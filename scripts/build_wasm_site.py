@@ -55,6 +55,23 @@ PEP723_HEADER = """\
 
 WEB_ASSETS = ["tutor.js", "tutor.css"]
 
+# Strip marimo's editor chrome down to just the notebook. The cells and their
+# per-cell controls (run, add, delete, edit) live outside these wrappers, so
+# hiding the chrome leaves editing fully intact. Selectors are marimo's stable
+# data-testid hooks. Tune this list if a future marimo version renames them.
+MARIMO_CHROME_CSS = (
+    "<style>"
+    '[data-testid="chrome-sidebar"],'
+    '[data-testid="chrome-context-aware-panel"],'
+    '[data-testid="chrome-footer"],'
+    '[data-testid="footer-panel"],'
+    '[data-testid="chrome-controls-top-right"],'
+    '[data-testid="watermark"],'
+    '[data-testid="static-notebook-banner"]'
+    "{display:none !important;}"
+    "</style>"
+)
+
 
 def chapters() -> list[Path]:
     return sorted(p for p in CHAPTERS_DIR.glob("*.py") if not p.name.startswith("_"))
@@ -171,7 +188,9 @@ def inject_tutor(page: Path, name: str) -> None:
     head = (
         '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />'
         '<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>'
-        '<link rel="stylesheet" href="../tutor.css" /></head>'
+        '<link rel="stylesheet" href="../tutor.css" />'
+        + MARIMO_CHROME_CSS
+        + "</head>"
     )
     body = (
         f"<script>window.TUTOR_CONFIG = {config};</script>"

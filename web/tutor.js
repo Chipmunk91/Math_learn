@@ -37,8 +37,7 @@
     "- If a question is unrelated to the chapter, answer briefly and steer back.";
 
   var messages = []; // {role, content}
-  var scope = "";    // highlighted passage attached to the next question
-  var lastSel = { text: "", ts: 0 }; // most recent non-empty selection
+  var scope = "";    // picked-cell content attached to the next question
 
   // ---- tiny, safe markdown -> html -------------------------------------
   function esc(s) {
@@ -120,34 +119,6 @@
     fab.addEventListener("click", openPanel);
     panel.querySelector('[data-mt="close"]').addEventListener("click", closePanel);
     panel.querySelector('[data-mt="settings"]').addEventListener("click", renderSetup);
-
-    // Track selections continuously so tapping the icon (which can collapse the
-    // selection) never loses what the learner highlighted.
-    document.addEventListener("selectionchange", trackSelection);
-    updateFabBadge();
-  }
-
-  function trackSelection() {
-    var t = "";
-    try { t = String(window.getSelection ? window.getSelection() : "").trim(); } catch (e) {}
-    if (t) lastSel = { text: t, ts: Date.now() };
-    updateFabBadge();
-  }
-
-  // Current selection if any, else the last one captured within 2 minutes.
-  function activeSelection() {
-    var t = "";
-    try { t = String(window.getSelection ? window.getSelection() : "").trim(); } catch (e) {}
-    if (t) return t;
-    if (lastSel.text && Date.now() - lastSel.ts < 120000) return lastSel.text;
-    return "";
-  }
-
-  function updateFabBadge() {
-    if (!el.fab) return;
-    var has = activeSelection() !== "";
-    el.fab.classList.toggle("mt-has-sel", has);
-    el.fab.title = has ? "Ask about your highlighted text" : "Ask the tutor";
   }
 
   // ---- key storage (session only) --------------------------------------
@@ -157,12 +128,8 @@
   function getModel() { try { return sessionStorage.getItem(MODEL_STORE) || MODELS[0].id; } catch (e) { return MODELS[0].id; } }
   function setModel(m) { try { sessionStorage.setItem(MODEL_STORE, m); } catch (e) {} }
 
-  // ---- open / close + selection capture --------------------------------
-  function openPanel() {
-    var sel = activeSelection();
-    if (sel) scope = sel; // a fresh highlight replaces scope; otherwise keep prior (e.g. a picked cell)
-    showPanel();
-  }
+  // ---- open / close -----------------------------------------------------
+  function openPanel() { showPanel(); }
   function showPanel() {
     el.panel.classList.add("mt-open");
     if (!getKey()) { renderSetup(); } else { renderChat(); }
@@ -310,9 +277,8 @@
       var tip = document.createElement("p");
       tip.className = "mt-hint";
       tip.innerHTML =
-        "💡 Ask about the whole chapter, <strong>highlight</strong> a sentence " +
-        "then reopen me, or use <strong>Pick a cell</strong> below to add a whole " +
-        "cell to the question.";
+        "💡 Ask about the whole chapter, or use <strong>Pick a cell</strong> " +
+        "below to attach a specific cell to your question.";
       b.appendChild(tip);
 
       var starters = (CFG.starters || []);
@@ -369,7 +335,7 @@
     var ta = document.createElement("textarea");
     ta.className = "mt-input";
     ta.rows = 1;
-    ta.placeholder = scope ? "Ask about the selected cell/text…" : "Ask about this chapter…";
+    ta.placeholder = scope ? "Ask about the picked cell…" : "Ask about this chapter…";
     el.input = ta;
     var btn = document.createElement("button");
     btn.className = "mt-send";
