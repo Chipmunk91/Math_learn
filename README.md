@@ -19,6 +19,28 @@ Dragging the `a`, `K`, and `y₀` sliders in chapter 1 reshapes the slope field
 and moves the solution curve in real time; the time animation plays with native
 play/pause.
 
+## AI assistant (in-notebook, for live sessions)
+
+marimo has a built-in AI assistant that can answer questions and **generate or
+edit cells in natural language** while you work — the session-oriented learning
+companion. The project is preconfigured to use Claude (see
+`[tool.marimo.ai.models]` in `pyproject.toml`); you only supply a key:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # marimo reads this; never commit it
+uv run marimo edit differential_equations/chapters/ch01_first_order_odes.py
+```
+
+Then inside the notebook, use the cell's **AI / sparkle** action to generate or
+rewrite a cell from a prompt, or open the **chat panel** to ask about the
+concept you're on. To use a stronger model, change the model id in
+`pyproject.toml` (e.g. `anthropic/claude-opus-4-7`).
+
+> This is the *live-session* lever (#2). Adding new chapters and library
+> code across DE and the broader math curriculum is the *agentic* lever (#1):
+> ask Claude Code to edit the notebooks/`delib`, which then auto-rebuilds the
+> deployed pages via CI.
+
 ## Live preview (mobile-friendly)
 
 Every push builds each chapter into a self-contained **WASM** page (runs in the

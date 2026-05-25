@@ -28,3 +28,11 @@ packages = ["differential_equations/delib"]
 
 [tool.pytest.ini_options]
 testpaths = ["differential_equations/tests"]
+
+# marimo's in-notebook AI assistant. The model is committed here (not a secret);
+# the API key is read from the ANTHROPIC_API_KEY environment variable, so it
+# never lives in the repo. Change the model id to any Claude model you have
+# access to.
+[tool.marimo.ai.models]
+chat_model = "anthropic/claude-sonnet-4-6"
+edit_model = "anthropic/claude-sonnet-4-6"
