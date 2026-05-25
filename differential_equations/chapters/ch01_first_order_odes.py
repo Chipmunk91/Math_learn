@@ -199,6 +199,68 @@ def _(mo):
 
 
 @app.cell
+def _():
+    CHAPTER_CONTEXT = r"""
+    Chapter 1 — First-order ODEs & slope fields.
+
+    Big idea: a first-order ODE y' = f(x, y) gives a *rule for the slope* at
+    every point of the plane, not a single solution. Drawing a short arrow of
+    slope f(x, y) on a grid produces the SLOPE FIELD — a picture of the flow
+    that every solution must stay tangent to.
+
+    Worked equation: the logistic model
+        y' = a*y*(1 - y/K)
+    with growth rate a and carrying capacity K. Its equilibria (where y' = 0)
+    are y = 0 and y = K; there the field goes flat (horizontal stripes).
+    Stability depends on the sign of a: for a > 0, y = K attracts and y = 0
+    repels; for a < 0 the roles flip.
+
+    What the learner sees on screen:
+    - A slope field that redraws as they drag sliders for a, K, and the initial
+      condition y0.
+    - A red solution curve through y(0) = y0 bending to follow the flow.
+    - A time animation tracing y(t) as t advances from 0 to 10.
+
+    "Try it" exercises:
+    1. Set a < 0: which equilibrium becomes the attractor, which repels?
+    2. Start with y0 above K: does it fall to K or overshoot?
+    3. Find a K where a solution from y0 = 0.5 barely moves — what does that say
+       about the slope near y = 0?
+    4. Push a toward 2: how does the steepness of the climb to K change?
+    """
+    return (CHAPTER_CONTEXT,)
+
+
+@app.cell
+def _(CHAPTER_CONTEXT, delib, mo):
+    tutor_chat = delib.tutor(
+        CHAPTER_CONTEXT,
+        section="Try it",
+        starters=[
+            "I set a < 0. I think y = 0 becomes the attractor — am I right?",
+            "Why does the field go flat exactly at y = 0 and y = K?",
+            "Give me a hint for question 2 without telling me the answer.",
+            "How does the growth rate a change the shape of the solution curve?",
+        ],
+    )
+    mo.vstack(
+        [
+            mo.md(
+                """
+                ## Ask the tutor
+
+                Stuck on a *Try it* question, or want to check your reasoning?
+                Ask below. The tutor knows this chapter — it will nudge you with
+                hints before handing over a full answer.
+                """
+            ),
+            tutor_chat,
+        ]
+    )
+    return (tutor_chat,)
+
+
+@app.cell
 def _(mo):
     mo.md(
         r"""

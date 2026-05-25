@@ -30,7 +30,7 @@ SITE = REPO / "site"
 # Pyodide runtime. For the WASM build we inline its source into each notebook so
 # the exported page is self-contained. Submodules are concatenated (not __init__,
 # whose relative imports won't resolve inside the synthesized module).
-DELIB_MODULES = ["solvers", "fields", "animate", "ui"]
+DELIB_MODULES = ["solvers", "fields", "animate", "ui", "tutor"]
 _FUTURE = re.compile(r"^from __future__ import .*$", re.MULTILINE)
 
 # marimo's WASM runtime installs these via micropip. We must list them

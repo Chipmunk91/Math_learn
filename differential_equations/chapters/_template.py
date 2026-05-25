@@ -139,6 +139,38 @@ def _(mo):
 
 
 @app.cell
+def _():
+    # 5b. Tutor context: plain-text summary of THIS chapter (equation, params,
+    # what's on screen, the Try-it questions). Sent as the tutor's system prompt
+    # so its help is grounded in exactly what the learner is reading.
+    CHAPTER_CONTEXT = r"""
+    Chapter NN — <title>.
+
+    Big idea: <one or two sentences>.
+    Worked equation: <equation and what each parameter means>.
+    What the learner sees: <sliders / plots / animation on screen>.
+    Try it: <restate the exercises so the tutor can give feedback on them>.
+    """
+    return (CHAPTER_CONTEXT,)
+
+
+@app.cell
+def _(CHAPTER_CONTEXT, delib, mo):
+    # 5c. AI tutor: a chapter-aware chat. Needs the Worker URL configured
+    # (delib.TUTOR_ENDPOINT or endpoint=...); see worker/README.md.
+    tutor_chat = delib.tutor(
+        CHAPTER_CONTEXT,
+        section="Try it",
+        starters=[
+            "<a question a learner might click to start>",
+            "Give me a hint for question 1 without the answer.",
+        ],
+    )
+    mo.vstack([mo.md("## Ask the tutor\n\nStuck or want feedback? Ask below."), tutor_chat])
+    return (tutor_chat,)
+
+
+@app.cell
 def _(mo):
     # 6. Recap + what's next (text only, no code dependency on other chapters).
     mo.md(
