@@ -25,6 +25,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import textwrap
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -101,6 +102,51 @@ def pretty(name: str) -> str:
     return f"{head.capitalize()} — {tail.replace('_', ' ').title()}"
 
 
+_CELL_SPLIT = re.compile(r"(?m)^@app\.cell")
+_DEF_LINE = re.compile(r"def _\([^)]*\):\n")
+_MD_CELL = re.compile(
+    r'^mo\.md\(\s*[rf]?(?:"""|\'\'\')(.*?)(?:"""|\'\'\')\s*\)\s*$', re.S
+)
+
+
+def parse_cells(source: str) -> list[dict]:
+    """Extract each cell's authored source in document order.
+
+    The exported page renders one ``.marimo-cell`` per ``@app.cell`` in file
+    order, so the widget can map a clicked cell to ``cells[index]``. Markdown
+    cells return their prose; other cells return their code. This gives the
+    tutor the real source even for code cells (whose rendered DOM is empty or
+    virtualized) and exact LaTeX for markdown.
+    """
+    cells: list[dict] = []
+    for block in _CELL_SPLIT.split(source)[1:]:
+        m = _DEF_LINE.search(block)
+        if not m:
+            continue
+        # Take the indented function body, stopping at the first dedent.
+        body_lines = []
+        for line in block[m.end():].split("\n"):
+            if line.startswith("    "):
+                body_lines.append(line[4:])
+            elif line.strip() == "":
+                body_lines.append("")
+            else:
+                break
+        while body_lines and not body_lines[-1].strip():
+            body_lines.pop()
+        while body_lines and body_lines[-1].strip().startswith("return"):
+            body_lines.pop()
+        while body_lines and not body_lines[-1].strip():
+            body_lines.pop()
+        text = "\n".join(body_lines).strip("\n")
+        md = _MD_CELL.match(text)
+        if md:
+            cells.append({"kind": "markdown", "text": textwrap.dedent(md.group(1)).strip("\n")})
+        else:
+            cells.append({"kind": "code", "text": text})
+    return cells
+
+
 def tutor_config(name: str) -> dict:
     """Per-chapter config injected for the tutor widget (context + starters)."""
     context_file = CHAPTERS_DIR / f"{name}.context.md"
@@ -109,14 +155,24 @@ def tutor_config(name: str) -> dict:
     starters: list[str] = []
     if starters_file.exists():
         starters = [s.strip() for s in starters_file.read_text().splitlines() if s.strip()]
-    return {"chapter": pretty(name), "context": context, "starters": starters}
+    cells = parse_cells((CHAPTERS_DIR / f"{name}.py").read_text())
+    return {
+        "chapter": pretty(name),
+        "context": context,
+        "starters": starters,
+        "cells": cells,
+    }
 
 
 def inject_tutor(page: Path, name: str) -> None:
     """Inject the tutor stylesheet, per-chapter config, and script into a page."""
     html = page.read_text()
     config = json.dumps(tutor_config(name))
-    head = '<link rel="stylesheet" href="../tutor.css" /></head>'
+    head = (
+        '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />'
+        '<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>'
+        '<link rel="stylesheet" href="../tutor.css" /></head>'
+    )
     body = (
         f"<script>window.TUTOR_CONFIG = {config};</script>"
         '<script src="../tutor.js"></script></body>'

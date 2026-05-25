@@ -63,6 +63,30 @@
     return blocks.join("");
   }
 
+  // Render markdown + LaTeX. Math is pulled out before markdown so paragraph
+  // wrapping can't split a $$...$$ across tags, then rendered with KaTeX.
+  function renderRich(src) {
+    var math = [], code = [];
+    function stash(tex, display) { math.push({ tex: tex, display: display }); return "@@M" + (math.length - 1) + "@@"; }
+    var s = src.replace(/```[\w-]*\n?([\s\S]*?)```/g, function (_, c) { code.push(c.replace(/\n$/, "")); return "@@C" + (code.length - 1) + "@@"; });
+    s = s.replace(/\$\$([\s\S]+?)\$\$/g, function (_, t) { return stash(t, true); });
+    s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (_, t) { return stash(t, true); });
+    s = s.replace(/\$([^\$\n]+?)\$/g, function (_, t) { return stash(t, false); });
+    s = s.replace(/\\\(([\s\S]+?)\\\)/g, function (_, t) { return stash(t, false); });
+    var html = mdToHtml(s);
+    html = html.replace(/@@M(\d+)@@/g, function (_, i) {
+      var m = math[i];
+      if (window.katex) {
+        try { return window.katex.renderToString(m.tex, { displayMode: m.display, throwOnError: false }); } catch (e) {}
+      }
+      return "<code>" + esc(m.tex) + "</code>";
+    });
+    html = html.replace(/@@C(\d+)@@/g, function (_, i) {
+      return "<pre><code>" + esc(code[i]) + "</code></pre>";
+    });
+    return html;
+  }
+
   // ---- DOM scaffold -----------------------------------------------------
   var el = {};
   function build() {
@@ -196,15 +220,26 @@
     o.top = r.top + "px"; o.left = r.left + "px";
     o.width = r.width + "px"; o.height = r.height + "px";
   }
+  // Prefer the authored source injected at build time (real code for code
+  // cells, exact LaTeX for markdown), mapping by the cell's document position.
+  function cellSource(cell) {
+    if (!CFG.cells || !CFG.cells.length) return "";
+    var all = Array.prototype.slice.call(document.querySelectorAll(".marimo-cell"));
+    var idx = all.indexOf(cell);
+    if (idx < 0 || idx >= CFG.cells.length) return "";
+    var c = CFG.cells[idx];
+    return c.kind === "code" ? "```python\n" + c.text + "\n```" : c.text;
+  }
   function onPickClick(e) {
     var cell = cellUnder(e.target);
     if (!cell) return;
     e.preventDefault();
     e.stopPropagation();
-    var text = cellText(cell);
+    var text = cellSource(cell) || cellText(cell);
     exitPick();
     if (text) scope = text;
     showPanel();
+    if (el.input) el.input.focus();
   }
   function onPickKey(e) {
     if (e.key === "Escape") { exitPick(); showPanel(); }
@@ -299,7 +334,7 @@
       row.className = "mt-msg " + (m.role === "user" ? "mt-user" : "mt-bot");
       var bub = document.createElement("div");
       bub.className = "mt-bubble";
-      bub.innerHTML = m.role === "user" ? esc(m.content).replace(/\n/g, "<br>") : mdToHtml(m.content);
+      bub.innerHTML = m.role === "user" ? esc(m.content).replace(/\n/g, "<br>") : renderRich(m.content);
       row.appendChild(bub);
       b.appendChild(row);
     });
@@ -334,7 +369,7 @@
     var ta = document.createElement("textarea");
     ta.className = "mt-input";
     ta.rows = 1;
-    ta.placeholder = "Ask about this chapter…";
+    ta.placeholder = scope ? "Ask about the selected cell/text…" : "Ask about this chapter…";
     el.input = ta;
     var btn = document.createElement("button");
     btn.className = "mt-send";
