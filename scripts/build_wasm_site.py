@@ -67,9 +67,38 @@ MARIMO_CHROME_CSS = (
     '[data-testid="footer-panel"],'
     '[data-testid="chrome-controls-top-right"],'
     '[data-testid="watermark"],'
-    '[data-testid="static-notebook-banner"]'
+    '[data-testid="static-notebook-banner"],'
+    # Per-cell language switcher (Python <-> SQL/Markdown). Hiding it keeps every
+    # cell Python, so learners can't flip a cell to SQL.
+    '[data-testid="language-button"],'
+    '[data-testid="language-toggle-button"]'
     "{display:none !important;}"
     "</style>"
+)
+
+# Hide marimo's SQL and "Generate with AI" affordances, which only confuse a
+# math-learning context (and AI codegen can't work without a server anyway).
+# These buttons/menu items carry no stable data-testid, so we match them by
+# their accessible label and re-apply on every DOM change. The tutor's own
+# "insert as new cell" flow is the sanctioned way to add code. Verified against
+# marimo 0.23.8; re-check the LABELS list after a marimo upgrade.
+MARIMO_HIDE_JS = (
+    "<script>(function(){"
+    'var LABELS=["generate with ai","chat with ai","edit with ai",'
+    '"fix with ai","ai completion","add sql cell","convert to sql"];'
+    'function norm(s){return (s||"").replace(/\\s+/g," ").trim().toLowerCase();}'
+    "function sweep(){"
+    'var ns=document.querySelectorAll(\'button,[role="menuitem"],a[role="menuitem"]\');'
+    "for(var i=0;i<ns.length;i++){var n=ns[i];if(n.dataset.mlHidden)continue;"
+    'var label=norm(n.getAttribute("aria-label"))||norm(n.textContent);'
+    'if(LABELS.indexOf(label)!==-1){n.style.display="none";n.dataset.mlHidden="1";}}}'
+    "var pend=false;function schedule(){if(pend)return;pend=true;"
+    "requestAnimationFrame(function(){pend=false;sweep();});}"
+    "function start(){new MutationObserver(schedule).observe(document.body,"
+    "{childList:true,subtree:true});sweep();}"
+    'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",start);}'
+    "else{start();}"
+    "})();</script>"
 )
 
 
@@ -194,7 +223,8 @@ def inject_tutor(page: Path, name: str) -> None:
     )
     body = (
         f"<script>window.TUTOR_CONFIG = {config};</script>"
-        '<script src="../tutor.js"></script></body>'
+        + MARIMO_HIDE_JS
+        + '<script src="../tutor.js"></script></body>'
     )
     if "</head>" not in html or "</body>" not in html:
         raise ValueError(f"missing </head> or </body> in {page}")
