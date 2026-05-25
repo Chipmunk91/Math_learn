@@ -155,10 +155,11 @@ def _():
 
 
 @app.cell
-def _(CHAPTER_CONTEXT, delib, mo):
-    # 5c. AI tutor: a chapter-aware chat. Needs the Worker URL configured
-    # (delib.TUTOR_ENDPOINT or endpoint=...); see worker/README.md.
-    tutor_chat = delib.tutor(
+def _(CHAPTER_CONTEXT, delib):
+    # 5c. AI tutor: a chapter-aware chat. By default each visitor pastes their
+    # own Anthropic key (it stays in their browser; they pay for their own use).
+    # To pay for everyone instead, deploy worker/ and set delib.TUTOR_ENDPOINT.
+    tutor_panel = delib.tutor(
         CHAPTER_CONTEXT,
         section="Try it",
         starters=[
@@ -166,8 +167,8 @@ def _(CHAPTER_CONTEXT, delib, mo):
             "Give me a hint for question 1 without the answer.",
         ],
     )
-    mo.vstack([mo.md("## Ask the tutor\n\nStuck or want feedback? Ask below."), tutor_chat])
-    return (tutor_chat,)
+    tutor_panel
+    return (tutor_panel,)
 
 
 @app.cell

@@ -1,9 +1,15 @@
-# Tutor proxy (Cloudflare Worker)
+# Tutor proxy (Cloudflare Worker) — optional "owner pays" mode
 
-A tiny key-holding proxy so the static lesson site can offer an AI tutor
-without ever shipping an Anthropic API key. The browser POSTs a conversation
-to this Worker; the Worker adds the secret key and forwards it to Anthropic's
-Messages API, then returns the reply with CORS headers.
+**You usually don't need this.** By default the tutor is bring-your-own-key:
+each visitor pastes their own Anthropic key (it stays in their browser and they
+pay for their own usage), so there's nothing to host. Deploy this Worker only
+if you want to pay for *all* visitors instead — e.g. a closed classroom.
+
+When deployed, it's a tiny key-holding proxy: the browser POSTs a conversation
+to the Worker, the Worker adds *your* secret key and forwards it to Anthropic's
+Messages API, then returns the reply with CORS headers. Activate it by setting
+`delib.TUTOR_ENDPOINT` (or passing `endpoint=`) to the Worker URL — that hides
+the key field and routes every request through your key.
 
 ```
 browser (GitHub Pages, Pyodide)  ──POST {system, messages}──▶  Worker  ──x-api-key──▶  api.anthropic.com

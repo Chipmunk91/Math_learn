@@ -232,8 +232,8 @@ def _():
 
 
 @app.cell
-def _(CHAPTER_CONTEXT, delib, mo):
-    tutor_chat = delib.tutor(
+def _(CHAPTER_CONTEXT, delib):
+    tutor_panel = delib.tutor(
         CHAPTER_CONTEXT,
         section="Try it",
         starters=[
@@ -243,21 +243,8 @@ def _(CHAPTER_CONTEXT, delib, mo):
             "How does the growth rate a change the shape of the solution curve?",
         ],
     )
-    mo.vstack(
-        [
-            mo.md(
-                """
-                ## Ask the tutor
-
-                Stuck on a *Try it* question, or want to check your reasoning?
-                Ask below. The tutor knows this chapter — it will nudge you with
-                hints before handing over a full answer.
-                """
-            ),
-            tutor_chat,
-        ]
-    )
-    return (tutor_chat,)
+    tutor_panel
+    return (tutor_panel,)
 
 
 @app.cell

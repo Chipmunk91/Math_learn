@@ -4,7 +4,13 @@ No network: we never call the Worker here. Those paths are exercised live in
 the browser / a local marimo session.
 """
 
-from delib.tutor import _extract_text, _system_prompt
+import delib
+from delib.tutor import (
+    DEFAULT_MODEL,
+    MODEL_CHOICES,
+    _extract_text,
+    _system_prompt,
+)
 
 
 def test_system_prompt_embeds_chapter_and_section():
@@ -39,3 +45,19 @@ def test_extract_text_surfaces_error_message():
 
 def test_extract_text_handles_unexpected_shape():
     assert _extract_text(["not", "a", "dict"]).startswith("⚠️")
+
+
+def test_default_model_is_an_offered_choice():
+    assert DEFAULT_MODEL in MODEL_CHOICES.values()
+
+
+def test_tutor_builds_in_both_modes():
+    # Bring-your-own-key (default) and owner-pays Worker both produce a panel.
+    byok = delib.tutor("ctx", section="Try it", starters=["hi"])
+    owner = delib.tutor("ctx", endpoint="https://example.workers.dev")
+    for panel in (byok, owner):
+        assert hasattr(panel, "text")  # a marimo renderable
+
+    # BYOK shows the key field; owner-pays mode hides it.
+    assert "password" in byok.text
+    assert "password" not in owner.text
