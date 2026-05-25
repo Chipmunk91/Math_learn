@@ -37,7 +37,8 @@
     "- If a question is unrelated to the chapter, answer briefly and steer back.";
 
   var messages = []; // {role, content}
-  var scope = "";    // highlighted passage, if any
+  var scope = "";    // highlighted passage attached to the next question
+  var lastSel = { text: "", ts: 0 }; // most recent non-empty selection
 
   // ---- tiny, safe markdown -> html -------------------------------------
   function esc(s) {
@@ -95,6 +96,34 @@
     fab.addEventListener("click", openPanel);
     panel.querySelector('[data-mt="close"]').addEventListener("click", closePanel);
     panel.querySelector('[data-mt="settings"]').addEventListener("click", renderSetup);
+
+    // Track selections continuously so tapping the icon (which can collapse the
+    // selection) never loses what the learner highlighted.
+    document.addEventListener("selectionchange", trackSelection);
+    updateFabBadge();
+  }
+
+  function trackSelection() {
+    var t = "";
+    try { t = String(window.getSelection ? window.getSelection() : "").trim(); } catch (e) {}
+    if (t) lastSel = { text: t, ts: Date.now() };
+    updateFabBadge();
+  }
+
+  // Current selection if any, else the last one captured within 2 minutes.
+  function activeSelection() {
+    var t = "";
+    try { t = String(window.getSelection ? window.getSelection() : "").trim(); } catch (e) {}
+    if (t) return t;
+    if (lastSel.text && Date.now() - lastSel.ts < 120000) return lastSel.text;
+    return "";
+  }
+
+  function updateFabBadge() {
+    if (!el.fab) return;
+    var has = activeSelection() !== "";
+    el.fab.classList.toggle("mt-has-sel", has);
+    el.fab.title = has ? "Ask about your highlighted text" : "Ask the tutor";
   }
 
   // ---- key storage (session only) --------------------------------------
@@ -106,9 +135,7 @@
 
   // ---- open / close + selection capture --------------------------------
   function openPanel() {
-    var sel = "";
-    try { sel = String(window.getSelection ? window.getSelection() : "").trim(); } catch (e) {}
-    if (sel) scope = sel;
+    scope = activeSelection();
     el.panel.classList.add("mt-open");
     if (!getKey()) { renderSetup(); } else { renderChat(); }
   }
@@ -176,6 +203,13 @@
     var b = el.body;
     b.innerHTML = "";
     if (!messages.length) {
+      var tip = document.createElement("p");
+      tip.className = "mt-hint";
+      tip.innerHTML =
+        "💡 Ask about the whole chapter, or <strong>highlight a sentence or " +
+        "section first</strong> then reopen me to ask about just that part.";
+      b.appendChild(tip);
+
       var starters = (CFG.starters || []);
       if (starters.length) {
         var sWrap = document.createElement("div");
