@@ -124,11 +124,18 @@ def _(K, a, delib, go, mo, np, y0):
     # --- Section 4: time animation -------------------------------------------
     # Trace the solution curve being drawn as t advances, with native play/pause.
     n_frames = 60
-    t_anim = np.linspace(0.0, 10.0, n_frames)
-    sol_anim = delib.solve_ode(lambda t, y: a * y * (1.0 - y / K), (0.0, 10.0), y0, t_eval=t_anim)
+    t_request = np.linspace(0.0, 10.0, n_frames)
+    sol_anim = delib.solve_ode(lambda t, y: a * y * (1.0 - y / K), (0.0, 10.0), y0, t_eval=t_request)
+    # The solver stops early if the solution diverges, so use what it returned
+    # rather than assuming all n_frames points exist.
+    t_anim = sol_anim.t
     ys = sol_anim.y[0]
+    n = len(t_anim)
 
-    y_lo, y_hi = float(min(ys.min(), 0.0)) - 0.5, float(max(ys.max(), K)) + 0.5
+    finite = ys[np.isfinite(ys)]
+    lo = float(min(finite.min(), 0.0)) if finite.size else -1.0
+    hi = float(max(finite.max(), K)) if finite.size else K + 1.0
+    y_lo, y_hi = lo - 0.5, hi + 0.5
 
     def _equilibria():
         return [
@@ -151,7 +158,7 @@ def _(K, a, delib, go, mo, np, y0):
                            marker=dict(color="#d1495b", size=10), name="now"),
             ],
         }
-        for i in range(n_frames)
+        for i in range(n)
     ]
 
     anim_fig = delib.animate_plotly(
