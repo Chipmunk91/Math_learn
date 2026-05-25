@@ -8,6 +8,7 @@ on:
     paths:
       - "differential_equations/chapters/**"
       - "differential_equations/delib/**"
+      - "web/**"
       - "scripts/build_wasm_site.py"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:

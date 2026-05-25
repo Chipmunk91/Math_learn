@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
-"""Export every chapter notebook to interactive WASM HTML and build a landing page.
+"""Export every chapter notebook to one interactive WASM page and build a site.
 
 Produces a static, mobile-friendly site under ``site/``:
 
     site/
-      index.html            # links to each chapter
+      index.html            # one link per chapter
       .nojekyll
-      <chapter-name>/        # one WASM-exported notebook per chapter
+      tutor.js, tutor.css   # the in-page AI tutor widget (web/)
+      <chapter-name>/       # one WASM-exported notebook per chapter
 
-The exported notebooks run entirely in the browser via Pyodide, so the site
-needs no server and works from a phone.
+Each chapter is exported once in ``edit`` mode with code hidden by default, so
+it reads cleanly but any cell can be expanded and edited in the browser. The
+build injects the tutor widget (a floating icon -> chat panel) plus that
+chapter's context into the exported page. The tutor is bring-your-own-key: each
+visitor pastes their own Anthropic key, so the site needs no server and costs
+the owner nothing.
 """
 
 from __future__ import annotations
 
 import base64
+import json
 import re
 import subprocess
 import sys
@@ -24,18 +30,15 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 CHAPTERS_DIR = REPO / "differential_equations" / "chapters"
 DELIB_DIR = REPO / "differential_equations" / "delib"
+WEB_DIR = REPO / "web"
 SITE = REPO / "site"
 
 # delib is a locally-installed package and does not exist in the browser's
 # Pyodide runtime. For the WASM build we inline its source into each notebook so
-# the exported page is self-contained. Submodules are concatenated (not __init__,
-# whose relative imports won't resolve inside the synthesized module).
-DELIB_MODULES = ["solvers", "fields", "animate", "ui", "tutor"]
+# the exported page is self-contained.
+DELIB_MODULES = ["solvers", "fields", "animate", "ui"]
 _FUTURE = re.compile(r"^from __future__ import .*$", re.MULTILINE)
 
-# marimo's WASM runtime installs these via micropip. We must list them
-# explicitly because (a) plotly is not a built-in Pyodide package and (b)
-# inlining delib hides its scipy/matplotlib imports from marimo's scanner.
 PEP723_HEADER = """\
 # /// script
 # requires-python = ">=3.12"
@@ -49,19 +52,14 @@ PEP723_HEADER = """\
 # ///
 """
 
+WEB_ASSETS = ["tutor.js", "tutor.css"]
+
 
 def chapters() -> list[Path]:
-    """All chapter notebooks except files starting with an underscore (template)."""
     return sorted(p for p in CHAPTERS_DIR.glob("*.py") if not p.name.startswith("_"))
 
 
 def delib_bootstrap() -> str:
-    """A code block that builds an in-memory ``delib`` module from inlined source.
-
-    The block is base64-embedded so it is immune to quote characters in delib's
-    own docstrings, and registers the module in ``sys.modules`` before the
-    notebook's ``import delib`` runs (same cell => sequential execution).
-    """
     parts = ["from __future__ import annotations"]
     for mod in DELIB_MODULES:
         src = (DELIB_DIR / f"{mod}.py").read_text()
@@ -79,27 +77,20 @@ def delib_bootstrap() -> str:
 
 
 def inline_delib(source: str) -> str:
-    """Replace a standalone ``import delib`` line with the inlined bootstrap."""
     pattern = re.compile(r"^[ \t]*import delib[ \t]*$", re.MULTILINE)
     if not pattern.search(source):
         raise ValueError("expected a standalone `import delib` line to inline")
     return pattern.sub(delib_bootstrap().rstrip("\n"), source, count=1)
 
 
-def export(notebook: Path, out_dir: Path, *, mode: str = "run") -> None:
-    """Export a chapter to WASM HTML in ``run`` (read-only) or ``edit`` (lab) mode."""
+def export(notebook: Path, out_dir: Path) -> None:
+    """Export a chapter to a single WASM HTML page (edit mode, code hidden)."""
     transformed = PEP723_HEADER + inline_delib(notebook.read_text())
     with tempfile.TemporaryDirectory() as tmp:
-        # Keep the original filename so the exported app keeps its title.
         staged = Path(tmp) / notebook.name
         staged.write_text(transformed)
         subprocess.run(
-            [
-                "marimo", "export", "html-wasm",
-                str(staged),
-                "-o", str(out_dir),
-                "--mode", mode,
-            ],
+            ["marimo", "export", "html-wasm", str(staged), "-o", str(out_dir), "--mode", "edit"],
             check=True,
         )
 
@@ -110,14 +101,36 @@ def pretty(name: str) -> str:
     return f"{head.capitalize()} — {tail.replace('_', ' ').title()}"
 
 
+def tutor_config(name: str) -> dict:
+    """Per-chapter config injected for the tutor widget (context + starters)."""
+    context_file = CHAPTERS_DIR / f"{name}.context.md"
+    starters_file = CHAPTERS_DIR / f"{name}.starters.txt"
+    context = context_file.read_text().strip() if context_file.exists() else ""
+    starters: list[str] = []
+    if starters_file.exists():
+        starters = [s.strip() for s in starters_file.read_text().splitlines() if s.strip()]
+    return {"chapter": pretty(name), "context": context, "starters": starters}
+
+
+def inject_tutor(page: Path, name: str) -> None:
+    """Inject the tutor stylesheet, per-chapter config, and script into a page."""
+    html = page.read_text()
+    config = json.dumps(tutor_config(name))
+    head = '<link rel="stylesheet" href="../tutor.css" /></head>'
+    body = (
+        f"<script>window.TUTOR_CONFIG = {config};</script>"
+        '<script src="../tutor.js"></script></body>'
+    )
+    if "</head>" not in html or "</body>" not in html:
+        raise ValueError(f"missing </head> or </body> in {page}")
+    html = html.replace("</head>", head, 1).replace("</body>", body, 1)
+    page.write_text(html)
+
+
 def build_index(names: list[str]) -> str:
     cards = "\n".join(
         f"""      <li class="card">
-        <span class="title">{pretty(n)}</span>
-        <span class="links">
-          <a href="./{n}/">Read</a>
-          <a class="lab" href="./{n}-lab/">Open lab ✎</a>
-        </span>
+        <a href="./{n}/">{pretty(n)}</a>
       </li>"""
         for n in names
     )
@@ -132,25 +145,19 @@ def build_index(names: list[str]) -> str:
            padding: 0 1.25rem; line-height: 1.5; color: #1d2733; }}
     h1 {{ font-size: 1.6rem; }}
     ul {{ list-style: none; padding: 0; }}
-    .card {{ border: 1px solid #d6dde6; border-radius: 0.6rem; padding: 0.9rem 1rem;
-             margin: 0.6rem 0; }}
-    .title {{ display: block; font-weight: 600; margin-bottom: 0.5rem; }}
-    .links {{ display: flex; gap: 0.5rem; }}
-    .links a {{ flex: 1; text-align: center; padding: 0.55rem 0.5rem; border-radius: 0.45rem;
-                text-decoration: none; font-weight: 600; background: #eef3fb; color: #2a5d9c; }}
-    .links a.lab {{ background: #2a5d9c; color: #fff; }}
-    .links a:active, .links a:hover {{ filter: brightness(0.95); }}
+    .card {{ border: 1px solid #d6dde6; border-radius: 0.6rem; margin: 0.6rem 0; }}
+    .card a {{ display: block; padding: 0.9rem 1rem; text-decoration: none;
+               font-weight: 600; color: #2a5d9c; }}
+    .card a:active, .card a:hover {{ background: #f5f8fc; }}
     p {{ color: #56636f; }}
-    .hint {{ font-size: 0.85rem; }}
   </style>
 </head>
 <body>
   <h1>Differential Equations Playground</h1>
   <p>Interactive chapters that run entirely in your browser — drag the sliders,
-     play the animations.</p>
-  <p class="hint"><strong>Read</strong> = guided chapter view.
-     <strong>Open lab ✎</strong> = editable notebook: change the code and re-run it
-     right in the browser.</p>
+     play the animations, and ask the built-in tutor (tap the 💬 icon).</p>
+  <p>Each chapter reads top-to-bottom; expand any cell to edit and re-run its
+     code right in the browser.</p>
   <ul>
 {cards}
   </ul>
@@ -166,13 +173,16 @@ def main() -> int:
         return 1
 
     SITE.mkdir(parents=True, exist_ok=True)
+    for asset in WEB_ASSETS:
+        (SITE / asset).write_text((WEB_DIR / asset).read_text())
+
     names: list[str] = []
     for nb in nbs:
         name = nb.stem
         names.append(name)
-        print(f"Exporting {nb.name} -> site/{name}/ (read) and site/{name}-lab/ (edit)")
-        export(nb, SITE / name, mode="run")
-        export(nb, SITE / f"{name}-lab", mode="edit")
+        print(f"Exporting {nb.name} -> site/{name}/")
+        export(nb, SITE / name)
+        inject_tutor(SITE / name / "index.html", name)
 
     (SITE / "index.html").write_text(build_index(names))
     (SITE / ".nojekyll").write_text("")

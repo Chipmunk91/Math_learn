@@ -1,0 +1,4 @@
+I set a < 0. I think y = 0 becomes the attractor — am I right?
+Why does the field go flat exactly at y = 0 and y = K?
+Give me a hint for question 2 without telling me the answer.
+How does the growth rate a change the shape of the solution curve?

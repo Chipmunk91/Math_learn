@@ -19,27 +19,24 @@ Dragging the `a`, `K`, and `y₀` sliders in chapter 1 reshapes the slope field
 and moves the solution curve in real time; the time animation plays with native
 play/pause.
 
-## AI assistant (in-notebook, for live sessions)
+## AI tutor (in-page, bring-your-own-key)
 
-marimo has a built-in AI assistant that can answer questions and **generate or
-edit cells in natural language** while you work — the session-oriented learning
-companion. The project is preconfigured to use Claude (see
-`[tool.marimo.ai.models]` in `pyproject.toml`); you only supply a key:
+Every published chapter has a built-in Socratic tutor — tap the **💬** icon to
+open a chat that already knows the chapter (its equation, parameters, and
+exercises). Highlight a passage before opening it and the tutor scopes its help
+to that selection; otherwise it answers about the whole chapter.
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...   # marimo reads this; never commit it
-uv run marimo edit differential_equations/chapters/ch01_first_order_odes.py
-```
+It's **bring-your-own-key**: each visitor pastes their own Anthropic API key,
+which is held only in that browser tab for the session (cleared when the tab
+closes) and sent **directly** to Anthropic. The key never reaches any server,
+and each visitor pays for their own usage — so the static site costs the owner
+nothing to host.
 
-Then inside the notebook, use the cell's **AI / sparkle** action to generate or
-rewrite a cell from a prompt, or open the **chat panel** to ask about the
-concept you're on. To use a stronger model, change the model id in
-`pyproject.toml` (e.g. `anthropic/claude-opus-4-7`).
-
-> This is the *live-session* lever (#2). Adding new chapters and library
-> code across DE and the broader math curriculum is the *agentic* lever (#1):
-> ask Claude Code to edit the notebooks/`delib`, which then auto-rebuilds the
-> deployed pages via CI.
+The widget is plain, dependency-free JS in [`web/`](web/) (`tutor.js` +
+`tutor.css`), injected into each exported chapter by the build. Per-chapter
+grounding comes from two sidecar files next to the notebook:
+`chNN_<topic>.context.md` (what the tutor knows) and
+`chNN_<topic>.starters.txt` (suggested opening prompts, one per line).
 
 ## Live preview (mobile-friendly)
 
@@ -71,10 +68,14 @@ math_learn/
       animate.py              # plotly play/pause + matplotlib export
       ui.py                   # standardized marimo sliders
     chapters/
-      ch01_first_order_odes.py   # worked reference chapter
-      _template.py               # copy this to start a new chapter
+      ch01_first_order_odes.py            # worked reference chapter
+      ch01_first_order_odes.context.md    # what the tutor knows about it
+      ch01_first_order_odes.starters.txt  # suggested tutor prompts
+      _template.py                        # copy this to start a new chapter
     tests/
     assets/                   # exported gifs/mp4 (gitignored except *_sample.*)
+  web/                        # in-page tutor widget (tutor.js + tutor.css)
+  scripts/build_wasm_site.py  # exports chapters to WASM + injects the tutor
 ```
 
 ## Adding a chapter
@@ -83,6 +84,11 @@ Copy `differential_equations/chapters/_template.py`, rename it
 `chNN_<topic>.py`, and fill in the six fixed sections (title/goals, concept,
 interactive exploration, time animation, "try it", recap). Chapters import only
 from `delib` and the standard stack — never from each other.
+
+For the tutor, add two sidecars next to it: `chNN_<topic>.context.md` (a plain
+summary of the equation, parameters, on-screen widgets, and exercises) and
+`chNN_<topic>.starters.txt` (a few suggested prompts, one per line). Both are
+optional; without them the tutor still works with just the chapter title.
 
 ## Notes
 

@@ -16,7 +16,6 @@ from delib.fields import (
 )
 from delib.animate import animate_time, animate_plotly, frame_index
 from delib.ui import param_slider, param_panel
-from delib.tutor import tutor, TUTOR_ENDPOINT
 
 __all__ = [
     "solve_ode",
@@ -31,6 +30,4 @@ __all__ = [
     "frame_index",
     "param_slider",
     "param_panel",
-    "tutor",
-    "TUTOR_ENDPOINT",
 ]

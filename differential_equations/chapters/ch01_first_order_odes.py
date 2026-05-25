@@ -4,7 +4,7 @@ __generated_with = "0.9.0"
 app = marimo.App(width="medium")
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     import marimo as mo
     import numpy as np
@@ -15,7 +15,7 @@ def _():
     return delib, go, mo, np, plt
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
@@ -35,7 +35,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
@@ -57,7 +57,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(delib, np, plt):
     def logistic_grid(a, K):
         """y' = a*y*(1 - y/K), vectorized over a slope-field grid."""
@@ -74,7 +74,7 @@ def _(delib, np, plt):
     return (logistic_grid,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(delib, mo):
     controls = delib.param_panel(
         [
@@ -96,7 +96,7 @@ def _(delib, mo):
     return (controls,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(controls, delib, logistic_grid, np, plt):
     a = controls.value["a"]
     K = controls.value["K"]
@@ -119,7 +119,7 @@ def _(controls, delib, logistic_grid, np, plt):
     return K, a, f_grid, sol, y0
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(K, a, delib, go, mo, np, y0):
     # --- Section 4: time animation -------------------------------------------
     # Trace the solution curve being drawn as t advances, with native play/pause.
@@ -175,13 +175,13 @@ def _(K, a, delib, go, mo, np, y0):
     return (anim_fig,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(anim_fig):
     anim_fig
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
@@ -198,56 +198,7 @@ def _(mo):
     return
 
 
-@app.cell
-def _():
-    CHAPTER_CONTEXT = r"""
-    Chapter 1 — First-order ODEs & slope fields.
-
-    Big idea: a first-order ODE y' = f(x, y) gives a *rule for the slope* at
-    every point of the plane, not a single solution. Drawing a short arrow of
-    slope f(x, y) on a grid produces the SLOPE FIELD — a picture of the flow
-    that every solution must stay tangent to.
-
-    Worked equation: the logistic model
-        y' = a*y*(1 - y/K)
-    with growth rate a and carrying capacity K. Its equilibria (where y' = 0)
-    are y = 0 and y = K; there the field goes flat (horizontal stripes).
-    Stability depends on the sign of a: for a > 0, y = K attracts and y = 0
-    repels; for a < 0 the roles flip.
-
-    What the learner sees on screen:
-    - A slope field that redraws as they drag sliders for a, K, and the initial
-      condition y0.
-    - A red solution curve through y(0) = y0 bending to follow the flow.
-    - A time animation tracing y(t) as t advances from 0 to 10.
-
-    "Try it" exercises:
-    1. Set a < 0: which equilibrium becomes the attractor, which repels?
-    2. Start with y0 above K: does it fall to K or overshoot?
-    3. Find a K where a solution from y0 = 0.5 barely moves — what does that say
-       about the slope near y = 0?
-    4. Push a toward 2: how does the steepness of the climb to K change?
-    """
-    return (CHAPTER_CONTEXT,)
-
-
-@app.cell
-def _(CHAPTER_CONTEXT, delib):
-    tutor_panel = delib.tutor(
-        CHAPTER_CONTEXT,
-        section="Try it",
-        starters=[
-            "I set a < 0. I think y = 0 becomes the attractor — am I right?",
-            "Why does the field go flat exactly at y = 0 and y = K?",
-            "Give me a hint for question 2 without telling me the answer.",
-            "How does the growth rate a change the shape of the solution curve?",
-        ],
-    )
-    tutor_panel
-    return (tutor_panel,)
-
-
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
