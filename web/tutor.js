@@ -34,6 +34,10 @@
     "exactly where any reasoning breaks, and a nudge toward the fix.\n" +
     "- Stay anchored to THIS chapter's equation, parameters, and figures.\n" +
     "- Be concise and encouraging. Use Markdown; write math with $...$.\n" +
+    "- When you suggest code, put it in a ```python fenced block. The learner " +
+    "gets an \"Insert as new cell\" button under it; the code is added to the " +
+    "notebook but never runs until they press ▶, so keep snippets self-contained " +
+    "and safe to read before running.\n" +
     "- If a question is unrelated to the chapter, answer briefly and steer back.";
 
   var messages = []; // {role, content}
@@ -67,7 +71,7 @@
   function renderRich(src) {
     var math = [], code = [];
     function stash(tex, display) { math.push({ tex: tex, display: display }); return "@@M" + (math.length - 1) + "@@"; }
-    var s = src.replace(/```[\w-]*\n?([\s\S]*?)```/g, function (_, c) { code.push(c.replace(/\n$/, "")); return "@@C" + (code.length - 1) + "@@"; });
+    var s = src.replace(/```([\w-]*)\n?([\s\S]*?)```/g, function (_, lang, c) { code.push({ lang: (lang || "").toLowerCase(), text: c.replace(/\n$/, "") }); return "@@C" + (code.length - 1) + "@@"; });
     s = s.replace(/\$\$([\s\S]+?)\$\$/g, function (_, t) { return stash(t, true); });
     s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (_, t) { return stash(t, true); });
     s = s.replace(/\$([^\$\n]+?)\$/g, function (_, t) { return stash(t, false); });
@@ -81,7 +85,8 @@
       return "<code>" + esc(m.tex) + "</code>";
     });
     html = html.replace(/@@C(\d+)@@/g, function (_, i) {
-      return "<pre><code>" + esc(code[i]) + "</code></pre>";
+      var c = code[i];
+      return '<pre class="mt-code" data-lang="' + esc(c.lang) + '"><code>' + esc(c.text) + "</code></pre>";
     });
     return html;
   }
@@ -351,6 +356,7 @@
       var bub = document.createElement("div");
       bub.className = "mt-bubble";
       bub.innerHTML = m.role === "user" ? esc(m.content).replace(/\n/g, "<br>") : renderRich(m.content);
+      if (m.role !== "user") decorateCode(bub);
       row.appendChild(bub);
       b.appendChild(row);
     });
@@ -421,6 +427,147 @@
       el.chip.classList.remove("mt-show");
       el.chip.innerHTML = "";
     }
+  }
+
+  // ---- code blocks -> "insert as a new cell" --------------------------
+  // The tutor never runs code. It can only WRITE a suggestion into a brand-new
+  // cell, which the learner reviews and then runs themselves (the ▶ button).
+  // Keeping a human as the trigger is what defuses the prompt-injection ->
+  // auto-exec -> key-exfiltration risk: nothing executes without a click.
+  function decorateCode(bubble) {
+    var pres = bubble.querySelectorAll("pre.mt-code");
+    Array.prototype.forEach.call(pres, function (pre) {
+      var codeEl = pre.querySelector("code");
+      var text = codeEl ? codeEl.textContent : pre.textContent;
+      if (!text || !text.trim()) return;
+      var lang = (pre.getAttribute("data-lang") || "").toLowerCase();
+      var bar = document.createElement("div");
+      bar.className = "mt-codebar";
+
+      // Only Python (or unlabelled) blocks map onto a marimo cell. Other
+      // snippets (shell, etc.) still get a Copy button but no Insert.
+      if (lang === "" || lang === "python" || lang === "py") {
+        var ins = document.createElement("button");
+        ins.className = "mt-codebtn";
+        ins.textContent = "⤵ Insert as new cell";
+        ins.title = "Add this as a new cell below. It will NOT run until you press ▶.";
+        ins.addEventListener("click", function () { doInsert(text, ins); });
+        bar.appendChild(ins);
+      }
+      var cp = document.createElement("button");
+      cp.className = "mt-codebtn";
+      cp.textContent = "⧉ Copy";
+      cp.addEventListener("click", function () { copyText(text); toast("Copied to clipboard."); });
+      bar.appendChild(cp);
+      pre.parentNode.insertBefore(bar, pre.nextSibling);
+    });
+  }
+
+  function doInsert(code, btn) {
+    var original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Inserting…";
+    insertCodeAsNewCell(code, function (ok) {
+      btn.disabled = false;
+      if (ok) {
+        btn.textContent = "✓ Inserted — press ▶ to run";
+        toast("Added as a new cell below. Review it, then press ▶ to run it.");
+      } else {
+        copyText(code);
+        btn.textContent = original;
+        toast("Couldn't insert automatically — copied to clipboard instead.");
+      }
+    });
+  }
+
+  // --- the fragile layer: drive marimo's in-browser editor -----------------
+  // Everything below leans on marimo's internals (data-testid hooks + the
+  // CodeMirror 6 view). These are NOT a stable public API; re-verify after any
+  // marimo upgrade. Built against marimo 0.23.8. On any failure we fall back to
+  // copying the code to the clipboard, so a broken selector degrades gracefully
+  // instead of doing something unexpected.
+
+  // CodeMirror 6 stores its EditorView on the DOM via `cmView` (this mirrors
+  // how CM's own EditorView.findFromDOM recovers a view from a node).
+  function cmViewOf(editorEl) {
+    var ed = (editorEl.classList && editorEl.classList.contains("cm-editor"))
+      ? editorEl : editorEl.querySelector(".cm-editor");
+    if (!ed) return null;
+    var content = ed.querySelector(".cm-content") || ed;
+    var cv = content.cmView;
+    if (!cv) return null;
+    return (cv.rootView && cv.rootView.view) || cv.view || null;
+  }
+
+  function setEditorText(editorEl, code) {
+    var view = cmViewOf(editorEl);
+    if (view && view.state && view.dispatch) {
+      try {
+        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code } });
+        view.focus();
+        return true;
+      } catch (e) { /* fall through */ }
+    }
+    // Fallback that doesn't need a view handle: type into the contenteditable
+    // via the input pipeline CM6 already listens to.
+    var content = editorEl.querySelector(".cm-content");
+    if (content) {
+      try {
+        content.focus();
+        document.execCommand("selectAll", false, null);
+        if (document.execCommand("insertText", false, code)) return true;
+      } catch (e) { /* fall through */ }
+    }
+    return false;
+  }
+
+  function findNewEditor(prevCount, cb, tries) {
+    tries = tries || 0;
+    var eds = document.querySelectorAll('[data-testid="cell-editor"]');
+    if (eds.length > prevCount) { cb(eds[eds.length - 1]); return; }
+    if (tries > 40) { cb(null); return; } // ~2s of React render budget
+    setTimeout(function () { findNewEditor(prevCount, cb, tries + 1); }, 50);
+  }
+
+  function insertCodeAsNewCell(code, done) {
+    var addBtns = document.querySelectorAll('[data-testid="create-cell-button"]');
+    var before = document.querySelectorAll('[data-testid="cell-editor"]').length;
+    if (!addBtns.length || !before) { done(false); return; }
+    try {
+      // The last create-cell button sits after the final cell -> appends at end.
+      addBtns[addBtns.length - 1].click();
+    } catch (e) { done(false); return; }
+    findNewEditor(before, function (editorEl) {
+      if (!editorEl) { done(false); return; }
+      var ok = setEditorText(editorEl, code);
+      if (ok && editorEl.scrollIntoView) {
+        try { editorEl.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {}
+      }
+      done(ok);
+    });
+  }
+
+  // ---- small utilities --------------------------------------------------
+  function copyText(t) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t); return; }
+    } catch (e) {}
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+    } catch (e) {}
+  }
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = el.toast;
+    if (!t) { t = document.createElement("div"); t.className = "mt-toast"; document.body.appendChild(t); el.toast = t; }
+    t.textContent = msg;
+    t.classList.add("mt-toast-show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("mt-toast-show"); }, 4000);
   }
 
   // ---- send -------------------------------------------------------------

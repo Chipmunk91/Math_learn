@@ -95,6 +95,38 @@
 .mt-bubble pre code { background: none; padding: 0; }
 .mt-bubble .katex-display { margin: 0.4rem 0; overflow-x: auto; overflow-y: hidden; }
 
+.mt-codebar { display: flex; gap: 0.4rem; margin: -0.1rem 0 0.5rem; }
+.mt-codebtn {
+  background: #f5f8fc;
+  border: 1px solid #dce4ee;
+  border-radius: 0.4rem;
+  padding: 0.28rem 0.55rem;
+  cursor: pointer;
+  color: #2a5d9c;
+  font: 600 0.76rem system-ui, -apple-system, sans-serif;
+}
+.mt-codebtn:hover { background: #eaf1fa; }
+.mt-codebtn:disabled { opacity: 0.6; cursor: default; }
+
+.mt-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%) translateY(1rem);
+  z-index: 2147483003;
+  max-width: min(28rem, calc(100vw - 2rem));
+  background: #1d2733;
+  color: #fff;
+  padding: 0.6rem 0.95rem;
+  border-radius: 0.5rem;
+  font: 0.84rem system-ui, -apple-system, sans-serif;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.mt-toast.mt-toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 .mt-hint { color: #56636f; font-size: 0.82rem; }
 .mt-hint a { color: #2a5d9c; }
 
