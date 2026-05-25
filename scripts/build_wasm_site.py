@@ -85,7 +85,7 @@ MARIMO_CHROME_CSS = (
 MARIMO_HIDE_JS = (
     "<script>(function(){"
     'var LABELS=["generate with ai","chat with ai","edit with ai",'
-    '"fix with ai","ai completion","add sql cell","convert to sql"];'
+    '"fix with ai","ai completion","sql","add sql cell","convert to sql"];'
     'function norm(s){return (s||"").replace(/\\s+/g," ").trim().toLowerCase();}'
     "function sweep(){"
     'var ns=document.querySelectorAll(\'button,[role="menuitem"],a[role="menuitem"]\');'

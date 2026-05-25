@@ -524,19 +524,47 @@
   function findNewEditor(prevCount, cb, tries) {
     tries = tries || 0;
     var eds = document.querySelectorAll('[data-testid="cell-editor"]');
-    if (eds.length > prevCount) { cb(eds[eds.length - 1]); return; }
+    if (eds.length > prevCount) {
+      // marimo focuses the freshly created cell; prefer it, else take the last.
+      var active = document.activeElement;
+      var viaActive = active && active.closest ? active.closest('[data-testid="cell-editor"]') : null;
+      cb(viaActive || eds[eds.length - 1]);
+      return;
+    }
     if (tries > 40) { cb(null); return; } // ~2s of React render budget
     setTimeout(function () { findNewEditor(prevCount, cb, tries + 1); }, 50);
   }
 
+  // Create a new Python cell at the end of the notebook. marimo offers two
+  // affordances and neither is a plain click target: the bottom language picker
+  // exposes a real "Python" button (onClick), and the inline "+" only fires on
+  // pointerdown. Try the picker first, then fall back to the "+".
+  function createPythonCell() {
+    var btns = document.querySelectorAll("button");
+    var pythons = [];
+    for (var i = 0; i < btns.length; i++) {
+      var t = (btns[i].textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+      if (t === "python") pythons.push(btns[i]);
+    }
+    if (pythons.length) { pythons[pythons.length - 1].click(); return true; }
+
+    var adds = document.querySelectorAll('[data-testid="create-cell-button"]');
+    if (adds.length) {
+      var btn = adds[adds.length - 1];
+      try {
+        btn.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true }));
+        btn.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true }));
+        return true;
+      } catch (e) {
+        try { btn.click(); return true; } catch (_) {}
+      }
+    }
+    return false;
+  }
+
   function insertCodeAsNewCell(code, done) {
-    var addBtns = document.querySelectorAll('[data-testid="create-cell-button"]');
     var before = document.querySelectorAll('[data-testid="cell-editor"]').length;
-    if (!addBtns.length || !before) { done(false); return; }
-    try {
-      // The last create-cell button sits after the final cell -> appends at end.
-      addBtns[addBtns.length - 1].click();
-    } catch (e) { done(false); return; }
+    if (!createPythonCell()) { done(false); return; }
     findNewEditor(before, function (editorEl) {
       if (!editorEl) { done(false); return; }
       var ok = setEditorText(editorEl, code);
