@@ -8,6 +8,9 @@ __pycache__/
 # marimo
 __marimo__/
 
+# Static WASM site build output (produced by scripts/build_wasm_site.py / CI)
+site/
+
 # Exported animations: keep curated samples, ignore the rest.
 differential_equations/assets/*
 !differential_equations/assets/.gitkeep

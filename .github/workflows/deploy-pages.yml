@@ -1,0 +1,55 @@
+name: Deploy WASM playground to Pages
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+    paths:
+      - "differential_equations/chapters/**"
+      - "differential_equations/delib/**"
+      - "scripts/build_wasm_site.py"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+# Allow the deployment to read the repo and publish to Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One live site; let a newer run supersede an in-flight one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync environment
+        run: uv sync
+
+      - name: Build interactive WASM site
+        run: uv run python scripts/build_wasm_site.py
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

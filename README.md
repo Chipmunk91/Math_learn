@@ -19,6 +19,24 @@ Dragging the `a`, `K`, and `y₀` sliders in chapter 1 reshapes the slope field
 and moves the solution curve in real time; the time animation plays with native
 play/pause.
 
+## Live preview (mobile-friendly)
+
+Every push builds each chapter into a self-contained **WASM** page (runs in the
+browser via Pyodide — interactive sliders and animations, no server) and
+publishes them to GitHub Pages, so you can open a chapter from any device.
+
+One-time setup: in the repo, go to **Settings → Pages → Build and deployment →
+Source** and select **GitHub Actions**. After the next push, the
+`Deploy WASM playground to Pages` workflow publishes the site; its run page
+shows the URL (typically `https://<owner>.github.io/<repo>/`).
+
+To build the static site locally:
+
+```bash
+uv run python scripts/build_wasm_site.py   # output in ./site
+python -m http.server --directory site     # then open the printed URL
+```
+
 ## Layout
 
 ```
