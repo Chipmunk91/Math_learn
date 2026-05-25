@@ -44,6 +44,10 @@
   line-height: 1.45;
 }
 .mt-panel.mt-open { display: flex; }
+.mt-panel.mt-max {
+  width: min(60rem, calc(100vw - 2rem));
+  height: min(90vh, calc(100vh - 2rem));
+}
 
 .mt-head {
   display: flex;
@@ -95,7 +99,8 @@
 .mt-bubble pre code { background: none; padding: 0; }
 .mt-bubble .katex-display { margin: 0.4rem 0; overflow-x: auto; overflow-y: hidden; }
 
-.mt-codebar { display: flex; gap: 0.4rem; margin: -0.1rem 0 0.5rem; }
+.mt-codebar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: -0.1rem 0 0.5rem; }
+.mt-codenote { font-size: 0.72rem; color: #56636f; }
 .mt-codebtn {
   background: #f5f8fc;
   border: 1px solid #dce4ee;

@@ -35,9 +35,9 @@
     "- Stay anchored to THIS chapter's equation, parameters, and figures.\n" +
     "- Be concise and encouraging. Use Markdown; write math with $...$.\n" +
     "- When you suggest code, put it in a ```python fenced block. The learner " +
-    "gets an \"Insert as new cell\" button under it; the code is added to the " +
-    "notebook but never runs until they press ▶, so keep snippets self-contained " +
-    "and safe to read before running.\n" +
+    "gets a Copy button and runs it in marimo's scratchpad (an isolated " +
+    "sandbox), so make snippets self-contained — they can re-import and redefine " +
+    "names like np or plt freely there.\n" +
     "- If a question is unrelated to the chapter, answer briefly and steer back.";
 
   var messages = []; // {role, content}
@@ -106,6 +106,7 @@
       '  <strong>Tutor</strong>' +
       '  <span class="mt-sub" data-mt="sub"></span>' +
       '  <span class="mt-spacer"></span>' +
+      '  <button class="mt-iconbtn" data-mt="max" title="Expand">⤢</button>' +
       '  <button class="mt-iconbtn" data-mt="settings" title="API key">⚙</button>' +
       '  <button class="mt-iconbtn" data-mt="close" title="Close">✕</button>' +
       '</div>' +
@@ -124,7 +125,14 @@
     fab.addEventListener("click", openPanel);
     panel.querySelector('[data-mt="close"]').addEventListener("click", closePanel);
     panel.querySelector('[data-mt="settings"]').addEventListener("click", renderSetup);
+    panel.querySelector('[data-mt="max"]').addEventListener("click", toggleMax);
     setupCellAsk();
+  }
+
+  function toggleMax() {
+    var on = el.panel.classList.toggle("mt-max");
+    var b = el.panel.querySelector('[data-mt="max"]');
+    if (b) { b.textContent = on ? "⤡" : "⤢"; b.title = on ? "Shrink" : "Expand"; }
   }
 
   // ---- key storage (session only) --------------------------------------
@@ -429,11 +437,13 @@
     }
   }
 
-  // ---- code blocks -> "insert as a new cell" --------------------------
-  // The tutor never runs code. It can only WRITE a suggestion into a brand-new
-  // cell, which the learner reviews and then runs themselves (the ▶ button).
-  // Keeping a human as the trigger is what defuses the prompt-injection ->
-  // auto-exec -> key-exfiltration risk: nothing executes without a click.
+  // ---- code blocks -> copy + scratchpad guidance ----------------------
+  // The tutor NEVER writes into the notebook. marimo is a reactive notebook
+  // where each variable is owned by exactly one cell, so dropping a standalone
+  // snippet into a cell collides with the existing definitions and breaks the
+  // graph. Instead we offer Copy and point the learner at marimo's scratchpad
+  // (an isolated sandbox) to run it. Nothing the tutor produces can execute or
+  // touch the notebook without the learner deliberately pasting and running it.
   function decorateCode(bubble) {
     var pres = bubble.querySelectorAll("pre.mt-code");
     Array.prototype.forEach.call(pres, function (pre) {
@@ -443,135 +453,21 @@
       var lang = (pre.getAttribute("data-lang") || "").toLowerCase();
       var bar = document.createElement("div");
       bar.className = "mt-codebar";
-
-      // Only Python (or unlabelled) blocks map onto a marimo cell. Other
-      // snippets (shell, etc.) still get a Copy button but no Insert.
-      if (lang === "" || lang === "python" || lang === "py") {
-        var ins = document.createElement("button");
-        ins.className = "mt-codebtn";
-        ins.textContent = "⤵ Insert as new cell";
-        ins.title = "Add this as a new cell below. It will NOT run until you press ▶.";
-        ins.addEventListener("click", function () { doInsert(text, ins); });
-        bar.appendChild(ins);
-      }
       var cp = document.createElement("button");
       cp.className = "mt-codebtn";
       cp.textContent = "⧉ Copy";
-      cp.addEventListener("click", function () { copyText(text); toast("Copied to clipboard."); });
+      cp.addEventListener("click", function () {
+        copyText(text);
+        toast("Copied. Paste it into a marimo scratchpad to run it.");
+      });
       bar.appendChild(cp);
+      if (lang === "" || lang === "python" || lang === "py") {
+        var note = document.createElement("span");
+        note.className = "mt-codenote";
+        note.textContent = "Run in a scratchpad — the notebook's cells already own names like np / plt.";
+        bar.appendChild(note);
+      }
       pre.parentNode.insertBefore(bar, pre.nextSibling);
-    });
-  }
-
-  function doInsert(code, btn) {
-    var original = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = "Inserting…";
-    insertCodeAsNewCell(code, function (ok) {
-      btn.disabled = false;
-      if (ok) {
-        btn.textContent = "✓ Inserted — press ▶ to run";
-        toast("Added as a new cell below. Review it, then press ▶ to run it.");
-      } else {
-        copyText(code);
-        btn.textContent = original;
-        toast("Couldn't insert automatically — copied to clipboard instead.");
-      }
-    });
-  }
-
-  // --- the fragile layer: drive marimo's in-browser editor -----------------
-  // Everything below leans on marimo's internals (data-testid hooks + the
-  // CodeMirror 6 view). These are NOT a stable public API; re-verify after any
-  // marimo upgrade. Built against marimo 0.23.8. On any failure we fall back to
-  // copying the code to the clipboard, so a broken selector degrades gracefully
-  // instead of doing something unexpected.
-
-  // CodeMirror 6 stores its EditorView on the DOM via `cmView` (this mirrors
-  // how CM's own EditorView.findFromDOM recovers a view from a node).
-  function cmViewOf(editorEl) {
-    var ed = (editorEl.classList && editorEl.classList.contains("cm-editor"))
-      ? editorEl : editorEl.querySelector(".cm-editor");
-    if (!ed) return null;
-    var content = ed.querySelector(".cm-content") || ed;
-    var cv = content.cmView;
-    if (!cv) return null;
-    return (cv.rootView && cv.rootView.view) || cv.view || null;
-  }
-
-  function setEditorText(editorEl, code) {
-    var view = cmViewOf(editorEl);
-    if (view && view.state && view.dispatch) {
-      try {
-        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code } });
-        view.focus();
-        return true;
-      } catch (e) { /* fall through */ }
-    }
-    // Fallback that doesn't need a view handle: type into the contenteditable
-    // via the input pipeline CM6 already listens to.
-    var content = editorEl.querySelector(".cm-content");
-    if (content) {
-      try {
-        content.focus();
-        document.execCommand("selectAll", false, null);
-        if (document.execCommand("insertText", false, code)) return true;
-      } catch (e) { /* fall through */ }
-    }
-    return false;
-  }
-
-  function findNewEditor(prevCount, cb, tries) {
-    tries = tries || 0;
-    var eds = document.querySelectorAll('[data-testid="cell-editor"]');
-    if (eds.length > prevCount) {
-      // marimo focuses the freshly created cell; prefer it, else take the last.
-      var active = document.activeElement;
-      var viaActive = active && active.closest ? active.closest('[data-testid="cell-editor"]') : null;
-      cb(viaActive || eds[eds.length - 1]);
-      return;
-    }
-    if (tries > 40) { cb(null); return; } // ~2s of React render budget
-    setTimeout(function () { findNewEditor(prevCount, cb, tries + 1); }, 50);
-  }
-
-  // Create a new Python cell at the end of the notebook. marimo offers two
-  // affordances and neither is a plain click target: the bottom language picker
-  // exposes a real "Python" button (onClick), and the inline "+" only fires on
-  // pointerdown. Try the picker first, then fall back to the "+".
-  function createPythonCell() {
-    var btns = document.querySelectorAll("button");
-    var pythons = [];
-    for (var i = 0; i < btns.length; i++) {
-      var t = (btns[i].textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
-      if (t === "python") pythons.push(btns[i]);
-    }
-    if (pythons.length) { pythons[pythons.length - 1].click(); return true; }
-
-    var adds = document.querySelectorAll('[data-testid="create-cell-button"]');
-    if (adds.length) {
-      var btn = adds[adds.length - 1];
-      try {
-        btn.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true }));
-        btn.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true }));
-        return true;
-      } catch (e) {
-        try { btn.click(); return true; } catch (_) {}
-      }
-    }
-    return false;
-  }
-
-  function insertCodeAsNewCell(code, done) {
-    var before = document.querySelectorAll('[data-testid="cell-editor"]').length;
-    if (!createPythonCell()) { done(false); return; }
-    findNewEditor(before, function (editorEl) {
-      if (!editorEl) { done(false); return; }
-      var ok = setEditorText(editorEl, code);
-      if (ok && editorEl.scrollIntoView) {
-        try { editorEl.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {}
-      }
-      done(ok);
     });
   }
 
