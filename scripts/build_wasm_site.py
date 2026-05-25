@@ -14,13 +14,24 @@ needs no server and works from a phone.
 
 from __future__ import annotations
 
+import base64
+import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 CHAPTERS_DIR = REPO / "differential_equations" / "chapters"
+DELIB_DIR = REPO / "differential_equations" / "delib"
 SITE = REPO / "site"
+
+# delib is a locally-installed package and does not exist in the browser's
+# Pyodide runtime. For the WASM build we inline its source into each notebook so
+# the exported page is self-contained. Submodules are concatenated (not __init__,
+# whose relative imports won't resolve inside the synthesized module).
+DELIB_MODULES = ["solvers", "fields", "animate", "ui"]
+_FUTURE = re.compile(r"^from __future__ import .*$", re.MULTILINE)
 
 
 def chapters() -> list[Path]:
@@ -28,16 +39,52 @@ def chapters() -> list[Path]:
     return sorted(p for p in CHAPTERS_DIR.glob("*.py") if not p.name.startswith("_"))
 
 
-def export(notebook: Path, out_dir: Path) -> None:
-    subprocess.run(
-        [
-            "marimo", "export", "html-wasm",
-            str(notebook),
-            "-o", str(out_dir),
-            "--mode", "run",
-        ],
-        check=True,
+def delib_bootstrap() -> str:
+    """A code block that builds an in-memory ``delib`` module from inlined source.
+
+    The block is base64-embedded so it is immune to quote characters in delib's
+    own docstrings, and registers the module in ``sys.modules`` before the
+    notebook's ``import delib`` runs (same cell => sequential execution).
+    """
+    parts = ["from __future__ import annotations"]
+    for mod in DELIB_MODULES:
+        src = (DELIB_DIR / f"{mod}.py").read_text()
+        parts.append(_FUTURE.sub("", src))
+    combined = "\n\n".join(parts)
+    encoded = base64.b64encode(combined.encode("utf-8")).decode("ascii")
+    return (
+        "    import base64 as _b64, sys as _sys, types as _types\n"
+        '    _delib = _types.ModuleType("delib")\n'
+        f'    _delib_src = _b64.b64decode("{encoded}").decode("utf-8")\n'
+        '    exec(compile(_delib_src, "delib (inlined for WASM)", "exec"), _delib.__dict__)\n'
+        '    _sys.modules["delib"] = _delib\n'
+        "    import delib\n"
     )
+
+
+def inline_delib(source: str) -> str:
+    """Replace a standalone ``import delib`` line with the inlined bootstrap."""
+    pattern = re.compile(r"^[ \t]*import delib[ \t]*$", re.MULTILINE)
+    if not pattern.search(source):
+        raise ValueError("expected a standalone `import delib` line to inline")
+    return pattern.sub(delib_bootstrap().rstrip("\n"), source, count=1)
+
+
+def export(notebook: Path, out_dir: Path) -> None:
+    transformed = inline_delib(notebook.read_text())
+    with tempfile.TemporaryDirectory() as tmp:
+        # Keep the original filename so the exported app keeps its title.
+        staged = Path(tmp) / notebook.name
+        staged.write_text(transformed)
+        subprocess.run(
+            [
+                "marimo", "export", "html-wasm",
+                str(staged),
+                "-o", str(out_dir),
+                "--mode", "run",
+            ],
+            check=True,
+        )
 
 
 def pretty(name: str) -> str:
