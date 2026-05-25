@@ -119,6 +119,7 @@
     fab.addEventListener("click", openPanel);
     panel.querySelector('[data-mt="close"]').addEventListener("click", closePanel);
     panel.querySelector('[data-mt="settings"]').addEventListener("click", renderSetup);
+    setupCellAsk();
   }
 
   // ---- key storage (session only) --------------------------------------
@@ -202,14 +203,63 @@
     if (!cell) return;
     e.preventDefault();
     e.stopPropagation();
-    var text = cellSource(cell) || cellText(cell);
     exitPick();
+    pickCellNow(cell);
+  }
+  function onPickKey(e) {
+    if (e.key === "Escape") { exitPick(); showPanel(); }
+  }
+
+  // Attach a cell to the next question and jump straight into the chat.
+  function pickCellNow(cell) {
+    var text = cellSource(cell) || cellText(cell);
     if (text) scope = text;
     showPanel();
     if (el.input) el.input.focus();
   }
-  function onPickKey(e) {
-    if (e.key === "Escape") { exitPick(); showPanel(); }
+
+  // ---- per-cell hover button (one-click: hover a cell -> "Ask") ---------
+  var hoverCell = null;
+  function setupCellAsk() {
+    el.ask = document.createElement("button");
+    el.ask.type = "button";
+    el.ask.className = "mt-cell-ask";
+    el.ask.innerHTML = "💬 Ask";
+    el.ask.title = "Ask the tutor about this cell";
+    el.ask.style.display = "none";
+    el.ask.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (hoverCell) pickCellNow(hoverCell);
+    });
+    document.body.appendChild(el.ask);
+    document.addEventListener("mousemove", onCellHover, true);
+    window.addEventListener("scroll", repositionAsk, true);
+  }
+  function onCellHover(e) {
+    if (picking) { hideAsk(); return; }
+    var t = e.target;
+    if (el.ask && (t === el.ask || el.ask.contains(t))) return;
+    var cell = t && t.closest ? t.closest(".marimo-cell") : null;
+    if (!cell) { hideAsk(); return; }
+    if (cell === hoverCell && el.ask.style.display !== "none") return;
+    hoverCell = cell;
+    positionAsk();
+  }
+  function positionAsk() {
+    if (!hoverCell) return;
+    var r = hoverCell.getBoundingClientRect();
+    var b = el.ask;
+    b.style.display = "flex";
+    b.style.top = (r.bottom - b.offsetHeight - 8) + "px";
+    b.style.left = (r.right - b.offsetWidth - 8) + "px";
+  }
+  function repositionAsk() {
+    if (el.ask && el.ask.style.display !== "none") positionAsk();
+  }
+  function hideAsk() {
+    hoverCell = null;
+    if (el.ask) el.ask.style.display = "none";
   }
 
   // ---- setup view -------------------------------------------------------
@@ -277,8 +327,8 @@
       var tip = document.createElement("p");
       tip.className = "mt-hint";
       tip.innerHTML =
-        "💡 Ask about the whole chapter, or use <strong>Pick a cell</strong> " +
-        "below to attach a specific cell to your question.";
+        "💡 Ask about the whole chapter, or hover any cell and click its " +
+        "<strong>💬 Ask</strong> button to attach that cell to your question.";
       b.appendChild(tip);
 
       var starters = (CFG.starters || []);

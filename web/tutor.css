@@ -176,6 +176,23 @@
 }
 .mt-pickbtn:hover { background: #eaf1fa; }
 
+.mt-cell-ask {
+  position: fixed;
+  z-index: 2147482500;
+  display: none;
+  align-items: center;
+  gap: 0.3rem;
+  background: #2a5d9c;
+  color: #fff;
+  border: none;
+  border-radius: 1rem;
+  padding: 0.25rem 0.65rem;
+  font: 600 0.78rem system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+.mt-cell-ask:hover { filter: brightness(1.07); }
+
 body.mt-picking, body.mt-picking * { cursor: crosshair !important; }
 
 .mt-pick-overlay {
