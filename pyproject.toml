@@ -1,0 +1,30 @@
+[project]
+name = "math-learn"
+version = "0.1.0"
+description = "An interactive, animated, chapter-based playground for learning math. First subject: differential equations."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "marimo>=0.9",
+    "numpy>=1.26",
+    "scipy>=1.13",
+    "matplotlib>=3.8",
+    "plotly>=5.22",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# delib lives inside the differential_equations subject but is installed as a
+# top-level package so chapters and tests can `import delib` from anywhere.
+[tool.hatch.build.targets.wheel]
+packages = ["differential_equations/delib"]
+
+[tool.pytest.ini_options]
+testpaths = ["differential_equations/tests"]

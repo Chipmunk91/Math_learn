@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.uv/
+*.egg-info/
+
+# marimo
+__marimo__/
+
+# Exported animations: keep curated samples, ignore the rest.
+differential_equations/assets/*
+!differential_equations/assets/.gitkeep
+!differential_equations/assets/*_sample.gif
+!differential_equations/assets/*_sample.mp4
