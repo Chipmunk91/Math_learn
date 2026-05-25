@@ -135,11 +135,80 @@
 
   // ---- open / close + selection capture --------------------------------
   function openPanel() {
-    scope = activeSelection();
+    var sel = activeSelection();
+    if (sel) scope = sel; // a fresh highlight replaces scope; otherwise keep prior (e.g. a picked cell)
+    showPanel();
+  }
+  function showPanel() {
     el.panel.classList.add("mt-open");
     if (!getKey()) { renderSetup(); } else { renderChat(); }
   }
   function closePanel() { el.panel.classList.remove("mt-open"); }
+
+  // ---- pick a whole cell ------------------------------------------------
+  var picking = false;
+  function cellText(cell) {
+    var area = cell.querySelector(".output-area") || cell;
+    var clone = area.cloneNode(true);
+    // KaTeX hides a MathML copy of every formula; drop it so math isn't doubled.
+    clone.querySelectorAll(".katex-mathml").forEach(function (n) { n.remove(); });
+    return (clone.innerText || "").replace(/\n{3,}/g, "\n\n").trim();
+  }
+  function pickOverlay() {
+    if (el.overlay) return;
+    el.overlay = document.createElement("div");
+    el.overlay.className = "mt-pick-overlay";
+    el.banner = document.createElement("div");
+    el.banner.className = "mt-pick-banner";
+    el.banner.textContent = "Click a cell to add it to the tutor — Esc to cancel";
+    document.body.appendChild(el.overlay);
+    document.body.appendChild(el.banner);
+  }
+  function enterPick() {
+    picking = true;
+    pickOverlay();
+    closePanel();
+    document.body.classList.add("mt-picking");
+    el.overlay.style.display = "none";
+    el.banner.style.display = "block";
+    document.addEventListener("mousemove", onPickMove, true);
+    document.addEventListener("click", onPickClick, true);
+    document.addEventListener("keydown", onPickKey, true);
+  }
+  function exitPick() {
+    picking = false;
+    document.body.classList.remove("mt-picking");
+    if (el.overlay) el.overlay.style.display = "none";
+    if (el.banner) el.banner.style.display = "none";
+    document.removeEventListener("mousemove", onPickMove, true);
+    document.removeEventListener("click", onPickClick, true);
+    document.removeEventListener("keydown", onPickKey, true);
+  }
+  function cellUnder(target) {
+    return target && target.closest ? target.closest(".marimo-cell") : null;
+  }
+  function onPickMove(e) {
+    var cell = cellUnder(e.target);
+    if (!cell) { el.overlay.style.display = "none"; return; }
+    var r = cell.getBoundingClientRect();
+    var o = el.overlay.style;
+    o.display = "block";
+    o.top = r.top + "px"; o.left = r.left + "px";
+    o.width = r.width + "px"; o.height = r.height + "px";
+  }
+  function onPickClick(e) {
+    var cell = cellUnder(e.target);
+    if (!cell) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var text = cellText(cell);
+    exitPick();
+    if (text) scope = text;
+    showPanel();
+  }
+  function onPickKey(e) {
+    if (e.key === "Escape") { exitPick(); showPanel(); }
+  }
 
   // ---- setup view -------------------------------------------------------
   function renderSetup() {
@@ -206,8 +275,9 @@
       var tip = document.createElement("p");
       tip.className = "mt-hint";
       tip.innerHTML =
-        "💡 Ask about the whole chapter, or <strong>highlight a sentence or " +
-        "section first</strong> then reopen me to ask about just that part.";
+        "💡 Ask about the whole chapter, <strong>highlight</strong> a sentence " +
+        "then reopen me, or use <strong>Pick a cell</strong> below to add a whole " +
+        "cell to the question.";
       b.appendChild(tip);
 
       var starters = (CFG.starters || []);
@@ -240,6 +310,11 @@
     var f = el.foot;
     f.innerHTML = "";
 
+    var pick = document.createElement("button");
+    pick.className = "mt-pickbtn";
+    pick.innerHTML = "&#9633; Pick a cell to ask about";
+    pick.addEventListener("click", enterPick);
+
     var keyrow = document.createElement("div");
     keyrow.className = "mt-keyrow";
     keyrow.innerHTML = "<span>key set ✓</span><span class='mt-spacer'></span>";
@@ -271,6 +346,7 @@
 
     row.appendChild(ta);
     row.appendChild(btn);
+    f.appendChild(pick);
     f.appendChild(keyrow);
     f.appendChild(chip);
     f.appendChild(row);
