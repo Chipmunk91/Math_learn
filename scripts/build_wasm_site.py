@@ -33,6 +33,22 @@ SITE = REPO / "site"
 DELIB_MODULES = ["solvers", "fields", "animate", "ui"]
 _FUTURE = re.compile(r"^from __future__ import .*$", re.MULTILINE)
 
+# marimo's WASM runtime installs these via micropip. We must list them
+# explicitly because (a) plotly is not a built-in Pyodide package and (b)
+# inlining delib hides its scipy/matplotlib imports from marimo's scanner.
+PEP723_HEADER = """\
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "marimo",
+#     "numpy",
+#     "scipy",
+#     "matplotlib",
+#     "plotly",
+# ]
+# ///
+"""
+
 
 def chapters() -> list[Path]:
     """All chapter notebooks except files starting with an underscore (template)."""
@@ -71,7 +87,7 @@ def inline_delib(source: str) -> str:
 
 
 def export(notebook: Path, out_dir: Path) -> None:
-    transformed = inline_delib(notebook.read_text())
+    transformed = PEP723_HEADER + inline_delib(notebook.read_text())
     with tempfile.TemporaryDirectory() as tmp:
         # Keep the original filename so the exported app keeps its title.
         staged = Path(tmp) / notebook.name
