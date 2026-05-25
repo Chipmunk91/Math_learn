@@ -86,7 +86,8 @@ def inline_delib(source: str) -> str:
     return pattern.sub(delib_bootstrap().rstrip("\n"), source, count=1)
 
 
-def export(notebook: Path, out_dir: Path) -> None:
+def export(notebook: Path, out_dir: Path, *, mode: str = "run") -> None:
+    """Export a chapter to WASM HTML in ``run`` (read-only) or ``edit`` (lab) mode."""
     transformed = PEP723_HEADER + inline_delib(notebook.read_text())
     with tempfile.TemporaryDirectory() as tmp:
         # Keep the original filename so the exported app keeps its title.
@@ -97,7 +98,7 @@ def export(notebook: Path, out_dir: Path) -> None:
                 "marimo", "export", "html-wasm",
                 str(staged),
                 "-o", str(out_dir),
-                "--mode", "run",
+                "--mode", mode,
             ],
             check=True,
         )
@@ -110,8 +111,15 @@ def pretty(name: str) -> str:
 
 
 def build_index(names: list[str]) -> str:
-    items = "\n".join(
-        f'      <li><a href="./{n}/">{pretty(n)}</a></li>' for n in names
+    cards = "\n".join(
+        f"""      <li class="card">
+        <span class="title">{pretty(n)}</span>
+        <span class="links">
+          <a href="./{n}/">Read</a>
+          <a class="lab" href="./{n}-lab/">Open lab ✎</a>
+        </span>
+      </li>"""
+        for n in names
     )
     return f"""<!doctype html>
 <html lang="en">
@@ -124,19 +132,27 @@ def build_index(names: list[str]) -> str:
            padding: 0 1.25rem; line-height: 1.5; color: #1d2733; }}
     h1 {{ font-size: 1.6rem; }}
     ul {{ list-style: none; padding: 0; }}
-    li {{ margin: 0.6rem 0; }}
-    a {{ display: block; padding: 0.9rem 1rem; border: 1px solid #d6dde6;
-         border-radius: 0.6rem; text-decoration: none; color: #2a5d9c; font-weight: 600; }}
-    a:active, a:hover {{ background: #f2f6fb; }}
+    .card {{ border: 1px solid #d6dde6; border-radius: 0.6rem; padding: 0.9rem 1rem;
+             margin: 0.6rem 0; }}
+    .title {{ display: block; font-weight: 600; margin-bottom: 0.5rem; }}
+    .links {{ display: flex; gap: 0.5rem; }}
+    .links a {{ flex: 1; text-align: center; padding: 0.55rem 0.5rem; border-radius: 0.45rem;
+                text-decoration: none; font-weight: 600; background: #eef3fb; color: #2a5d9c; }}
+    .links a.lab {{ background: #2a5d9c; color: #fff; }}
+    .links a:active, .links a:hover {{ filter: brightness(0.95); }}
     p {{ color: #56636f; }}
+    .hint {{ font-size: 0.85rem; }}
   </style>
 </head>
 <body>
   <h1>Differential Equations Playground</h1>
   <p>Interactive chapters that run entirely in your browser — drag the sliders,
-     play the animations. Tap a chapter to begin.</p>
+     play the animations.</p>
+  <p class="hint"><strong>Read</strong> = guided chapter view.
+     <strong>Open lab ✎</strong> = editable notebook: change the code and re-run it
+     right in the browser.</p>
   <ul>
-{items}
+{cards}
   </ul>
 </body>
 </html>
@@ -154,8 +170,9 @@ def main() -> int:
     for nb in nbs:
         name = nb.stem
         names.append(name)
-        print(f"Exporting {nb.name} -> site/{name}/")
-        export(nb, SITE / name)
+        print(f"Exporting {nb.name} -> site/{name}/ (read) and site/{name}-lab/ (edit)")
+        export(nb, SITE / name, mode="run")
+        export(nb, SITE / f"{name}-lab", mode="edit")
 
     (SITE / "index.html").write_text(build_index(names))
     (SITE / ".nojekyll").write_text("")
