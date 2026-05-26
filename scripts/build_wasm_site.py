@@ -20,6 +20,7 @@ the owner nothing.
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import re
 import subprocess
@@ -209,21 +210,28 @@ def tutor_config(name: str) -> dict:
     }
 
 
+def asset_version(filename: str) -> str:
+    """Short content hash so deploys bust the browser cache for our assets."""
+    return hashlib.md5((WEB_DIR / filename).read_bytes()).hexdigest()[:8]
+
+
 def inject_tutor(page: Path, name: str) -> None:
     """Inject the tutor stylesheet, per-chapter config, and script into a page."""
     html = page.read_text()
     config = json.dumps(tutor_config(name))
+    css_v = asset_version("tutor.css")
+    js_v = asset_version("tutor.js")
     head = (
         '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />'
         '<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>'
-        '<link rel="stylesheet" href="../tutor.css" />'
+        '<link rel="stylesheet" href="../tutor.css?v=' + css_v + '" />'
         + MARIMO_CHROME_CSS
         + "</head>"
     )
     body = (
         f"<script>window.TUTOR_CONFIG = {config};</script>"
         + MARIMO_HIDE_JS
-        + '<script src="../tutor.js"></script></body>'
+        + '<script src="../tutor.js?v=' + js_v + '"></script></body>'
     )
     if "</head>" not in html or "</body>" not in html:
         raise ValueError(f"missing </head> or </body> in {page}")
