@@ -137,7 +137,7 @@ def export(notebook: Path, out_dir: Path) -> None:
         staged = Path(tmp) / notebook.name
         staged.write_text(transformed, encoding="utf-8")
         subprocess.run(
-            ["marimo", "export", "html-wasm", str(staged), "-o", str(out_dir), "--mode", "edit"],
+            [sys.executable, "-m", "marimo", "export", "html-wasm", str(staged), "-o", str(out_dir), "--mode", "edit"],
             check=True,
         )
 
