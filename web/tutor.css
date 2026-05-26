@@ -42,6 +42,7 @@
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 0.92rem;
   line-height: 1.45;
+  transition: width 0.22s ease, height 0.22s ease;
 }
 .mt-panel.mt-open { display: flex; }
 .mt-panel.mt-max {

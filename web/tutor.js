@@ -473,11 +473,12 @@
     var original = btn.textContent;
     btn.disabled = true;
     btn.textContent = "Opening…";
-    openScratchpad(function (editorEl) {
+    openScratchpad(function (editorEl, reason) {
       btn.disabled = false;
       if (!editorEl) {
         copyText(code); btn.textContent = original;
-        toast("Couldn't open the scratchpad — copied to clipboard instead.");
+        var why = reason === "no-toggle" ? "no Scratchpad button found" : "scratchpad didn't open";
+        toast("Couldn't reach the scratchpad (" + reason + ": " + why + ") — copied to clipboard instead.");
         return;
       }
       if (setEditorText(editorEl, code)) {
@@ -486,7 +487,7 @@
         toast("Sent to the scratchpad. Review it, then run it there (▶).");
       } else {
         copyText(code); btn.textContent = original;
-        toast("Couldn't fill the scratchpad — copied to clipboard instead.");
+        toast("Couldn't fill the scratchpad (fill-fail) — copied to clipboard instead.");
       }
     });
   }
@@ -496,22 +497,52 @@
   // CodeMirror 6 view). NOT a stable public API; re-verify after a marimo
   // upgrade. Built against marimo 0.23.8. Any failure falls back to clipboard,
   // and because the scratchpad is isolated, a miss never harms the notebook.
+  // The scratchpad panel mounts a run button; its editor is the CM6 instance
+  // alongside it.
   function scratchpadEditor() {
     var run = document.querySelector('[data-testid="scratchpad-run-button"]');
     if (!run) return null;
-    var panel = run.closest ? run.closest('[data-testid="chrome-context-aware-panel"]') : null;
-    var ed = (panel || document).querySelector(".cm-editor");
+    var panel = run.closest
+      ? (run.closest('[data-testid="chrome-context-aware-panel"]') || run.closest('[data-testid="panel"]') || run.parentElement)
+      : null;
+    var scope = panel || document;
+    var ed = scope.querySelector(".cm-editor");
+    if (!ed) ed = document.querySelector('[data-testid="chrome-context-aware-panel"] .cm-editor');
     return ed || null;
+  }
+
+  // The sidebar toggle's label is bound dynamically, so match anything that
+  // mentions "scratchpad" (aria-label, title, or text), excluding our own
+  // widget and the run button itself.
+  function findScratchpadToggle() {
+    var cands = document.querySelectorAll('button,[role="button"],a');
+    for (var i = 0; i < cands.length; i++) {
+      var n = cands[i];
+      if (n.closest && n.closest(".mt-panel")) continue;
+      if (n.getAttribute && n.getAttribute("data-testid") === "scratchpad-run-button") continue;
+      var hay = ((n.getAttribute && (n.getAttribute("aria-label") || "")) + " " +
+        (n.getAttribute && (n.getAttribute("title") || "")) + " " +
+        (n.textContent || "")).toLowerCase();
+      if (hay.indexOf("scratchpad") !== -1) return (n.closest && n.closest("button")) || n;
+    }
+    return null;
+  }
+
+  // Fire it through every channel marimo might listen on (some controls use
+  // pointer events rather than click).
+  function fireClick(eln) {
+    try { eln.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true })); } catch (e) {}
+    try { eln.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true })); } catch (e) {}
+    try { eln.click(); } catch (e) {}
   }
 
   function openScratchpad(cb) {
     var ed = scratchpadEditor();
-    if (ed) { cb(ed); return; }
-    var toggle = document.querySelector('[aria-label="Scratchpad"]');
-    if (toggle && toggle.closest) toggle = toggle.closest("button") || toggle;
-    if (!toggle) { cb(null); return; }
-    try { toggle.click(); } catch (e) { cb(null); return; }
-    waitFor(scratchpadEditor, cb, 0);
+    if (ed) { cb(ed, "already-open"); return; }
+    var toggle = findScratchpadToggle();
+    if (!toggle) { cb(null, "no-toggle"); return; }
+    fireClick(toggle);
+    waitFor(scratchpadEditor, function (e) { cb(e, e ? "opened" : "no-open"); }, 0);
   }
 
   function waitFor(get, cb, tries) {

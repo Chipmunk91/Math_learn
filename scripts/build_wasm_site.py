@@ -96,7 +96,7 @@ MARIMO_HIDE_JS = (
     "if(sb){var bs=sb.querySelectorAll('button,[role=\"button\"]');"
     "for(var j=0;j<bs.length;j++){var b=bs[j];if(b.dataset.mlHidden)continue;"
     'var al=norm(b.getAttribute("aria-label"));'
-    'if(al&&al!=="scratchpad"){b.style.display="none";b.dataset.mlHidden="1";}}}}'
+    'if(al&&al.indexOf("scratchpad")===-1){b.style.display="none";b.dataset.mlHidden="1";}}}}'
     "var pend=false;function schedule(){if(pend)return;pend=true;"
     "requestAnimationFrame(function(){pend=false;sweep();});}"
     "function start(){new MutationObserver(schedule).observe(document.body,"
