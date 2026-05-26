@@ -34,10 +34,9 @@
     "exactly where any reasoning breaks, and a nudge toward the fix.\n" +
     "- Stay anchored to THIS chapter's equation, parameters, and figures.\n" +
     "- Be concise and encouraging. Use Markdown; write math with $...$.\n" +
-    "- When you suggest code, put it in a ```python fenced block. The learner " +
-    "gets a \"Send to scratchpad\" button that opens it in marimo's scratchpad " +
-    "(an isolated sandbox) to run. So make snippets self-contained — they can " +
-    "re-import and redefine names like np or plt freely there.\n" +
+    "- When you suggest code, put it in a ```python fenced block; the learner " +
+    "gets a Copy button. They read and adapt it themselves, so explain what each " +
+    "part does and keep snippets short and self-contained.\n" +
     "- If a question is unrelated to the chapter, answer briefly and steer back.";
 
   var messages = []; // {role, content}
@@ -437,29 +436,20 @@
     }
   }
 
-  // ---- code blocks -> copy + send to scratchpad -----------------------
-  // The tutor NEVER writes into the notebook proper: marimo is reactive and each
-  // variable is owned by exactly one cell, so a standalone snippet would collide
-  // with existing definitions and break the graph. marimo's SCRATCHPAD is an
-  // isolated sandbox with no such restriction, so that's where tutor code goes.
-  // We open and fill it but never run it — the learner reviews and runs it there.
+  // ---- code blocks -> copy ---------------------------------------------
+  // The tutor never writes into the notebook. A static WASM export gives us no
+  // safe place to RUN tutor-authored code: a fresh cell collides with marimo's
+  // reactive single-definition rule, and the scratchpad isn't mounted in the
+  // export. So code is read-only guidance with a Copy button — nothing the tutor
+  // produces can execute or touch the notebook.
   function decorateCode(bubble) {
     var pres = bubble.querySelectorAll("pre.mt-code");
     Array.prototype.forEach.call(pres, function (pre) {
       var codeEl = pre.querySelector("code");
       var text = codeEl ? codeEl.textContent : pre.textContent;
       if (!text || !text.trim()) return;
-      var lang = (pre.getAttribute("data-lang") || "").toLowerCase();
       var bar = document.createElement("div");
       bar.className = "mt-codebar";
-      if (lang === "" || lang === "python" || lang === "py") {
-        var sp = document.createElement("button");
-        sp.className = "mt-codebtn";
-        sp.textContent = "▶ Send to scratchpad";
-        sp.title = "Open it in marimo's scratchpad (a sandbox). Review it, then run it there.";
-        sp.addEventListener("click", function () { sendToScratchpad(text, sp); });
-        bar.appendChild(sp);
-      }
       var cp = document.createElement("button");
       cp.className = "mt-codebtn";
       cp.textContent = "⧉ Copy";
@@ -467,121 +457,6 @@
       bar.appendChild(cp);
       pre.parentNode.insertBefore(bar, pre.nextSibling);
     });
-  }
-
-  function sendToScratchpad(code, btn) {
-    var original = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = "Opening…";
-    openScratchpad(function (editorEl, reason) {
-      btn.disabled = false;
-      if (!editorEl) {
-        copyText(code); btn.textContent = original;
-        var why = reason === "no-toggle" ? "no Scratchpad button found" : "scratchpad didn't open";
-        toast("Couldn't reach the scratchpad (" + reason + ": " + why + ") — copied to clipboard instead.");
-        return;
-      }
-      if (setEditorText(editorEl, code)) {
-        btn.textContent = "✓ In scratchpad — press ▶ there";
-        try { editorEl.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {}
-        toast("Sent to the scratchpad. Review it, then run it there (▶).");
-      } else {
-        copyText(code); btn.textContent = original;
-        toast("Couldn't fill the scratchpad (fill-fail) — copied to clipboard instead.");
-      }
-    });
-  }
-
-  // --- the fragile layer: marimo's scratchpad + CodeMirror ---------------
-  // Leans on marimo internals (the Scratchpad sidebar toggle, the panel's
-  // CodeMirror 6 view). NOT a stable public API; re-verify after a marimo
-  // upgrade. Built against marimo 0.23.8. Any failure falls back to clipboard,
-  // and because the scratchpad is isolated, a miss never harms the notebook.
-  // The scratchpad panel mounts a run button; its editor is the CM6 instance
-  // alongside it.
-  function scratchpadEditor() {
-    var run = document.querySelector('[data-testid="scratchpad-run-button"]');
-    if (!run) return null;
-    var panel = run.closest
-      ? (run.closest('[data-testid="chrome-context-aware-panel"]') || run.closest('[data-testid="panel"]') || run.parentElement)
-      : null;
-    var scope = panel || document;
-    var ed = scope.querySelector(".cm-editor");
-    if (!ed) ed = document.querySelector('[data-testid="chrome-context-aware-panel"] .cm-editor');
-    return ed || null;
-  }
-
-  // The sidebar toggle's label is bound dynamically, so match anything that
-  // mentions "scratchpad" (aria-label, title, or text), excluding our own
-  // widget and the run button itself.
-  function findScratchpadToggle() {
-    var cands = document.querySelectorAll('button,[role="button"],a');
-    for (var i = 0; i < cands.length; i++) {
-      var n = cands[i];
-      if (n.closest && n.closest(".mt-panel")) continue;
-      if (n.getAttribute && n.getAttribute("data-testid") === "scratchpad-run-button") continue;
-      var hay = ((n.getAttribute && (n.getAttribute("aria-label") || "")) + " " +
-        (n.getAttribute && (n.getAttribute("title") || "")) + " " +
-        (n.textContent || "")).toLowerCase();
-      if (hay.indexOf("scratchpad") !== -1) return (n.closest && n.closest("button")) || n;
-    }
-    return null;
-  }
-
-  // Fire it through every channel marimo might listen on (some controls use
-  // pointer events rather than click).
-  function fireClick(eln) {
-    try { eln.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true })); } catch (e) {}
-    try { eln.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true })); } catch (e) {}
-    try { eln.click(); } catch (e) {}
-  }
-
-  function openScratchpad(cb) {
-    var ed = scratchpadEditor();
-    if (ed) { cb(ed, "already-open"); return; }
-    var toggle = findScratchpadToggle();
-    if (!toggle) { cb(null, "no-toggle"); return; }
-    fireClick(toggle);
-    waitFor(scratchpadEditor, function (e) { cb(e, e ? "opened" : "no-open"); }, 0);
-  }
-
-  function waitFor(get, cb, tries) {
-    var v = get();
-    if (v) { cb(v); return; }
-    if (tries > 40) { cb(null); return; } // ~2s
-    setTimeout(function () { waitFor(get, cb, tries + 1); }, 50);
-  }
-
-  // CodeMirror 6 stores its EditorView on the DOM via `cmView` (mirrors how
-  // CM's own EditorView.findFromDOM recovers a view from a node).
-  function cmViewOf(editorEl) {
-    var ed = (editorEl.classList && editorEl.classList.contains("cm-editor"))
-      ? editorEl : editorEl.querySelector(".cm-editor");
-    if (!ed) return null;
-    var content = ed.querySelector(".cm-content") || ed;
-    var cv = content.cmView;
-    if (!cv) return null;
-    return (cv.rootView && cv.rootView.view) || cv.view || null;
-  }
-
-  function setEditorText(editorEl, code) {
-    var view = cmViewOf(editorEl);
-    if (view && view.state && view.dispatch) {
-      try {
-        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code } });
-        view.focus();
-        return true;
-      } catch (e) { /* fall through */ }
-    }
-    var content = editorEl.querySelector(".cm-content");
-    if (content) {
-      try {
-        content.focus();
-        document.execCommand("selectAll", false, null);
-        if (document.execCommand("insertText", false, code)) return true;
-      } catch (e) { /* fall through */ }
-    }
-    return false;
   }
 
   // ---- small utilities --------------------------------------------------
