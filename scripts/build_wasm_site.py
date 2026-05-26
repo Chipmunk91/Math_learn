@@ -55,14 +55,14 @@ PEP723_HEADER = """\
 
 WEB_ASSETS = ["tutor.js", "tutor.css"]
 
-# Strip marimo's editor chrome down to just the notebook. The cells and their
-# per-cell controls (run, add, delete, edit) live outside these wrappers, so
-# hiding the chrome leaves editing fully intact. Selectors are marimo's stable
-# data-testid hooks. Tune this list if a future marimo version renames them.
+# Strip marimo's editor chrome down to just the notebook plus the scratchpad.
+# The cells and their per-cell controls (run, add, delete, edit) live outside
+# these wrappers, so hiding the chrome leaves editing fully intact. We keep the
+# sidebar and its context panel visible because that's where the scratchpad
+# lives (the tutor sends code there); MARIMO_HIDE_JS then prunes the sidebar
+# down to just the Scratchpad icon. Selectors are marimo's data-testid hooks.
 MARIMO_CHROME_CSS = (
     "<style>"
-    '[data-testid="chrome-sidebar"],'
-    '[data-testid="chrome-context-aware-panel"],'
     '[data-testid="chrome-footer"],'
     '[data-testid="footer-panel"],'
     '[data-testid="chrome-controls-top-right"],'
@@ -77,11 +77,10 @@ MARIMO_CHROME_CSS = (
 )
 
 # Hide marimo's SQL and "Generate with AI" affordances, which only confuse a
-# math-learning context (and AI codegen can't work without a server anyway).
-# These buttons/menu items carry no stable data-testid, so we match them by
-# their accessible label and re-apply on every DOM change. The tutor's own
-# "insert as new cell" flow is the sanctioned way to add code. Verified against
-# marimo 0.23.8; re-check the LABELS list after a marimo upgrade.
+# math-learning context, and prune the left sidebar down to just the Scratchpad
+# panel (the tutor's "send to scratchpad" target). These carry no stable
+# data-testid, so we match buttons by their accessible label and re-apply on
+# every DOM change. Verified against marimo 0.23.8; re-check after an upgrade.
 MARIMO_HIDE_JS = (
     "<script>(function(){"
     'var LABELS=["generate with ai","chat with ai","edit with ai",'
@@ -91,7 +90,13 @@ MARIMO_HIDE_JS = (
     'var ns=document.querySelectorAll(\'button,[role="menuitem"],a[role="menuitem"]\');'
     "for(var i=0;i<ns.length;i++){var n=ns[i];if(n.dataset.mlHidden)continue;"
     'var label=norm(n.getAttribute("aria-label"))||norm(n.textContent);'
-    'if(LABELS.indexOf(label)!==-1){n.style.display="none";n.dataset.mlHidden="1";}}}'
+    'if(LABELS.indexOf(label)!==-1){n.style.display="none";n.dataset.mlHidden="1";}}'
+    # Keep only the Scratchpad toggle in the sidebar; hide every other panel icon.
+    'var sb=document.querySelector(\'[data-testid="chrome-sidebar"]\');'
+    "if(sb){var bs=sb.querySelectorAll('button,[role=\"button\"]');"
+    "for(var j=0;j<bs.length;j++){var b=bs[j];if(b.dataset.mlHidden)continue;"
+    'var al=norm(b.getAttribute("aria-label"));'
+    'if(al&&al!=="scratchpad"){b.style.display="none";b.dataset.mlHidden="1";}}}}'
     "var pend=false;function schedule(){if(pend)return;pend=true;"
     "requestAnimationFrame(function(){pend=false;sweep();});}"
     "function start(){new MutationObserver(schedule).observe(document.body,"
