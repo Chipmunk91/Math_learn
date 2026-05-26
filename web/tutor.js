@@ -17,6 +17,11 @@
   var KEY_CONSOLE = "https://console.anthropic.com/settings/keys";
   var MAX_TOKENS = 800;
 
+  // Own Pyodide sandbox (separate from marimo's runtime) for running tutor code.
+  // Loaded lazily on the first Run. Bump PYODIDE_VER if the CDN path 404s.
+  var PYODIDE_VER = "0.26.4";
+  var PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v" + PYODIDE_VER + "/full/";
+
   var MODELS = CFG.models || [
     { label: "Claude Haiku 4.5 — fast & cheap", id: "claude-haiku-4-5-20251001" },
     { label: "Claude Sonnet 4.6 — stronger", id: "claude-sonnet-4-6" },
@@ -35,8 +40,10 @@
     "- Stay anchored to THIS chapter's equation, parameters, and figures.\n" +
     "- Be concise and encouraging. Use Markdown; write math with $...$.\n" +
     "- When you suggest code, put it in a ```python fenced block; the learner " +
-    "gets a Copy button. They read and adapt it themselves, so explain what each " +
-    "part does and keep snippets short and self-contained.\n" +
+    "gets a Run button that executes it in a sandbox (numpy, scipy, matplotlib " +
+    "available) and shows printed output and any matplotlib plot inline. So make " +
+    "each snippet fully self-contained and runnable on its own: include imports, " +
+    "and end with a plot (plt.show()) or a print so there is visible output.\n" +
     "- If a question is unrelated to the chapter, answer briefly and steer back.";
 
   var messages = []; // {role, content}
@@ -436,27 +443,127 @@
     }
   }
 
-  // ---- code blocks -> copy ---------------------------------------------
-  // The tutor never writes into the notebook. A static WASM export gives us no
-  // safe place to RUN tutor-authored code: a fresh cell collides with marimo's
-  // reactive single-definition rule, and the scratchpad isn't mounted in the
-  // export. So code is read-only guidance with a Copy button — nothing the tutor
-  // produces can execute or touch the notebook.
+  // ---- code blocks -> run in our own Pyodide sandbox ------------------
+  // The tutor never writes into the notebook (marimo's reactive single-
+  // definition rule makes that unsafe). Instead, Python snippets get a Run
+  // button that executes them in OUR OWN Pyodide instance — completely isolated
+  // from marimo's runtime — and renders stdout + any matplotlib figure right
+  // here in the chat. Nothing touches the notebook.
   function decorateCode(bubble) {
     var pres = bubble.querySelectorAll("pre.mt-code");
     Array.prototype.forEach.call(pres, function (pre) {
       var codeEl = pre.querySelector("code");
       var text = codeEl ? codeEl.textContent : pre.textContent;
       if (!text || !text.trim()) return;
+      var lang = (pre.getAttribute("data-lang") || "").toLowerCase();
+      var isPy = (lang === "" || lang === "python" || lang === "py");
+
       var bar = document.createElement("div");
       bar.className = "mt-codebar";
+      var out = document.createElement("div");
+      out.className = "mt-run";
+
+      if (isPy) {
+        var run = document.createElement("button");
+        run.className = "mt-codebtn";
+        run.textContent = "▶ Run";
+        run.title = "Run this in a sandbox and show the output here.";
+        run.addEventListener("click", function () { runInSandbox(text, run, out); });
+        bar.appendChild(run);
+      }
       var cp = document.createElement("button");
       cp.className = "mt-codebtn";
       cp.textContent = "⧉ Copy";
       cp.addEventListener("click", function () { copyText(text); toast("Copied to clipboard."); });
       bar.appendChild(cp);
+
       pre.parentNode.insertBefore(bar, pre.nextSibling);
+      pre.parentNode.insertBefore(out, bar.nextSibling);
     });
+  }
+
+  // ---- Pyodide sandbox --------------------------------------------------
+  function loadScript(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement("script");
+      s.src = src; s.onload = res; s.onerror = function () { rej(new Error("failed to load " + src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  var pyodideReady = null;
+  function ensurePyodide(onProgress) {
+    if (pyodideReady) return pyodideReady;
+    pyodideReady = (function () {
+      onProgress("Loading Python runtime (first run only)…");
+      return loadScript(PYODIDE_BASE + "pyodide.js")
+        .then(function () { return window.loadPyodide({ indexURL: PYODIDE_BASE }); })
+        .then(function (py) {
+          onProgress("Loading numpy + matplotlib…");
+          return py.loadPackage(["numpy", "matplotlib"]).then(function () { return py; });
+        });
+    })();
+    return pyodideReady;
+  }
+
+  // Run user code, capture stdout/stderr and any matplotlib figures (as PNGs).
+  var RUN_HARNESS =
+    "import io, sys, base64, json, traceback\n" +
+    "def __tutor_run(src):\n" +
+    "    out = io.StringIO(); imgs = []; err = None\n" +
+    "    try:\n" +
+    "        import matplotlib; matplotlib.use('AGG')\n" +
+    "    except Exception:\n" +
+    "        pass\n" +
+    "    _o, _e = sys.stdout, sys.stderr; sys.stdout = sys.stderr = out\n" +
+    "    try:\n" +
+    "        exec(src, {'__name__': '__main__'})\n" +
+    "    except Exception:\n" +
+    "        err = traceback.format_exc()\n" +
+    "    finally:\n" +
+    "        sys.stdout, sys.stderr = _o, _e\n" +
+    "    try:\n" +
+    "        import matplotlib.pyplot as plt\n" +
+    "        for n in plt.get_fignums():\n" +
+    "            b = io.BytesIO(); plt.figure(n).savefig(b, format='png', bbox_inches='tight', dpi=110)\n" +
+    "            imgs.append(base64.b64encode(b.getvalue()).decode('ascii'))\n" +
+    "        plt.close('all')\n" +
+    "    except Exception:\n" +
+    "        pass\n" +
+    "    return json.dumps({'stdout': out.getvalue(), 'error': err, 'images': imgs})\n" +
+    "__tutor_run(__tutor_src)\n";
+
+  function runPython(code, onProgress) {
+    return ensurePyodide(onProgress).then(function (py) {
+      onProgress("Running…");
+      return Promise.resolve(py.loadPackagesFromImports(code)).catch(function () {})
+        .then(function () {
+          py.globals.set("__tutor_src", code);
+          return py.runPythonAsync(RUN_HARNESS);
+        })
+        .then(function (json) { return JSON.parse(json); });
+    });
+  }
+
+  function runInSandbox(code, btn, out) {
+    var orig = btn.textContent;
+    btn.disabled = true; btn.textContent = "Running…";
+    out.style.display = "block";
+    out.innerHTML = '<div class="mt-run-status">Starting…</div>';
+    runPython(code, function (msg) { out.innerHTML = '<div class="mt-run-status">' + esc(msg) + "</div>"; })
+      .then(function (res) {
+        var html = "";
+        (res.images || []).forEach(function (b64) {
+          html += '<img class="mt-run-img" alt="plot output" src="data:image/png;base64,' + b64 + '" />';
+        });
+        if (res.stdout && res.stdout.trim()) html += '<pre class="mt-run-out">' + esc(res.stdout) + "</pre>";
+        if (res.error) html += '<pre class="mt-run-err">' + esc(res.error) + "</pre>";
+        out.innerHTML = html || '<div class="mt-run-status">(ran with no output)</div>';
+      })
+      .catch(function (e) {
+        out.innerHTML = '<pre class="mt-run-err">⚠️ ' + esc(String(e && e.message || e)) + "</pre>";
+      })
+      .then(function () { btn.disabled = false; btn.textContent = orig; });
   }
 
   // ---- small utilities --------------------------------------------------

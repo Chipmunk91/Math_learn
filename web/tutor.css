@@ -114,6 +114,22 @@
 .mt-codebtn:hover { background: #eaf1fa; }
 .mt-codebtn:disabled { opacity: 0.6; cursor: default; }
 
+.mt-run { margin: 0 0 0.6rem; }
+.mt-run-status { font-size: 0.78rem; color: #56636f; font-style: italic; padding: 0.2rem 0; }
+.mt-run-img { max-width: 100%; height: auto; border: 1px solid #e4e9f0; border-radius: 0.4rem; margin: 0.2rem 0; display: block; }
+.mt-run-out, .mt-run-err {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.5rem;
+  border-radius: 0.4rem;
+  overflow-x: auto;
+  margin: 0.3rem 0 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8em;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.mt-run-err { background: #fdecec; color: #9b2c2c; }
+
 .mt-toast {
   position: fixed;
   left: 50%;
