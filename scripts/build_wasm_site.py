@@ -109,7 +109,7 @@ def chapters() -> list[Path]:
 def delib_bootstrap() -> str:
     parts = ["from __future__ import annotations"]
     for mod in DELIB_MODULES:
-        src = (DELIB_DIR / f"{mod}.py").read_text()
+        src = (DELIB_DIR / f"{mod}.py").read_text(encoding="utf-8")
         parts.append(_FUTURE.sub("", src))
     combined = "\n\n".join(parts)
     encoded = base64.b64encode(combined.encode("utf-8")).decode("ascii")
@@ -132,10 +132,10 @@ def inline_delib(source: str) -> str:
 
 def export(notebook: Path, out_dir: Path) -> None:
     """Export a chapter to a single WASM HTML page (edit mode, code hidden)."""
-    transformed = PEP723_HEADER + inline_delib(notebook.read_text())
+    transformed = PEP723_HEADER + inline_delib(notebook.read_text(encoding="utf-8"))
     with tempfile.TemporaryDirectory() as tmp:
         staged = Path(tmp) / notebook.name
-        staged.write_text(transformed)
+        staged.write_text(transformed, encoding="utf-8")
         subprocess.run(
             ["marimo", "export", "html-wasm", str(staged), "-o", str(out_dir), "--mode", "edit"],
             check=True,
@@ -197,11 +197,11 @@ def tutor_config(name: str) -> dict:
     """Per-chapter config injected for the tutor widget (context + starters)."""
     context_file = CHAPTERS_DIR / f"{name}.context.md"
     starters_file = CHAPTERS_DIR / f"{name}.starters.txt"
-    context = context_file.read_text().strip() if context_file.exists() else ""
+    context = context_file.read_text(encoding="utf-8").strip() if context_file.exists() else ""
     starters: list[str] = []
     if starters_file.exists():
-        starters = [s.strip() for s in starters_file.read_text().splitlines() if s.strip()]
-    cells = parse_cells((CHAPTERS_DIR / f"{name}.py").read_text())
+        starters = [s.strip() for s in starters_file.read_text(encoding="utf-8").splitlines() if s.strip()]
+    cells = parse_cells((CHAPTERS_DIR / f"{name}.py").read_text(encoding="utf-8"))
     return {
         "chapter": pretty(name),
         "context": context,
@@ -217,7 +217,7 @@ def asset_version(filename: str) -> str:
 
 def inject_tutor(page: Path, name: str) -> None:
     """Inject the tutor stylesheet, per-chapter config, and script into a page."""
-    html = page.read_text()
+    html = page.read_text(encoding="utf-8")
     config = json.dumps(tutor_config(name))
     css_v = asset_version("tutor.css")
     js_v = asset_version("tutor.js")
@@ -236,7 +236,7 @@ def inject_tutor(page: Path, name: str) -> None:
     if "</head>" not in html or "</body>" not in html:
         raise ValueError(f"missing </head> or </body> in {page}")
     html = html.replace("</head>", head, 1).replace("</body>", body, 1)
-    page.write_text(html)
+    page.write_text(html, encoding="utf-8")
 
 
 def build_index(names: list[str]) -> str:
@@ -286,7 +286,7 @@ def main() -> int:
 
     SITE.mkdir(parents=True, exist_ok=True)
     for asset in WEB_ASSETS:
-        (SITE / asset).write_text((WEB_DIR / asset).read_text())
+        (SITE / asset).write_text((WEB_DIR / asset).read_text(encoding="utf-8"), encoding="utf-8")
 
     names: list[str] = []
     for nb in nbs:
@@ -296,8 +296,8 @@ def main() -> int:
         export(nb, SITE / name)
         inject_tutor(SITE / name / "index.html", name)
 
-    (SITE / "index.html").write_text(build_index(names))
-    (SITE / ".nojekyll").write_text("")
+    (SITE / "index.html").write_text(build_index(names), encoding="utf-8")
+    (SITE / ".nojekyll").write_text("", encoding="utf-8")
     print(f"Built site with {len(names)} chapter(s) at {SITE}")
     return 0
 
