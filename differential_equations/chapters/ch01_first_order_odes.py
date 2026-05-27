@@ -229,24 +229,6 @@ def _(delib, ex_code, ex_run):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ---
-        ## Your turn — the playground
-
-        Open the **Playground** panel on the left (tap the ☰ toggle on mobile) and
-        **ask in plain language** — *"show the solution when a is negative."* The
-        tutor writes the code straight into the editor; **review it and press Run**
-        to see the result below. Prefer to type your own? Just edit the code and
-        Run. Bring your own Anthropic key — enter it in the panel; it stays in your
-        browser.
-        """
-    )
-    return
-
-
 @app.cell
 def _():
     # Two main-thread widgets (the kernel is sandboxed in a Web Worker and cannot
@@ -317,26 +299,7 @@ def _():
         picked_text = traitlets.Unicode("").tag(sync=True)
         picked_title = traitlets.Unicode("").tag(sync=True)
 
-    class CopyButton(anywidget.AnyWidget):
-        _esm = """
-        function render({ model, el }) {
-          var b=document.createElement('button');
-          b.style.cssText='padding:7px 12px;border:1px solid #c7d2e0;border-radius:8px;background:#f3f7fc;cursor:pointer;font:13px sans-serif;color:#2c3e50';
-          function reset(){ b.textContent='\\u29C9 Copy code'; }
-          reset();
-          b.addEventListener('click', function(){
-            var t=model.get('text')||'';
-            function done(){ b.textContent='\\u2713 Copied'; setTimeout(reset,1200); }
-            if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done, done); }
-            else { var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); done(); }
-          });
-          el.appendChild(b);
-        }
-        export default { render };
-        """
-        text = traitlets.Unicode("").tag(sync=True)
-
-    return CellPicker, CopyButton, KeyBridge
+    return CellPicker, KeyBridge
 
 
 @app.cell
@@ -352,64 +315,9 @@ def _(CellPicker, mo):
 
 
 @app.cell
-def _(CopyButton, mo):
-    copy_btn = mo.ui.anywidget(CopyButton())
-    return (copy_btn,)
-
-
-@app.cell
-def _(delib, go, mo, np, plt):
-    _helpers = {k: getattr(delib, k) for k in delib.__all__}
-
-    def run_view(code):
-        import traceback
-        import matplotlib
-
-        ns = {"mo": mo, "np": np, "plt": plt, "go": go, "delib": delib, **_helpers}
-        try:
-            exec(code, ns)
-        except Exception:
-            return mo.callout(mo.md(f"```\n{traceback.format_exc()}\n```"), kind="danger")
-        view = ns.get("view")
-        if view is None:
-            return mo.callout("Code ran but never assigned `view`.", kind="warn")
-        if isinstance(view, matplotlib.axes.Axes):
-            view = view.figure
-        return view
-
-    return (run_view,)
-
-
-@app.cell
-def _(mo):
-    # One shared code string. Ask mode writes the tutor's code here; the editor
-    # below reads it. This is the single code path — no separate Ask/Write modes.
-    get_code, set_code = mo.state(
-        "view = delib.vector_field_plotly(lambda x, y: 1.0*y*(1 - y/4.0), (0, 10), (-1, 6))"
-    )
-    return get_code, set_code
-
-
-@app.cell
 def _(mo):
     api_field = mo.ui.text(label="Anthropic key (stays in your browser)", kind="password", full_width=True)
     return (api_field,)
-
-
-@app.cell
-def _(get_code, mo):
-    # Rebuilt whenever the code state changes, so the tutor's generated code lands
-    # here ready to review and Run. Editing it locally is fine — Run uses .value.
-    code_input = mo.ui.code_editor(value=get_code(), language="python")
-    run_btn = mo.ui.run_button(label="Run", full_width=True)
-    return code_input, run_btn
-
-
-@app.cell
-def _(code_input, copy_btn):
-    # Keep the Copy button's payload in sync with the live editor contents.
-    copy_btn.widget.text = code_input.value
-    return
 
 
 @app.cell
@@ -421,9 +329,8 @@ def _(api_field, key_bridge):
 
 
 @app.cell
-def _(api_field, key_bridge, picker, set_code):
+def _(api_field, key_bridge, picker):
     import json as _json
-    import re as _re
 
     _MODEL = "claude-haiku-4-5-20251001"
     _URL = "https://api.anthropic.com/v1/messages"
@@ -433,25 +340,13 @@ def _(api_field, key_bridge, picker, set_code):
         "growth rate a and carrying capacity K (equilibria at y=0 and y=K)."
     )
     _SYS = (
-        "You are a friendly math tutor inside a marimo notebook. " + _CONTEXT + "\n\n"
-        "The student NEVER sees code in the chat — your python goes silently into an "
-        "editor they can Run. So write your reply as a self-contained explanation for "
-        "a human:\n"
-        "- Explain the idea in plain language; use LaTeX (e.g. $y'=ay(1-y/K)$) for math.\n"
-        "- Describe in words what the plot you are preparing will show.\n"
-        "- Do NOT mention code, do NOT say 'here is the code' or 'read the code', and "
-        "do NOT use section headings like 'Part 1' / 'Part 2' / 'Code'.\n"
-        "- End by inviting a next step, e.g. 'Want me to show what happens when a is "
-        "negative?'.\n\n"
-        "After the explanation, append exactly ONE ```python fenced block (this is "
-        "hidden from the student) containing the full self-contained solution and "
-        "nothing after it. The code may use only these names: mo, np, plt, go, delib. "
-        "PREFER delib's light-theme Plotly helpers so the chart matches the chapter: "
-        "vector_field_plotly(f, xlim, ylim) -> arrow field go.Figure, "
-        "flow_field(f, xlim, ylim) -> animated particles riding the field, "
-        "solution_surface(f, t_span, y0_values) -> 3D; also solve_ode(f, t_span, y0). "
-        "Do NO file or network I/O. END by assigning the single renderable to `view` "
-        "(ideally a Plotly figure)."
+        "You are a friendly, concise math tutor inside a marimo notebook. " + _CONTEXT
+        + " Explain clearly in plain language and ALWAYS use LaTeX for math — inline "
+        "$...$ and display $$...$$ (never write bare expressions like y'=ay). When code "
+        "helps, you may include a ```python block using only mo, np, plt, go, delib "
+        "(helpers: vector_field_plotly, flow_field, solution_surface, solve_ode; assign "
+        "a Plotly figure to `view` to display it). The student can copy code into a "
+        "practice cell to run it. Keep answers focused."
     )
 
     async def chat_model(messages, config):
@@ -465,7 +360,7 @@ def _(api_field, key_bridge, picker, set_code):
             for m in messages
             if m.role in ("user", "assistant") and m.content
         ]
-        body = _json.dumps({"model": _MODEL, "max_tokens": 700, "system": system, "messages": msgs})
+        body = _json.dumps({"model": _MODEL, "max_tokens": 800, "system": system, "messages": msgs})
         headers = {
             "content-type": "application/json",
             "x-api-key": key,
@@ -478,15 +373,7 @@ def _(api_field, key_bridge, picker, set_code):
         data = await resp.json()
         if not (isinstance(data, dict) and data.get("content")):
             return "**API error**\n\n```json\n" + _json.dumps(data, indent=2)[:800] + "\n```"
-        full = "".join(b.get("text", "") for b in data["content"])
-        # Lift code into the editor; the chat shows prose only. Strip closed fences,
-        # then cut anything from a dangling fence so a ``` can never reach the bubble.
-        _blocks = _re.findall(r"```(?:python)?\s*\n(.*?)```", full, _re.S)
-        if _blocks:
-            set_code(_blocks[0].strip())
-        explanation = _re.sub(r"```.*?```", "", full, flags=_re.S)
-        explanation = explanation.split("```")[0].strip()
-        return explanation or "Done — your plot is ready below. Press **Run** to see it."
+        return "".join(b.get("text", "") for b in data["content"])
 
     return (chat_model,)
 
@@ -505,18 +392,11 @@ def _(chat_model, mo):
 
 
 @app.cell(hide_code=True)
-def _(api_field, chatbox, code_input, copy_btn, key_bridge, mo, picker, run_btn):
+def _(api_field, chatbox, key_bridge, mo, picker):
     _key_ok = bool(api_field.value or (key_bridge.value or {}).get("key"))
-    _items = [mo.md("### Playground"), key_bridge, api_field]
+    _items = [mo.md("### Tutor"), key_bridge, api_field]
     if _key_ok:
-        _items += [
-            mo.md("key set ✓"),
-            picker,
-            chatbox,
-            mo.md("**Code** — the tutor writes here; review or edit, then Run:"),
-            code_input,
-            mo.hstack([run_btn, copy_btn], justify="start", gap=0.5),
-        ]
+        _items += [mo.md("key set ✓"), picker, chatbox]
     else:
         _items.append(
             mo.callout(
@@ -531,13 +411,6 @@ def _(api_field, chatbox, code_input, copy_btn, key_bridge, mo, picker, run_btn)
             )
         )
     mo.sidebar(_items, width="420px")
-    return
-
-
-@app.cell(hide_code=True)
-def _(code_input, mo, run_btn, run_view):
-    mo.stop(not run_btn.value, mo.md("*Ask in the panel, then press **Run** to render the code.*"))
-    run_view(code_input.value)
     return
 
 
