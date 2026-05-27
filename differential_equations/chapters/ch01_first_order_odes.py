@@ -164,68 +164,75 @@ def _(anim_fig):
 def _(mo):
     mo.md(
         r"""
-        ## Try it
+        ## Try it — in code
 
-        1. Set $a < 0$. Which equilibrium becomes the **attractor** now, and which
-           one repels nearby solutions?
-        2. Start with $y_0$ *above* $K$. Does the population fall to $K$ or overshoot?
-        3. Find a value of $K$ where a solution starting at $y_0 = 0.5$ barely moves
-           over the whole window. What does that say about the slope near $y = 0$?
-        4. Push $a$ toward $2$. How does the steepness of the climb to $K$ change?
+        Each task below is a little code ground. Type and run your own answer, or ask
+        the tutor (the ✨ box) to write or edit the code for you — then **Run & check**
+        to see the output and whether it's right.
         """
     )
     return
 
 
-@app.cell(hide_code=True)
+# --- Challenge 1: the stable equilibrium when a < 0 -----------------------------
+@app.cell
 def _(mo):
-    mo.md(
-        r"""
-        ## Check yourself — in code
-
-        Write a short Python answer and press **Run & check**. Your code runs right
-        here and is graded automatically.
-        """
+    c1_get, c1_set = mo.state(
+        "a, K = -1.0, 4.0\n"
+        "# With a < 0, which equilibrium do solutions move toward?\n"
+        "# Assign that equilibrium's y-value to `answer`.\n"
+        "answer = ...\n"
     )
+    return c1_get, c1_set
+
+
+@app.cell
+def _(c1_get, mo):
+    c1_ai = mo.ui.text(placeholder="✨ ask the tutor to write/edit the code…", full_width=True)
+    c1_gen = mo.ui.run_button(label="✨ Write / edit")
+    c1_code = mo.ui.code_editor(value=c1_get(), language="python")
+    c1_run = mo.ui.run_button(label="Run & check", full_width=True)
+    return c1_ai, c1_code, c1_gen, c1_run
+
+
+@app.cell
+async def _(api_field, c1_ai, c1_code, c1_gen, c1_set, delib, key_bridge, mo):
+    mo.stop(not c1_gen.value)
+    _key = api_field.value or (key_bridge.value or {}).get("key", "")
+    c1_set(await delib.ai_code(
+        c1_ai.value, c1_code.value, _key,
+        context="Logistic y'=a*y*(1-y/K). The task: which equilibrium is stable when a<0; put its y-value in `answer`.",
+    ))
     return
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    ex_code = mo.ui.code_editor(
-        value=(
-            "# Logistic: y' = a*y*(1 - y/K) with a = 1, K = 4.\n"
-            "# Find the NONZERO equilibrium (where y' = 0 and y != 0)\n"
-            "# and store it in a variable named `answer`.\n"
-            "answer = ...\n"
-        ),
-        language="python",
-    )
-    ex_run = mo.ui.run_button(label="Run & check", full_width=True)
+def _(c1_ai, c1_code, c1_gen, c1_run, mo):
     mo.vstack([
-        mo.md("**Task:** the population value where the logistic flow stops "
-              "changing and that isn't $0$."),
-        ex_code,
-        ex_run,
+        mo.md("**1.** With $a<0$, which equilibrium becomes the **attractor**? "
+              "Assign its $y$-value to `answer`."),
+        mo.hstack([c1_ai, c1_gen], justify="start", gap=0.5, widths=[4, 1]),
+        c1_code,
+        c1_run,
     ])
-    return ex_code, ex_run
+    return
 
 
 @app.cell(hide_code=True)
-def _(delib, ex_code, ex_run):
-    def _check(ns):
+def _(c1_code, c1_run, delib):
+    def _c1_check(ns):
         a = ns.get("answer")
         if a is None or a is Ellipsis:
-            return False, "Define a variable `answer` holding the equilibrium value."
+            return False, "Assign the attracting equilibrium's $y$-value to `answer`."
         try:
-            ok = abs(float(a) - 4.0) < 1e-6
+            ok = abs(float(a)) < 1e-9
         except Exception:
             return False, "`answer` should be a single number."
         if ok:
-            return True, "Correct — the nonzero equilibrium is $y = K = 4$."
-        return False, f"You got {a}. Hint: solve $a\\,y(1 - y/K) = 0$ with $y \\neq 0$."
+            return True, "Right — for $a<0$, $y=0$ is the attractor (and $y=K$ repels)."
+        return False, f"You got {a}. With $a<0$ the flow points toward $y=0$."
 
-    delib.run_exercise(ex_code.value, ex_run.value, check=_check)
+    delib.run_exercise(c1_code.value, c1_run.value, check=_c1_check)
     return
 
 
