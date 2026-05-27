@@ -23,6 +23,7 @@ from matplotlib.figure import Figure
 __all__ = [
     "animate_time",
     "animate_plotly",
+    "vector_field_morph",
     "flow_field",
     "solution_surface",
     "frame_index",
@@ -157,6 +158,74 @@ def animate_plotly(
         fig.update_layout(template=template)
     if layout:
         fig.update_layout(**layout)
+    return fig
+
+
+def vector_field_morph(
+    make_f: Callable,
+    params: Sequence[float],
+    xlim: tuple[float, float],
+    ylim: tuple[float, float],
+    *,
+    density: int = 16,
+    color: str = "#5b7db1",
+    extra_lines: Sequence | None = None,
+    slider_prefix: str = "",
+    title: str | None = None,
+):
+    """Animate a vector field reshaping as a parameter sweeps.
+
+    ``make_f(p)`` returns the RHS ``f(x, y)`` for parameter value ``p``; one
+    animation frame is drawn per value in ``params``. Each arrow emits a fixed
+    number of coordinates, so Plotly tweens the whole field — the arrows rotate
+    smoothly as ``p`` changes. ``extra_lines`` (e.g. equilibria) sit underneath.
+    Returns a light-theme go.Figure with play/slider.
+    """
+    import numpy as _np
+    import plotly.graph_objects as go
+
+    x0, x1 = xlim
+    y0, y1 = ylim
+    GX, GY = _np.meshgrid(_np.linspace(x0, x1, density), _np.linspace(y0, y1, density))
+    Lx = (x1 - x0) / density * 0.8
+    Ly = (y1 - y0) / density * 0.8
+    ca, sa, head = float(_np.cos(0.5)), float(_np.sin(0.5)), 0.32
+
+    def arrows(f):
+        U = _np.ones_like(GX)
+        V = f(GX, GY)
+        nrm = _np.hypot(U, V)
+        nrm[nrm == 0] = 1.0
+        U, V = U / nrm, V / nrm
+        xs: list = []
+        ys: list = []
+        for xi, yi, ui, vi in zip(GX.ravel(), GY.ravel(), U.ravel(), V.ravel()):
+            dx, dy = ui * Lx, vi * Ly
+            hx, hy = xi + dx, yi + dy
+            bx, by = -dx * head, -dy * head
+            xs += [xi, hx, None, hx, hx + (bx * ca - by * sa), None, hx, hx + (bx * ca + by * sa), None]
+            ys += [yi, hy, None, hy, hy + (bx * sa + by * ca), None, hy, hy + (-bx * sa + by * ca), None]
+        return xs, ys
+
+    base = list(extra_lines) if extra_lines else []
+    frames_data = []
+    for p in params:
+        xs, ys = arrows(make_f(p))
+        tr = go.Scatter(x=xs, y=ys, mode="lines", line=dict(color=color, width=1.4),
+                        opacity=0.85, hoverinfo="skip", showlegend=False)
+        frames_data.append({"name": f"{float(p):.2f}", "data": base + [tr]})
+
+    layout = dict(
+        template="plotly_white",
+        title=(dict(text=title, x=0.02) if title else None),
+        xaxis=dict(title="x", range=[x0, x1], zeroline=False),
+        yaxis=dict(title="y", range=[y0, y1], zeroline=False),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=460, showlegend=False, margin=dict(l=55, r=20, t=70, b=45),
+    )
+    fig = animate_plotly(frames_data, fps=12, transition_ms=150, layout=layout)
+    if slider_prefix and fig.layout.sliders:
+        fig.layout.sliders[0].currentvalue.prefix = slider_prefix
     return fig
 
 

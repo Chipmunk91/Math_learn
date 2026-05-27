@@ -19,6 +19,7 @@ __all__ = [
     "slope_field_data",
     "slope_field",
     "slope_field_plotly",
+    "vector_field_plotly",
     "vector_field",
     "phase_portrait",
     "overlay_solution",
@@ -190,6 +191,62 @@ def slope_field_plotly(
             line=dict(color=color, width=1.4), opacity=0.7,
             hoverinfo="skip", showlegend=False,
         )
+    )
+    fig.update_layout(
+        template="plotly_white",
+        title=(dict(text=title, x=0.02) if title else None),
+        xaxis=dict(title="x", range=list(xlim), zeroline=False),
+        yaxis=dict(title="y", range=list(ylim), zeroline=False),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=460, showlegend=False,
+        margin=dict(l=55, r=20, t=50, b=45),
+    )
+    return fig
+
+
+def _field_arrows(X, Y, U, V, Lx, Ly, *, head: float = 0.32, spread: float = 0.5):
+    """Build (xs, ys) for a single Scatter of arrows with heads.
+
+    Each arrow emits a fixed 9 coordinates (shaft + two head strokes, None-
+    separated), so the count is identical regardless of direction — which lets
+    Plotly tween the whole field smoothly between animation frames.
+    """
+    ca, sa = float(np.cos(spread)), float(np.sin(spread))
+    xs: list = []
+    ys: list = []
+    for xi, yi, ui, vi in zip(X.ravel(), Y.ravel(), U.ravel(), V.ravel()):
+        dx, dy = ui * Lx, vi * Ly
+        hx, hy = xi + dx, yi + dy
+        bx, by = -dx * head, -dy * head
+        xs += [xi, hx, None, hx, hx + (bx * ca - by * sa), None, hx, hx + (bx * ca + by * sa), None]
+        ys += [yi, hy, None, hy, hy + (bx * sa + by * ca), None, hy, hy + (-bx * sa + by * ca), None]
+    return xs, ys
+
+
+def vector_field_plotly(
+    f: ScalarRHS,
+    xlim: tuple[float, float],
+    ylim: tuple[float, float],
+    *,
+    density: int = 16,
+    color: str = "#5b7db1",
+    title: str | None = None,
+):
+    """Light-theme Plotly *vector* field (arrows with heads) for ``y' = f(x, y)``.
+
+    Like :func:`slope_field_plotly` but draws true arrows pointing along the flow
+    direction ``(1, f)``, for a 3b1b-style vector-field look. Returns a go.Figure.
+    """
+    import plotly.graph_objects as go
+
+    X, Y, U, V = slope_field_data(f, xlim, ylim, density=density)
+    Lx = (xlim[1] - xlim[0]) / density * 0.8
+    Ly = (ylim[1] - ylim[0]) / density * 0.8
+    xs, ys = _field_arrows(X, Y, U, V, Lx, Ly)
+    fig = go.Figure(
+        go.Scatter(x=xs, y=ys, mode="lines",
+                   line=dict(color=color, width=1.4), opacity=0.85,
+                   hoverinfo="skip", showlegend=False)
     )
     fig.update_layout(
         template="plotly_white",

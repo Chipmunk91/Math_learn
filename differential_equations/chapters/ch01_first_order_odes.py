@@ -64,9 +64,9 @@ def _(delib):
         return lambda x, y: a * y * (1.0 - y / K)
 
     # A static illustration with fixed parameters, before we make it interactive.
-    _fig = delib.slope_field_plotly(
-        logistic_grid(1.0, 4.0), (0, 10), (-1, 6), density=22,
-        title="Slope field of the logistic equation (a = 1, K = 4)",
+    _fig = delib.vector_field_plotly(
+        logistic_grid(1.0, 4.0), (0, 10), (-1, 6), density=18,
+        title="Vector field of the logistic equation (a = 1, K = 4)",
     )
     _fig.add_hline(y=4.0, line=dict(color="#2a9d8f", dash="dash", width=1.5),
                    annotation_text="K = 4", annotation_position="top right")
@@ -106,8 +106,8 @@ def _(controls, delib, go, logistic_grid):
 
     f_grid = logistic_grid(a, K)
 
-    fig_explore = delib.slope_field_plotly(
-        f_grid, (0, 10), (-1, 6), density=22,
+    fig_explore = delib.vector_field_plotly(
+        f_grid, (0, 10), (-1, 6), density=18,
         title=f"a = {a:.1f},  K = {K:.1f},  y₀ = {y0:.1f}",
     )
     # Equilibria flatten the field; show them for reference.
@@ -129,25 +129,30 @@ def _(controls, delib, go, logistic_grid):
 
 
 @app.cell(hide_code=True)
-def _(K, delib, f_grid, go, mo):
-    # The dynamical view: a cloud of particles advected along the field, so the
-    # whole flow comes alive instead of tracing one curve.
+def _(delib, go, mo, np):
+    # The dynamical view: animate the whole field reshaping as the growth rate a
+    # sweeps from negative to positive (K fixed at 4). Arrows rotate smoothly.
     _eq = [
-        go.Scatter(x=[0, 10], y=[K, K], mode="lines",
+        go.Scatter(x=[0, 10], y=[4, 4], mode="lines",
                    line=dict(color="#2a9d8f", dash="dash", width=1.5),
                    hoverinfo="skip", showlegend=False),
         go.Scatter(x=[0, 10], y=[0, 0], mode="lines",
                    line=dict(color="#9aa7b5", dash="dot", width=1),
                    hoverinfo="skip", showlegend=False),
     ]
-    anim_fig = delib.flow_field(
-        f_grid, (0, 10), (-1, 6), extra_lines=_eq,
-        title="The flow coming alive — particles carried along the field",
+    anim_fig = delib.vector_field_morph(
+        lambda a: (lambda x, y: a * y * (1.0 - y / 4.0)),
+        np.linspace(-2.0, 2.0, 41),
+        (0, 10), (-1, 6),
+        extra_lines=_eq,
+        slider_prefix="a = ",
+        title="The field reshaping as the growth rate a sweeps (K = 4)",
     )
     mo.md(
-        "## Watch the flow\n\nPress **▶ Play**. Each dot is a solution being carried "
-        "along the field. Watch them all bend toward $y = K$ and peel away from "
-        "$y = 0$ — the field's attractor and repeller made visible."
+        "## Watch the field move\n\nPress **▶ Play** to sweep the growth rate $a$ from "
+        "$-2$ to $2$. Watch every arrow rotate: with $a < 0$ the flow points toward "
+        "$y = 0$ (decay), and as $a$ turns positive it flips to point toward $y = K$ "
+        "(growth) — the equilibria swap which one attracts."
     )
     return (anim_fig,)
 
@@ -155,32 +160,6 @@ def _(K, delib, f_grid, go, mo):
 @app.cell(hide_code=True)
 def _(anim_fig):
     anim_fig
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ## All solutions at once — in 3-D
-
-        Each ridge is one solution $y(t)$ for a different starting value $y_0$ (the
-        depth axis). As $t$ grows, every ridge flattens onto the plane $y = K$ — the
-        attractor — no matter where it began. Drag to rotate.
-        """
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, np):
-    surf = delib.solution_surface(
-        lambda t, y: 1.0 * y * (1.0 - y / 4.0),
-        (0.0, 10.0),
-        np.linspace(0.1, 7.0, 28),
-        title="Every start bends toward K = 4",
-    )
-    surf
     return
 
 
@@ -357,7 +336,7 @@ def _(mo):
     # One shared code string. Ask mode writes the tutor's code here; the editor
     # below reads it. This is the single code path — no separate Ask/Write modes.
     get_code, set_code = mo.state(
-        "view = delib.slope_field_plotly(lambda x, y: 1.0*y*(1 - y/4.0), (0, 10), (-1, 6))"
+        "view = delib.vector_field_plotly(lambda x, y: 1.0*y*(1 - y/4.0), (0, 10), (-1, 6))"
     )
     return get_code, set_code
 
@@ -419,10 +398,12 @@ def _(api_field, key_bridge, picker, set_code):
         "hidden from the student) containing the full self-contained solution and "
         "nothing after it. The code may use only these names: mo, np, plt, go, delib. "
         "PREFER delib's light-theme Plotly helpers so the chart matches the chapter: "
-        "slope_field_plotly(f, xlim, ylim) -> go.Figure, flow_field(f, xlim, ylim) -> "
-        "animated go.Figure, solution_surface(f, t_span, y0_values) -> 3D go.Figure; "
-        "also solve_ode(f, t_span, y0). Do NO file or network I/O. END by assigning the "
-        "single renderable to `view` (ideally a Plotly figure)."
+        "vector_field_plotly(f, xlim, ylim) -> arrow field go.Figure, "
+        "vector_field_morph(make_f, params, xlim, ylim) -> animated arrows that "
+        "reshape as a parameter sweeps, flow_field(f, xlim, ylim) -> particle flow, "
+        "solution_surface(f, t_span, y0_values) -> 3D; also solve_ode(f, t_span, y0). "
+        "Do NO file or network I/O. END by assigning the single renderable to `view` "
+        "(ideally a Plotly figure)."
     )
 
     async def chat_model(messages, config):
