@@ -42,7 +42,9 @@ grounding comes from two sidecar files next to the notebook:
 
 Every push builds each chapter into a self-contained **WASM** page (runs in the
 browser via Pyodide — interactive sliders and animations, no server) and
-publishes them to GitHub Pages, so you can open a chapter from any device.
+publishes them to GitHub Pages, so you can open a chapter from any device. Each
+chapter page gets a top bar to step to the previous / next chapter or jump back
+to the index, and the index lists every chapter.
 
 One-time setup: in the repo, go to **Settings → Pages → Build and deployment →
 Source** and select **GitHub Actions**. After the next push, the
