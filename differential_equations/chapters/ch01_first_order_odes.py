@@ -241,10 +241,20 @@ def _():
     class CellPicker(anywidget.AnyWidget):
         _esm = """
         function render({ model, el }) {
-          var cells = (window.TUTOR_CONFIG||{}).cells || [];
           var overlay, banner, picking=false;
-          function list(){ return Array.prototype.slice.call(document.querySelectorAll('.marimo-cell')); }
-          function srcFor(i){ var c=cells[i]; return c ? (c.text||'') : ''; }
+          function selfCell(){ return el.closest ? el.closest('.marimo-cell') : null; }
+          function under(t){ var c = (t && t.closest) ? t.closest('.marimo-cell') : null; return (c && c===selfCell()) ? null : c; }
+          function cellText(c){
+            var a = c.querySelector('.output-area') || c;
+            var clone = a.cloneNode(true);
+            var mm = clone.querySelectorAll('.katex-mathml'); for (var j=0;j<mm.length;j++) mm[j].remove();
+            return (clone.innerText || '').replace(/\\n{3,}/g,'\\n\\n').trim();
+          }
+          function titleOf(t){
+            var lines = t.split('\\n');
+            for (var k=0;k<lines.length;k++){ var s=lines[k].trim(); if(s){ return s.replace(/[*_`#$]/g,'').trim().slice(0,40); } }
+            return 'selected cell';
+          }
           function ensure(){
             if(overlay) return;
             overlay=document.createElement('div');
@@ -254,24 +264,27 @@ def _():
             banner.textContent='Click a cell to ask about it — Esc to cancel';
             document.body.appendChild(overlay); document.body.appendChild(banner);
           }
-          function under(t){ return t && t.closest ? t.closest('.marimo-cell') : null; }
           function onMove(e){ var c=under(e.target); if(!c){ overlay.style.display='none'; return;} var r=c.getBoundingClientRect(); var o=overlay.style; o.display='block'; o.top=r.top+'px'; o.left=r.left+'px'; o.width=r.width+'px'; o.height=r.height+'px'; }
-          function onClick(e){ var c=under(e.target); if(!c) return; e.preventDefault(); e.stopPropagation(); var i=list().indexOf(c); exit(); select(i); }
+          function onClick(e){ var c=under(e.target); if(!c) return; e.preventDefault(); e.stopPropagation(); exit(); select(c); }
           function onKey(e){ if(e.key==='Escape') exit(); }
-          function enter(){ picking=true; ensure(); overlay.style.display='none'; banner.style.display='block'; document.addEventListener('mousemove',onMove,true); document.addEventListener('click',onClick,true); document.addEventListener('keydown',onKey,true); }
+          function enter(){
+            // Clear first: one click re-picks, and cancelling leaves nothing selected.
+            model.set('picked_text',''); model.set('picked_title',''); model.save_changes(); paint();
+            picking=true; ensure(); overlay.style.display='none'; banner.style.display='block';
+            document.addEventListener('mousemove',onMove,true); document.addEventListener('click',onClick,true); document.addEventListener('keydown',onKey,true);
+          }
           function exit(){ picking=false; if(overlay)overlay.style.display='none'; if(banner)banner.style.display='none'; document.removeEventListener('mousemove',onMove,true); document.removeEventListener('click',onClick,true); document.removeEventListener('keydown',onKey,true); }
-          function select(i){ model.set('picked_idx', i); model.set('picked_text', srcFor(i)); model.save_changes(); paint(); }
-          function clear(){ model.set('picked_idx', -1); model.set('picked_text', ''); model.save_changes(); paint(); }
+          function select(c){ var t=cellText(c); model.set('picked_text', t.slice(0,2000)); model.set('picked_title', titleOf(t)); model.save_changes(); paint(); }
           var btn=document.createElement('button');
           btn.style.cssText='width:100%;padding:8px 10px;border:1px solid #c7d2e0;border-radius:8px;background:#f3f7fc;cursor:pointer;font:13px sans-serif;color:#2c3e50;text-align:left';
-          function paint(){ var i=model.get('picked_idx'); btn.innerHTML = (i!=null && i>=0) ? ('\\u{1F4CC} Asking about <b>Cell '+(i+1)+'</b> &nbsp;&middot;&nbsp; clear \\u2715') : '\\u{1F4CC} Pick a cell to ask about'; }
-          btn.addEventListener('click', function(){ var i=model.get('picked_idx'); if(i!=null && i>=0){ clear(); } else { enter(); } });
+          function paint(){ var ti=model.get('picked_title'); btn.textContent = ti ? ('\\u{1F4CC} Asking about: '+ti) : '\\u{1F4CC} Pick a cell to ask about'; }
+          btn.addEventListener('click', function(){ enter(); });
           el.appendChild(btn); paint();
         }
         export default { render };
         """
-        picked_idx = traitlets.Int(-1).tag(sync=True)
         picked_text = traitlets.Unicode("").tag(sync=True)
+        picked_title = traitlets.Unicode("").tag(sync=True)
 
     return CellPicker, KeyBridge
 
@@ -357,12 +370,14 @@ def _(api_field, key_bridge, picker, set_code):
         "growth rate a and carrying capacity K (equilibria at y=0 and y=K)."
     )
     _SYS = (
-        "You help a student in a marimo notebook. " + _CONTEXT + " Reply with a SHORT "
-        "(1-3 sentence) explanation, then exactly ONE ```python code block. The code "
-        "must be self-contained and use only these names: mo, np, plt, go, delib (with "
-        "helpers slope_field(f, xlim, ylim) -> matplotlib Axes, phase_portrait, "
-        "overlay_solution, solve_ode, solve_system). Do NO file or network I/O. END by "
-        "assigning the single renderable to a variable named `view`."
+        "You are a tutor inside a marimo notebook. " + _CONTEXT + " Answer in TWO "
+        "parts. Part 1: a brief plain-language explanation, 2-4 sentences, with NO "
+        "code and NO fenced blocks. Part 2: exactly ONE ```python fenced block with "
+        "the full self-contained solution and nothing after it. The code may use only "
+        "these names: mo, np, plt, go, delib (helpers: slope_field(f, xlim, ylim) -> "
+        "matplotlib Axes, phase_portrait, overlay_solution, solve_ode, solve_system). "
+        "Do NO file or network I/O. END by assigning the single renderable to `view` "
+        "(a matplotlib or plotly figure)."
     )
 
     async def chat_model(messages, config):
@@ -390,13 +405,13 @@ def _(api_field, key_bridge, picker, set_code):
         if not (isinstance(data, dict) and data.get("content")):
             return "**API error**\n\n```json\n" + _json.dumps(data, indent=2)[:800] + "\n```"
         full = "".join(b.get("text", "") for b in data["content"])
-        # Lift the code into the editor; show only the explanation in the chat.
-        _m = _re.search(r"```(?:python)?\s*\n(.*?)```", full, _re.S)
-        if _m:
-            set_code(_m.group(1).strip())
-            explanation = (full[: _m.start()] + full[_m.end():]).strip()
-            return explanation or "Code is in the editor below — review it and press **Run**."
-        return full
+        # Lift code into the editor; strip ALL fenced blocks from the chat reply so
+        # the bubble shows only readable prose (and no Add-to-Notebook button).
+        _blocks = _re.findall(r"```(?:python)?\s*\n(.*?)```", full, _re.S)
+        if _blocks:
+            set_code(_blocks[0].strip())
+        explanation = _re.sub(r"```.*?```", "", full, flags=_re.S).strip()
+        return explanation or "Code is in the editor below — review it and press **Run**."
 
     return (chat_model,)
 
