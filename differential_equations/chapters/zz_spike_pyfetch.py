@@ -189,5 +189,107 @@ def _(code_input, mo, run_btn, run_view):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ---
+        ## Step 3 — Ask mode (native `mo.ui.chat`)
+
+        Plain-language questions go to Claude via the same client-side call. The
+        system prompt forces a short explanation + one ```python block that ends in
+        `view = ...`. The cell below extracts that block and runs it through the
+        very same `run_view` harness. Try: *"show the solution when the rate is
+        negative"* or *"draw the slope field for y' = y - x"*.
+        """
+    )
+    return
+
+
+@app.cell
+def _(api_key):
+    import json as _json
+
+    _MODEL = "claude-haiku-4-5-20251001"
+    _URL = "https://api.anthropic.com/v1/messages"
+    _SYS = (
+        "You help a student explore first-order ODEs inside a marimo notebook. "
+        "Reply with a SHORT (1-3 sentence) explanation, then exactly ONE ```python "
+        "code block. The code must be self-contained and use only these names: mo, "
+        "np, plt, go, delib (with helpers slope_field(f, xlim, ylim) -> matplotlib "
+        "Axes, phase_portrait, overlay_solution, solve_ode, solve_system). Do NO "
+        "file or network I/O. END by assigning the single renderable to a variable "
+        "named `view` (a matplotlib Axes/Figure or a plotly Figure)."
+    )
+
+    async def chat_model(messages, config):
+        msgs = [
+            {"role": m.role, "content": m.content}
+            for m in messages
+            if m.role in ("user", "assistant") and m.content
+        ]
+        body = _json.dumps(
+            {"model": _MODEL, "max_tokens": 700, "system": _SYS, "messages": msgs}
+        )
+        headers = {
+            "content-type": "application/json",
+            "x-api-key": api_key.value,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true",
+        }
+        try:
+            from pyodide.http import pyfetch
+
+            resp = await pyfetch(_URL, method="POST", headers=headers, body=body)
+            data = await resp.json()
+        except ModuleNotFoundError:
+            import urllib.request
+            import urllib.error
+
+            req = urllib.request.Request(
+                _URL, data=body.encode(), headers=headers, method="POST"
+            )
+            try:
+                with urllib.request.urlopen(req) as r:
+                    data = _json.loads(r.read().decode())
+            except urllib.error.HTTPError as e:
+                data = _json.loads(e.read().decode())
+
+        if isinstance(data, dict) and data.get("content"):
+            return "".join(b.get("text", "") for b in data["content"])
+        return "**API error**\n\n```json\n" + _json.dumps(data, indent=2)[:800] + "\n```"
+
+    return (chat_model,)
+
+
+@app.cell(hide_code=True)
+def _(chat_model, mo):
+    chatbox = mo.ui.chat(
+        chat_model,
+        prompts=[
+            "show the solution when the rate is negative",
+            "draw the slope field for y' = y - x",
+            "phase portrait of a stable spiral",
+        ],
+    )
+    chatbox
+    return (chatbox,)
+
+
+@app.cell(hide_code=True)
+def _(chatbox, mo, run_view):
+    import re
+
+    _msgs = chatbox.value or []
+    _bot = [m for m in _msgs if m.role == "assistant" and m.content]
+    mo.stop(not _bot, mo.md("*Ask for a plot above to generate and run code.*"))
+
+    _hit = re.search(r"```(?:python)?\s*\n(.*?)```", _bot[-1].content, re.S)
+    mo.stop(_hit is None, mo.callout("The reply had no python block to run.", kind="warn"))
+
+    run_view(_hit.group(1))
+    return
+
+
 if __name__ == "__main__":
     app.run()
