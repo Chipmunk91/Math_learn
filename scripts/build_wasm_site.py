@@ -124,8 +124,59 @@ MATH_RENDER_JS = (
 )
 
 
+# A slim fixed bar at the top of every chapter linking to the previous/next
+# chapter and back to the index. ``#root`` is marimo's mount point; padding it
+# down keeps the bar from covering the first cell.
+NAV_CSS = (
+    "<style>"
+    ".ml-chapter-nav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;"
+    "align-items:center;justify-content:space-between;gap:.5rem;height:44px;"
+    "padding:0 .75rem;background:rgba(255,255,255,.92);"
+    "-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);"
+    "border-bottom:1px solid #d6dde6;box-sizing:border-box;"
+    "font-family:system-ui,sans-serif;font-size:.9rem;}"
+    ".ml-chapter-nav a{text-decoration:none;color:#2a5d9c;font-weight:600;"
+    "padding:.35rem .6rem;border-radius:.4rem;white-space:nowrap;}"
+    ".ml-chapter-nav a:hover{background:#f0f5fb;}"
+    ".ml-chapter-nav .ml-nav-home{color:#1d2733;}"
+    ".ml-chapter-nav .ml-nav-disabled{color:#aab4c0;font-weight:600;"
+    "padding:.35rem .6rem;white-space:nowrap;}"
+    "#root{padding-top:44px;box-sizing:border-box;}"
+    "@media (max-width:480px){.ml-chapter-nav{font-size:.8rem;padding:0 .4rem;}}"
+    "</style>"
+)
+
+
+def nav_bar(names: list[str], idx: int) -> str:
+    """Build the prev / index / next navigation bar for chapter ``idx``."""
+    if idx > 0:
+        prev = names[idx - 1]
+        left = f'<a href="../{prev}/" title="{pretty(prev)}">&larr; Previous</a>'
+    else:
+        left = '<span class="ml-nav-disabled">&larr; Previous</span>'
+    if idx < len(names) - 1:
+        nxt = names[idx + 1]
+        right = f'<a href="../{nxt}/" title="{pretty(nxt)}">Next &rarr;</a>'
+    else:
+        right = '<span class="ml-nav-disabled">Next &rarr;</span>'
+    home = '<a class="ml-nav-home" href="../">All chapters</a>'
+    return f'<nav class="ml-chapter-nav" aria-label="Chapter navigation">{left}{home}{right}</nav>'
+
+
+def inject_nav(page: Path, names: list[str], idx: int) -> None:
+    """Add the chapter navigation bar (styles in <head>, bar after <body>)."""
+    html = page.read_text(encoding="utf-8")
+    if "</head>" not in html or "<body>" not in html:
+        raise ValueError(f"missing </head> or <body> in {page}")
+    html = html.replace("</head>", NAV_CSS + "</head>", 1)
+    html = html.replace("<body>", "<body>" + nav_bar(names, idx), 1)
+    page.write_text(html, encoding="utf-8")
+
+
 def chapters() -> list[Path]:
-    return sorted(p for p in CHAPTERS_DIR.glob("*.py") if not p.name.startswith("_"))
+    # Only real chapters (chNN_<topic>.py) are published. This skips _template.py
+    # and the zz_spike_*.py experiments that share the chapters/ directory.
+    return sorted(CHAPTERS_DIR.glob("ch[0-9][0-9]_*.py"))
 
 
 def delib_bootstrap() -> str:
@@ -302,13 +353,13 @@ def main() -> int:
 
     SITE.mkdir(parents=True, exist_ok=True)
 
-    names: list[str] = []
-    for nb in nbs:
+    names = [nb.stem for nb in nbs]
+    for idx, nb in enumerate(nbs):
         name = nb.stem
-        names.append(name)
         print(f"Exporting {nb.name} -> site/{name}/")
         export(nb, SITE / name)
         inject_tutor(SITE / name / "index.html", name)
+        inject_nav(SITE / name / "index.html", names, idx)
 
     (SITE / "index.html").write_text(build_index(names), encoding="utf-8")
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
