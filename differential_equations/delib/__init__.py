@@ -19,7 +19,6 @@ from delib.fields import (
 from delib.animate import (
     animate_time,
     animate_plotly,
-    vector_field_morph,
     flow_field,
     solution_surface,
     frame_index,
@@ -38,7 +37,6 @@ __all__ = [
     "overlay_solution",
     "animate_time",
     "animate_plotly",
-    "vector_field_morph",
     "flow_field",
     "solution_surface",
     "frame_index",

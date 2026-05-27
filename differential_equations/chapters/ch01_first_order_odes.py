@@ -129,30 +129,27 @@ def _(controls, delib, go, logistic_grid):
 
 
 @app.cell(hide_code=True)
-def _(delib, go, mo, np):
-    # The dynamical view: animate the whole field reshaping as the growth rate a
-    # sweeps from negative to positive (K fixed at 4). Arrows rotate smoothly.
+def _(K, a, delib, go, mo):
+    # The dynamical view: the field is fixed (static arrows); particles ride along
+    # it. Reshape the field with the a / K sliders above and re-watch.
     _eq = [
-        go.Scatter(x=[0, 10], y=[4, 4], mode="lines",
+        go.Scatter(x=[0, 10], y=[K, K], mode="lines",
                    line=dict(color="#2a9d8f", dash="dash", width=1.5),
                    hoverinfo="skip", showlegend=False),
         go.Scatter(x=[0, 10], y=[0, 0], mode="lines",
                    line=dict(color="#9aa7b5", dash="dot", width=1),
                    hoverinfo="skip", showlegend=False),
     ]
-    anim_fig = delib.vector_field_morph(
-        lambda a: (lambda x, y: a * y * (1.0 - y / 4.0)),
-        np.linspace(-2.0, 2.0, 41),
-        (0, 10), (-1, 6),
+    anim_fig = delib.flow_field(
+        lambda x, y: a * y * (1.0 - y / K), (0, 10), (-1, 6),
         extra_lines=_eq,
-        slider_prefix="a = ",
-        title="The field reshaping as the growth rate a sweeps (K = 4)",
+        title=f"Particles riding the field  (a = {a:.1f},  K = {K:.1f})",
     )
     mo.md(
-        "## Watch the field move\n\nPress **▶ Play** to sweep the growth rate $a$ from "
-        "$-2$ to $2$. Watch every arrow rotate: with $a < 0$ the flow points toward "
-        "$y = 0$ (decay), and as $a$ turns positive it flips to point toward $y = K$ "
-        "(growth) — the equilibria swap which one attracts."
+        "## Watch particles ride the field\n\nThe arrows are the field — fixed for "
+        "these parameters. Press **▶ Play** and watch particles flow *along* them, "
+        "all bending toward $y = K$ and peeling off $y = 0$. Then drag the **$a$ / $K$ "
+        "sliders above** to reshape the field and play again."
     )
     return (anim_fig,)
 
@@ -399,8 +396,7 @@ def _(api_field, key_bridge, picker, set_code):
         "nothing after it. The code may use only these names: mo, np, plt, go, delib. "
         "PREFER delib's light-theme Plotly helpers so the chart matches the chapter: "
         "vector_field_plotly(f, xlim, ylim) -> arrow field go.Figure, "
-        "vector_field_morph(make_f, params, xlim, ylim) -> animated arrows that "
-        "reshape as a parameter sweeps, flow_field(f, xlim, ylim) -> particle flow, "
+        "flow_field(f, xlim, ylim) -> animated particles riding the field, "
         "solution_surface(f, t_span, y0_values) -> 3D; also solve_ode(f, t_span, y0). "
         "Do NO file or network I/O. END by assigning the single renderable to `view` "
         "(ideally a Plotly figure)."
