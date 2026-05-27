@@ -49,12 +49,12 @@ jobs:
         with:
           path: site
 
-  # Only main publishes to the live site. On other branches the build above
-  # still runs as a CI check, but the deploy is skipped (not failed) — the
-  # github-pages environment also only permits the default branch to deploy.
+  # main is production. The active integration branch also deploys so it can be
+  # previewed live; other feature branches still build as a CI check but don't
+  # deploy, so they can't clobber the live site.
   deploy:
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/claude/tender-einstein-arCIU'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
