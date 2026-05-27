@@ -141,7 +141,8 @@ NAV_CSS = (
     ".ml-chapter-nav .ml-nav-home{color:#1d2733;}"
     ".ml-chapter-nav .ml-nav-disabled{color:#aab4c0;font-weight:600;"
     "padding:.35rem .6rem;white-space:nowrap;}"
-    "#root{padding-top:44px;box-sizing:border-box;}"
+    "#root{padding-top:54px;box-sizing:border-box;}"
+    ".ml-chapter-nav a{max-width:40vw;overflow:hidden;text-overflow:ellipsis;}"
     "@media (max-width:480px){.ml-chapter-nav{font-size:.8rem;padding:0 .4rem;}}"
     "</style>"
 )

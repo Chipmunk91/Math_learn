@@ -211,7 +211,7 @@ def _(c1_ai, c1_code, c1_gen, c1_run, mo):
     mo.vstack([
         mo.md("**1.** With $a<0$, which equilibrium becomes the **attractor**? "
               "Assign its $y$-value to `answer`."),
-        mo.hstack([c1_ai, c1_gen], justify="start", gap=0.5, widths=[4, 1]),
+        mo.vstack([c1_ai, c1_gen]),
         c1_code,
         c1_run,
     ])
@@ -273,7 +273,7 @@ def _(c2_ai, c2_code, c2_gen, c2_run, mo):
         mo.md("**2.** Start **above** the capacity ($y_0=6$, $a=1$, $K=4$). Integrate "
               "to $t=10$ and put the final value $y(10)$ in `answer`. Does it fall to "
               "$K$ or overshoot?"),
-        mo.hstack([c2_ai, c2_gen], justify="start", gap=0.5, widths=[4, 1]),
+        mo.vstack([c2_ai, c2_gen]),
         c2_code,
         c2_run,
     ])
@@ -335,7 +335,7 @@ def _(c3_ai, c3_code, c3_gen, c3_run, mo):
     mo.vstack([
         mo.md("**3.** The growth rate $y'=a\\,y(1-y/K)$ is **steepest** at one value of "
               "$y$. Find it (for $a=1$, $K=4$) and put it in `answer`."),
-        mo.hstack([c3_ai, c3_gen], justify="start", gap=0.5, widths=[4, 1]),
+        mo.vstack([c3_ai, c3_gen]),
         c3_code,
         c3_run,
     ])
@@ -593,7 +593,7 @@ async def _(api_field, delib, key_bridge, mo, pg_ai, pg_code, pg_gen, pg_set):
 @app.cell(hide_code=True)
 def _(mo, pg_ai, pg_code, pg_gen, pg_run):
     mo.vstack([
-        mo.hstack([pg_ai, pg_gen], justify="start", gap=0.5, widths=[4, 1]),
+        mo.vstack([pg_ai, pg_gen]),
         pg_code,
         pg_run,
     ])
