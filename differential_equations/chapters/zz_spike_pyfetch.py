@@ -7,9 +7,12 @@ app = marimo.App(width="medium")
 @app.cell(hide_code=True)
 def _():
     import marimo as mo
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import plotly.graph_objects as go
 
     import delib
-    return delib, mo
+    return delib, go, mo, np, plt
 
 
 @app.cell(hide_code=True)
@@ -100,6 +103,55 @@ async def _(api_key, ask, ask_claude, mo, prompt):
 
     _reply = await ask_claude(api_key.value, prompt.value)
     mo.md(_reply)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ---
+        ## Step 1 — the `view` harness
+
+        The contract: any code string — typed or AI-generated — runs in a fixed
+        namespace (`mo`, `np`, `plt`, `go`, `delib` + helpers) and ends by assigning
+        its single renderable to **`view`**. The harness execs it and renders `view`.
+        Below it is fed a hardcoded string; if the slope field draws, Step 1 passes.
+        """
+    )
+    return
+
+
+@app.cell
+def _(delib, go, mo, np, plt):
+    _helpers = {k: getattr(delib, k) for k in delib.__all__}
+
+    def run_view(code):
+        import traceback
+        import matplotlib
+
+        ns = {"mo": mo, "np": np, "plt": plt, "go": go, "delib": delib, **_helpers}
+        try:
+            exec(code, ns)
+        except Exception:
+            tb = traceback.format_exc()
+            return mo.callout(mo.md(f"```\n{tb}\n```"), kind="danger")
+        view = ns.get("view")
+        if view is None:
+            return mo.callout("Code ran but never assigned `view`.", kind="warn")
+        if isinstance(view, matplotlib.axes.Axes):
+            view = view.figure
+        return view
+
+    return (run_view,)
+
+
+@app.cell(hide_code=True)
+def _(run_view):
+    _demo_code = (
+        "view = delib.slope_field(lambda x, y: np.sin(x) + y, (-3, 3), (-3, 3))"
+    )
+    run_view(_demo_code)
     return
 
 
