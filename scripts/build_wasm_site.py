@@ -115,8 +115,10 @@ MATH_RENDER_JS = (
     "var seen=new WeakSet();"
     "var OPTS={delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false,ignoredTags:['script','noscript','style','textarea','pre','code']};"
     "function ensureCss(root){try{if(root.querySelector&&!root.querySelector('link[data-mlk]')){var l=document.createElement('link');l.rel='stylesheet';l.href=CSS;l.setAttribute('data-mlk','1');root.appendChild(l);}}catch(e){}}"
+    "var MCSS='@media(max-width:640px){.js-plotly-plot,.plotly,.plot-container,.svg-container{max-width:100%!important}.cm-editor,.cm-scroller{max-width:100%!important}table{display:block;overflow-x:auto}img,svg{max-width:100%;height:auto}.marimo-cell,[data-testid=\"cell-output\"]{overflow-x:auto;max-width:100%}}';"
+    "function injectMobile(root){try{if(root.querySelector&&!root.querySelector('style[data-mlm]')){var s=document.createElement('style');s.setAttribute('data-mlm','1');s.textContent=MCSS;root.appendChild(s);}}catch(e){}}"
     "function proc(root){if(!window.renderMathInElement)return;try{if((root.textContent||'').indexOf('$')>-1){ensureCss(root);var k=root.children||[];for(var i=0;i<k.length;i++){try{window.renderMathInElement(k[i],OPTS);}catch(e){}}}}catch(e){}}"
-    "function walk(root){proc(root);var els;try{els=root.querySelectorAll('*');}catch(e){return;}for(var i=0;i<els.length;i++){var sr=els[i].shadowRoot;if(sr){if(!seen.has(sr)){seen.add(sr);try{new MutationObserver(sch).observe(sr,{childList:true,subtree:true,characterData:true});}catch(e){}}walk(sr);}}}"
+    "function walk(root){injectMobile(root);proc(root);var els;try{els=root.querySelectorAll('*');}catch(e){return;}for(var i=0;i<els.length;i++){var sr=els[i].shadowRoot;if(sr){if(!seen.has(sr)){seen.add(sr);try{new MutationObserver(sch).observe(sr,{childList:true,subtree:true,characterData:true});}catch(e){}}walk(sr);}}}"
     "var p=false;function sch(){if(p)return;p=true;requestAnimationFrame(function(){p=false;walk(document.body);});}"
     "function start(){new MutationObserver(sch).observe(document.body,{childList:true,subtree:true});sch();setTimeout(sch,800);setTimeout(sch,2000);setTimeout(sch,4000);}"
     'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",start);}else{start();}'
