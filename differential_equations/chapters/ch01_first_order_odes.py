@@ -200,7 +200,7 @@ async def _(api_field, c1_ai, c1_code, c1_gen, c1_set, delib, key_bridge, mo):
     mo.stop(not c1_gen.value)
     _key = api_field.value or (key_bridge.value or {}).get("key", "")
     c1_set(await delib.ai_code(
-        c1_ai.value, c1_code.value, _key,
+        c1_ai.value, c1_code.value, _key, coach=True,
         context="Logistic y'=a*y*(1-y/K). The task: which equilibrium is stable when a<0; put its y-value in `answer`.",
     ))
     return
@@ -233,6 +233,130 @@ def _(c1_code, c1_run, delib):
         return False, f"You got {a}. With $a<0$ the flow points toward $y=0$."
 
     delib.run_exercise(c1_code.value, c1_run.value, check=_c1_check)
+    return
+
+
+# --- Challenge 2: a solution starting above K ----------------------------------
+@app.cell
+def _(mo):
+    c2_get, c2_set = mo.state(
+        "a, K, y0 = 1.0, 4.0, 6.0   # start ABOVE the carrying capacity\n"
+        "# Integrate to t = 10 and store the final value y(10) in `answer`.\n"
+        "answer = ...\n"
+    )
+    return c2_get, c2_set
+
+
+@app.cell
+def _(c2_get, mo):
+    c2_ai = mo.ui.text(placeholder="✨ ask the tutor to write/edit the code…", full_width=True)
+    c2_gen = mo.ui.run_button(label="✨ Write / edit")
+    c2_code = mo.ui.code_editor(value=c2_get(), language="python")
+    c2_run = mo.ui.run_button(label="Run & check", full_width=True)
+    return c2_ai, c2_code, c2_gen, c2_run
+
+
+@app.cell
+async def _(api_field, c2_ai, c2_code, c2_gen, c2_set, delib, key_bridge, mo):
+    mo.stop(not c2_gen.value)
+    _key = api_field.value or (key_bridge.value or {}).get("key", "")
+    c2_set(await delib.ai_code(
+        c2_ai.value, c2_code.value, _key, coach=True,
+        context="Logistic y'=a*y*(1-y/K), a=1, K=4, y0=6 (above K). Task: integrate to t=10 and put y(10) in `answer` (use delib.solve_ode).",
+    ))
+    return
+
+
+@app.cell(hide_code=True)
+def _(c2_ai, c2_code, c2_gen, c2_run, mo):
+    mo.vstack([
+        mo.md("**2.** Start **above** the capacity ($y_0=6$, $a=1$, $K=4$). Integrate "
+              "to $t=10$ and put the final value $y(10)$ in `answer`. Does it fall to "
+              "$K$ or overshoot?"),
+        mo.hstack([c2_ai, c2_gen], justify="start", gap=0.5, widths=[4, 1]),
+        c2_code,
+        c2_run,
+    ])
+    return
+
+
+@app.cell(hide_code=True)
+def _(c2_code, c2_run, delib):
+    def _c2_check(ns):
+        a = ns.get("answer")
+        if a is None or a is Ellipsis:
+            return False, "Assign $y(10)$ to `answer` — try `delib.solve_ode`."
+        try:
+            ok = abs(float(a) - 4.0) < 0.1
+        except Exception:
+            return False, "`answer` should be a single number."
+        if ok:
+            return True, "Right — it settles onto $K=4$ from above, no overshoot."
+        return False, f"You got {a}. Integrate $y'=a y(1-y/K)$ from $y_0=6$; it approaches $4$."
+
+    delib.run_exercise(c2_code.value, c2_run.value, check=_c2_check)
+    return
+
+
+# --- Challenge 3: where the growth is steepest ---------------------------------
+@app.cell
+def _(mo):
+    c3_get, c3_set = mo.state(
+        "a, K = 1.0, 4.0\n"
+        "# The growth rate y' = a*y*(1 - y/K) is largest at one value of y.\n"
+        "# Find that y (the steepest point) and store it in `answer`.\n"
+        "answer = ...\n"
+    )
+    return c3_get, c3_set
+
+
+@app.cell
+def _(c3_get, mo):
+    c3_ai = mo.ui.text(placeholder="✨ ask the tutor to write/edit the code…", full_width=True)
+    c3_gen = mo.ui.run_button(label="✨ Write / edit")
+    c3_code = mo.ui.code_editor(value=c3_get(), language="python")
+    c3_run = mo.ui.run_button(label="Run & check", full_width=True)
+    return c3_ai, c3_code, c3_gen, c3_run
+
+
+@app.cell
+async def _(api_field, c3_ai, c3_code, c3_gen, c3_set, delib, key_bridge, mo):
+    mo.stop(not c3_gen.value)
+    _key = api_field.value or (key_bridge.value or {}).get("key", "")
+    c3_set(await delib.ai_code(
+        c3_ai.value, c3_code.value, _key, coach=True,
+        context="Logistic y'=a*y*(1-y/K), a=1, K=4. Task: find the y that maximizes the growth rate y'; put it in `answer`.",
+    ))
+    return
+
+
+@app.cell(hide_code=True)
+def _(c3_ai, c3_code, c3_gen, c3_run, mo):
+    mo.vstack([
+        mo.md("**3.** The growth rate $y'=a\\,y(1-y/K)$ is **steepest** at one value of "
+              "$y$. Find it (for $a=1$, $K=4$) and put it in `answer`."),
+        mo.hstack([c3_ai, c3_gen], justify="start", gap=0.5, widths=[4, 1]),
+        c3_code,
+        c3_run,
+    ])
+    return
+
+
+@app.cell(hide_code=True)
+def _(c3_code, c3_run, delib):
+    def _c3_check(ns):
+        a = ns.get("answer")
+        if a is None or a is Ellipsis:
+            return False, "Assign the $y$ of steepest growth to `answer`."
+        try:
+            ok = abs(float(a) - 2.0) < 0.05
+        except Exception:
+            return False, "`answer` should be a single number."
+        if ok:
+            return True, "Yes — growth peaks at $y=K/2=2$, halfway to capacity."
+        return False, f"You got {a}. Maximize $a y(1-y/K)$ over $y$; the peak is at $y=K/2$."
+
+    delib.run_exercise(c3_code.value, c3_run.value, check=_c3_check)
     return
 
 
@@ -421,6 +545,65 @@ def _(api_field, chatbox, key_bridge, mo, picker):
             )
         )
     mo.sidebar(_items, width="420px")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ---
+        ## Playground — free exploration
+
+        No task, no grading. Type any Python, or ask the tutor (✨) to write it, then
+        **Run** to see the result. Build whatever you're curious about.
+        """
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    pg_get, pg_set = mo.state(
+        "view = delib.vector_field_plotly(lambda x, y: 1.0*y*(1 - y/4.0), (0, 10), (-1, 6))\n"
+    )
+    return pg_get, pg_set
+
+
+@app.cell
+def _(mo, pg_get):
+    pg_ai = mo.ui.text(placeholder="✨ ask the tutor to write/edit the code…", full_width=True)
+    pg_gen = mo.ui.run_button(label="✨ Write / edit")
+    pg_code = mo.ui.code_editor(value=pg_get(), language="python")
+    pg_run = mo.ui.run_button(label="Run", full_width=True)
+    return pg_ai, pg_code, pg_gen, pg_run
+
+
+@app.cell
+async def _(api_field, delib, key_bridge, mo, pg_ai, pg_code, pg_gen, pg_set):
+    mo.stop(not pg_gen.value)
+    _key = api_field.value or (key_bridge.value or {}).get("key", "")
+    pg_set(await delib.ai_code(
+        pg_ai.value, pg_code.value, _key,
+        context="Open sandbox for chapter 1 (first-order ODEs, logistic). Write complete, runnable code; assign a Plotly figure to `view`.",
+    ))
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo, pg_ai, pg_code, pg_gen, pg_run):
+    mo.vstack([
+        mo.hstack([pg_ai, pg_gen], justify="start", gap=0.5, widths=[4, 1]),
+        pg_code,
+        pg_run,
+    ])
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, pg_code, pg_run):
+    # No check -> run_exercise just renders the view (open sandbox).
+    delib.run_exercise(pg_code.value, pg_run.value)
     return
 
 

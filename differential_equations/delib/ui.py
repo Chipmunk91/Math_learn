@@ -98,7 +98,7 @@ def run_exercise(code: str, run_pressed: bool, *, check=None, ns_extra: Mapping 
     return mo.vstack(out) if out else mo.md("*(ran with no output)*")
 
 
-async def ai_code(instruction, current_code, key, *, context="",
+async def ai_code(instruction, current_code, key, *, context="", coach=False,
                   model="claude-haiku-4-5-20251001"):
     """Ask Claude to write or edit a code answer for a single exercise.
 
@@ -106,6 +106,9 @@ async def ai_code(instruction, current_code, key, *, context="",
     returns the FULL updated program as a string (the python block extracted from
     the reply). On any error or empty key, returns ``current_code`` unchanged so
     the editor is never wiped. BYO key, called client-side.
+
+    With ``coach=True`` (graded exercises), the AI scaffolds and hints but is told
+    NOT to fill in the final graded ``answer`` — the student completes that.
     """
     import json
     import re
@@ -125,6 +128,12 @@ async def ai_code(instruction, current_code, key, *, context="",
         "Assign what the task needs — a number to `answer`, and/or a Plotly figure to "
         "`view`. Do no file or network I/O. " + context
     )
+    if coach:
+        system += (
+            " This is a GRADED exercise: help the student set up and explore the "
+            "problem with code and short hint comments, but do NOT compute or fill in "
+            "the final graded value — leave the `answer = ...` line for them to finish."
+        )
     user = f"Current code:\n```python\n{current_code}\n```\n\nRequest: {instruction}"
     body = json.dumps({
         "model": model, "max_tokens": 800, "system": system,
