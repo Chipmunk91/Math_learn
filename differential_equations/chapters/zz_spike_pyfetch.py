@@ -155,5 +155,39 @@ def _(run_view):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ---
+        ## Step 2 — Write mode
+
+        The same `run_view` harness, now fed by a live editor instead of a
+        hardcoded string. Edit the code and press **Run**: it execs in the fixed
+        namespace and renders `view`. Try changing the equation, or break it on
+        purpose to see the error callout.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    code_input = mo.ui.code_editor(
+        value="view = delib.slope_field(lambda x, y: np.sin(x) + y, (-3, 3), (-3, 3))",
+        language="python",
+    )
+    run_btn = mo.ui.run_button(label="Run")
+    mo.vstack([code_input, run_btn])
+    return code_input, run_btn
+
+
+@app.cell(hide_code=True)
+def _(code_input, mo, run_btn, run_view):
+    mo.stop(not run_btn.value, mo.md("*Edit the code above and press **Run**.*"))
+    run_view(code_input.value)
+    return
+
+
 if __name__ == "__main__":
     app.run()
