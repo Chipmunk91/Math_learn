@@ -205,10 +205,12 @@ def _(mo):
         ---
         ## Your turn — the playground
 
-        Use the **Playground** panel on the left (tap the ☰ toggle on mobile) to
-        **Ask** in plain language or switch to **Write code** and type Python. It
-        runs live in this notebook and the result appears right below. Bring your
-        own Anthropic key — set it once in the 💬 tutor and it is shared here too.
+        Open the **Playground** panel on the left (tap the ☰ toggle on mobile) and
+        **ask in plain language** — *"show the solution when a is negative."* The
+        tutor writes the code straight into the editor; **review it and press Run**
+        to see the result below. Prefer to type your own? Just edit the code and
+        Run. Bring your own Anthropic key — set it once in the 💬 tutor and it is
+        shared here too.
         """
     )
     return
@@ -272,6 +274,16 @@ def _(delib, go, mo, np, plt):
 
 
 @app.cell
+def _(mo):
+    # One shared code string. Ask mode writes the tutor's code here; the editor
+    # below reads it. This is the single code path — no separate Ask/Write modes.
+    get_code, set_code = mo.state(
+        "view = delib.slope_field(lambda x, y: 1.0*y*(1 - y/4.0), (0, 10), (-1, 6))"
+    )
+    return get_code, set_code
+
+
+@app.cell
 def _(bridge, mo):
     import json as _json
 
@@ -287,14 +299,17 @@ def _(bridge, mo):
             _opts[f"Cell {_i + 1}: {_flat[:46]}"] = _src
 
     api_field = mo.ui.text(label="Anthropic key (optional here)", kind="password", full_width=True)
-    mode = mo.ui.radio(["Ask", "Write code"], value="Ask", inline=True)
     cell_pick = mo.ui.dropdown(options=_opts, value="(whole chapter)", label="Ask about", full_width=True)
-    code_input = mo.ui.code_editor(
-        value="view = delib.slope_field(lambda x, y: 1.0*y*(1 - y/4.0), (0, 10), (-1, 6))",
-        language="python",
-    )
+    return api_field, cell_pick
+
+
+@app.cell
+def _(get_code, mo):
+    # Rebuilt whenever the code state changes, so the tutor's generated code lands
+    # here ready to review and Run. Editing it locally is fine — Run uses .value.
+    code_input = mo.ui.code_editor(value=get_code(), language="python")
     run_btn = mo.ui.run_button(label="Run", full_width=True)
-    return api_field, cell_pick, code_input, mode, run_btn
+    return code_input, run_btn
 
 
 @app.cell
@@ -354,9 +369,23 @@ def _(api_field, bridge, cell_pick):
 
 
 @app.cell
-def _(chat_model, mo):
+def _(chat_model, mo, set_code):
+    import re
+
+    def _on_message(messages):
+        # When the tutor replies, lift its python block into the shared code state
+        # so it appears in the editor for review + Run. This is the only insertion
+        # path — no marimo "Add to Notebook".
+        _bot = [m for m in messages if m.role == "assistant" and m.content]
+        if not _bot:
+            return
+        _hit = re.search(r"```(?:python)?\s*\n(.*?)```", _bot[-1].content, re.S)
+        if _hit:
+            set_code(_hit.group(1).strip())
+
     chatbox = mo.ui.chat(
         chat_model,
+        on_message=_on_message,
         prompts=[
             "explain this chapter in a paragraph",
             "show the solution when the growth rate a is negative",
@@ -367,34 +396,28 @@ def _(chat_model, mo):
 
 
 @app.cell(hide_code=True)
-def _(api_field, bridge, cell_pick, chatbox, code_input, mo, mode, run_btn):
+def _(api_field, bridge, cell_pick, chatbox, code_input, mo, run_btn):
     _key_ok = bool(api_field.value or (bridge.value or {}).get("key"))
     _status = mo.md(
         "key loaded from the tutor ✓" if _key_ok else "⚠️ set your Anthropic key in the 💬 tutor (or below)"
     )
-    _panel = chatbox if mode.value == "Ask" else mo.vstack([code_input, run_btn])
-    _items = [mo.md("### Playground"), bridge, mode, cell_pick, _status]
+    _items = [mo.md("### Playground"), bridge, cell_pick, _status]
     if not _key_ok:
         _items.append(api_field)
-    _items.append(_panel)
+    _items += [
+        chatbox,
+        mo.md("**Code** — the tutor writes here; review or edit, then Run:"),
+        code_input,
+        run_btn,
+    ]
     mo.sidebar(_items)
     return
 
 
 @app.cell(hide_code=True)
-def _(chatbox, code_input, mo, mode, run_btn, run_view):
-    import re
-
-    if mode.value == "Write code":
-        mo.stop(not run_btn.value, mo.md("*Write code above and press **Run**.*"))
-        _out = run_view(code_input.value)
-    else:
-        _bot = [m for m in (chatbox.value or []) if m.role == "assistant" and m.content]
-        mo.stop(not _bot, mo.md("*Ask above to generate and run a plot.*"))
-        _hit = re.search(r"```(?:python)?\s*\n(.*?)```", _bot[-1].content, re.S)
-        mo.stop(_hit is None, mo.callout("The reply had no python block to run.", kind="warn"))
-        _out = run_view(_hit.group(1))
-    _out
+def _(code_input, mo, run_btn, run_view):
+    mo.stop(not run_btn.value, mo.md("*Ask in the panel, then press **Run** to render the code.*"))
+    run_view(code_input.value)
     return
 
 
