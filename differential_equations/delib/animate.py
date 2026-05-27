@@ -181,8 +181,8 @@ def flow_field(
     xlim: tuple[float, float],
     ylim: tuple[float, float],
     *,
-    n_particles: int = 240,
-    n_frames: int = 90,
+    n_particles: int = 160,
+    n_frames: int = 70,
     density: int = 16,
     particle_color: str = "#d1495b",
     field_color: str = "rgba(91,125,177,0.55)",
@@ -196,6 +196,9 @@ def flow_field(
     The field is drawn as arrows for context; particles ride along them. Change
     the parameters of ``f`` to reshape the field. ``extra_lines`` (e.g.
     equilibria) sit underneath. Returns a light-theme go.Figure with play/slider.
+
+    The static field is drawn once in the base figure and each frame updates only
+    the particle trace, so the payload stays small (no per-frame field copies).
     """
     import numpy as _np
     import plotly.graph_objects as go
@@ -207,7 +210,7 @@ def flow_field(
     px = rng.uniform(x0, x1, n_particles)
     py = rng.uniform(y0, y1, n_particles)
 
-    # static field of arrows for context — the particles ride along these
+    # static field of arrows — drawn ONCE in the base, never per frame
     GX, GY = _np.meshgrid(_np.linspace(x0, x1, density), _np.linspace(y0, y1, density))
     U = _np.ones_like(GX)
     V = f(GX, GY)
@@ -221,32 +224,62 @@ def flow_field(
                        line=dict(color=field_color, width=1.2),
                        hoverinfo="skip", showlegend=False)
     base = [field] + (list(extra_lines) if extra_lines else [])
+    p_idx = len(base)  # index of the particle trace we animate
 
-    frames_data = []
-    for k in range(n_frames):
-        dots = go.Scatter(x=px.copy(), y=py.copy(), mode="markers",
+    def dots(xs, ys):
+        return go.Scatter(x=xs.copy(), y=ys.copy(), mode="markers",
                           marker=dict(color=particle_color, size=6, opacity=0.85),
                           hoverinfo="skip", showlegend=False)
-        frames_data.append({"name": str(k), "data": base + [dots]})
-        slope = f(px, py)
-        py = py + slope * dx
+
+    positions = [(px.copy(), py.copy())]
+    for _ in range(n_frames - 1):
+        py = py + f(px, py) * dx
         px = px + dx
         out = (px > x1) | (py < y0 - 1.5) | (py > y1 + 1.5)
         m = int(out.sum())
         if m:
             px[out] = x0
             py[out] = rng.uniform(y0, y1, m)
+        positions.append((px.copy(), py.copy()))
 
-    layout = dict(
+    frames = [
+        go.Frame(data=[dots(xs, ys)], traces=[p_idx], name=str(k))
+        for k, (xs, ys) in enumerate(positions)
+    ]
+    duration = int(1000 / 24)
+    play = {"frame": {"duration": duration, "redraw": False}, "fromcurrent": True,
+            "transition": {"duration": 0}}
+    fig = go.Figure(data=base + [dots(*positions[0])], frames=frames)
+    fig.update_layout(
         template="plotly_white",
         title=(dict(text=title, x=0.02) if title else None),
         xaxis=dict(title="x", range=[x0, x1], zeroline=False),
         yaxis=dict(title="y", range=[y0, y1], zeroline=False),
         paper_bgcolor="white", plot_bgcolor="white",
-        height=460, showlegend=False,
-        margin=dict(l=55, r=20, t=70, b=45),
+        height=460, showlegend=False, margin=dict(l=55, r=20, t=70, b=45),
+        updatemenus=[{
+            "type": "buttons", "direction": "left", "showactive": False,
+            "x": 0.0, "y": 1.12, "xanchor": "left", "yanchor": "top",
+            "pad": {"r": 8, "t": 4, "b": 4, "l": 8},
+            "bgcolor": "rgba(127,127,127,0.12)", "bordercolor": "rgba(127,127,127,0.35)",
+            "borderwidth": 1, "font": {"size": 13},
+            "buttons": [
+                {"label": "▶  Play", "method": "animate", "args": [None, play]},
+                {"label": "❚❚  Pause", "method": "animate",
+                 "args": [[None], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate"}]},
+            ],
+        }],
+        sliders=[{
+            "x": 0.0, "len": 1.0, "pad": {"t": 36, "b": 8},
+            "currentvalue": {"prefix": "frame ", "font": {"size": 13}},
+            "steps": [
+                {"label": str(k), "method": "animate",
+                 "args": [[str(k)], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate"}]}
+                for k in range(n_frames)
+            ],
+        }],
     )
-    return animate_plotly(frames_data, fps=24, transition_ms=0, layout=layout)
+    return fig
 
 
 def solution_surface(
