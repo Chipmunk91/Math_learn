@@ -286,7 +286,26 @@ def _():
         picked_text = traitlets.Unicode("").tag(sync=True)
         picked_title = traitlets.Unicode("").tag(sync=True)
 
-    return CellPicker, KeyBridge
+    class CopyButton(anywidget.AnyWidget):
+        _esm = """
+        function render({ model, el }) {
+          var b=document.createElement('button');
+          b.style.cssText='padding:7px 12px;border:1px solid #c7d2e0;border-radius:8px;background:#f3f7fc;cursor:pointer;font:13px sans-serif;color:#2c3e50';
+          function reset(){ b.textContent='\\u29C9 Copy code'; }
+          reset();
+          b.addEventListener('click', function(){
+            var t=model.get('text')||'';
+            function done(){ b.textContent='\\u2713 Copied'; setTimeout(reset,1200); }
+            if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done, done); }
+            else { var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); done(); }
+          });
+          el.appendChild(b);
+        }
+        export default { render };
+        """
+        text = traitlets.Unicode("").tag(sync=True)
+
+    return CellPicker, CopyButton, KeyBridge
 
 
 @app.cell
@@ -299,6 +318,12 @@ def _(KeyBridge, mo):
 def _(CellPicker, mo):
     picker = mo.ui.anywidget(CellPicker())
     return (picker,)
+
+
+@app.cell
+def _(CopyButton, mo):
+    copy_btn = mo.ui.anywidget(CopyButton())
+    return (copy_btn,)
 
 
 @app.cell
@@ -350,6 +375,13 @@ def _(get_code, mo):
 
 
 @app.cell
+def _(code_input, copy_btn):
+    # Keep the Copy button's payload in sync with the live editor contents.
+    copy_btn.widget.text = code_input.value
+    return
+
+
+@app.cell
 def _(api_field, key_bridge):
     # Persist a key typed here to the shared slot so it auto-loads next visit.
     if api_field.value:
@@ -370,14 +402,22 @@ def _(api_field, key_bridge, picker, set_code):
         "growth rate a and carrying capacity K (equilibria at y=0 and y=K)."
     )
     _SYS = (
-        "You are a tutor inside a marimo notebook. " + _CONTEXT + " Answer in TWO "
-        "parts. Part 1: a brief plain-language explanation, 2-4 sentences, with NO "
-        "code and NO fenced blocks. Part 2: exactly ONE ```python fenced block with "
-        "the full self-contained solution and nothing after it. The code may use only "
-        "these names: mo, np, plt, go, delib (helpers: slope_field(f, xlim, ylim) -> "
-        "matplotlib Axes, phase_portrait, overlay_solution, solve_ode, solve_system). "
-        "Do NO file or network I/O. END by assigning the single renderable to `view` "
-        "(a matplotlib or plotly figure)."
+        "You are a friendly math tutor inside a marimo notebook. " + _CONTEXT + "\n\n"
+        "The student NEVER sees code in the chat — your python goes silently into an "
+        "editor they can Run. So write your reply as a self-contained explanation for "
+        "a human:\n"
+        "- Explain the idea in plain language; use LaTeX (e.g. $y'=ay(1-y/K)$) for math.\n"
+        "- Describe in words what the plot you are preparing will show.\n"
+        "- Do NOT mention code, do NOT say 'here is the code' or 'read the code', and "
+        "do NOT use section headings like 'Part 1' / 'Part 2' / 'Code'.\n"
+        "- End by inviting a next step, e.g. 'Want me to show what happens when a is "
+        "negative?'.\n\n"
+        "After the explanation, append exactly ONE ```python fenced block (this is "
+        "hidden from the student) containing the full self-contained solution and "
+        "nothing after it. The code may use only these names: mo, np, plt, go, delib "
+        "(helpers: slope_field(f, xlim, ylim) -> matplotlib Axes, phase_portrait, "
+        "overlay_solution, solve_ode, solve_system). Do NO file or network I/O. END by "
+        "assigning the single renderable to `view` (a matplotlib or plotly figure)."
     )
 
     async def chat_model(messages, config):
@@ -405,13 +445,14 @@ def _(api_field, key_bridge, picker, set_code):
         if not (isinstance(data, dict) and data.get("content")):
             return "**API error**\n\n```json\n" + _json.dumps(data, indent=2)[:800] + "\n```"
         full = "".join(b.get("text", "") for b in data["content"])
-        # Lift code into the editor; strip ALL fenced blocks from the chat reply so
-        # the bubble shows only readable prose (and no Add-to-Notebook button).
+        # Lift code into the editor; the chat shows prose only. Strip closed fences,
+        # then cut anything from a dangling fence so a ``` can never reach the bubble.
         _blocks = _re.findall(r"```(?:python)?\s*\n(.*?)```", full, _re.S)
         if _blocks:
             set_code(_blocks[0].strip())
-        explanation = _re.sub(r"```.*?```", "", full, flags=_re.S).strip()
-        return explanation or "Code is in the editor below — review it and press **Run**."
+        explanation = _re.sub(r"```.*?```", "", full, flags=_re.S)
+        explanation = explanation.split("```")[0].strip()
+        return explanation or "Done — your plot is ready below. Press **Run** to see it."
 
     return (chat_model,)
 
@@ -430,7 +471,7 @@ def _(chat_model, mo):
 
 
 @app.cell(hide_code=True)
-def _(api_field, chatbox, code_input, key_bridge, mo, picker, run_btn):
+def _(api_field, chatbox, code_input, copy_btn, key_bridge, mo, picker, run_btn):
     _key_ok = bool(api_field.value or (key_bridge.value or {}).get("key"))
     _items = [mo.md("### Playground"), key_bridge, api_field]
     if _key_ok:
@@ -440,7 +481,7 @@ def _(api_field, chatbox, code_input, key_bridge, mo, picker, run_btn):
             chatbox,
             mo.md("**Code** — the tutor writes here; review or edit, then Run:"),
             code_input,
-            run_btn,
+            mo.hstack([run_btn, copy_btn], justify="start", gap=0.5),
         ]
     else:
         _items.append(

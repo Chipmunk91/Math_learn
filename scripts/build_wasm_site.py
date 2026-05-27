@@ -89,7 +89,7 @@ MARIMO_HIDE_JS = (
     'var ns=document.querySelectorAll(\'button,[role="menuitem"],a[role="menuitem"]\');'
     "for(var i=0;i<ns.length;i++){var n=ns[i];if(n.dataset.mlHidden)continue;"
     'var label=norm(n.getAttribute("aria-label"))||norm(n.textContent);'
-    'if(LABELS.indexOf(label)!==-1){n.style.display="none";n.dataset.mlHidden="1";}}}'
+    'if(LABELS.indexOf(label)!==-1||label.indexOf("add to notebook")!==-1){n.style.display="none";n.dataset.mlHidden="1";}}}'
     "var pend=false;function schedule(){if(pend)return;pend=true;"
     "requestAnimationFrame(function(){pend=false;sweep();});}"
     "function start(){new MutationObserver(schedule).observe(document.body,"
