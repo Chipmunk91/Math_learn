@@ -132,13 +132,13 @@ def inline_delib(source: str) -> str:
 
 
 def export(notebook: Path, out_dir: Path) -> None:
-    """Export a chapter to a single WASM HTML page (edit mode, code hidden)."""
+    """Export a chapter to a single WASM HTML page (run mode: auto-runs, code hidden)."""
     transformed = PEP723_HEADER + inline_delib(notebook.read_text(encoding="utf-8"))
     with tempfile.TemporaryDirectory() as tmp:
         staged = Path(tmp) / notebook.name
         staged.write_text(transformed, encoding="utf-8")
         subprocess.run(
-            [sys.executable, "-m", "marimo", "export", "html-wasm", str(staged), "-o", str(out_dir), "--mode", "edit"],
+            [sys.executable, "-m", "marimo", "export", "html-wasm", str(staged), "-o", str(out_dir), "--mode", "run"],
             check=True,
         )
 

@@ -202,6 +202,205 @@ def _(mo):
 def _(mo):
     mo.md(
         r"""
+        ---
+        ## Your turn — the playground
+
+        **Ask** in plain language or switch to **Write code** and type Python. It
+        runs live in this notebook and the result appears right below. Bring your
+        own Anthropic key — set it once in the 💬 tutor and it is shared here too.
+        """
+    )
+    return
+
+
+@app.cell
+def _():
+    # Bridge: runs on the main thread (the kernel is sandboxed in a Web Worker and
+    # cannot see sessionStorage or the page config). Reads the shared key slot and
+    # the chapter's cell sources, and writes the key back when set here.
+    import anywidget
+    import traitlets
+
+    class Bridge(anywidget.AnyWidget):
+        _esm = """
+        function render({ model, el }) {
+          function readKey(){ try { return sessionStorage.getItem('mathlearn.anthropicKey')||''; } catch(e){ return ''; } }
+          function readCells(){ try { var c=(window.TUTOR_CONFIG||{}).cells||[]; return c.map(function(x){return (x.text||'').slice(0,1500);}); } catch(e){ return []; } }
+          function push(){ model.set('key', readKey()); model.set('cells', JSON.stringify(readCells())); model.set('ready', true); model.save_changes(); }
+          push();
+          model.on('change:save_value', function(){ try{ sessionStorage.setItem('mathlearn.anthropicKey', model.get('save_value')); model.set('key', model.get('save_value')); model.save_changes(); }catch(e){} });
+          el.style.display='none';
+        }
+        export default { render };
+        """
+        key = traitlets.Unicode("").tag(sync=True)
+        cells = traitlets.Unicode("[]").tag(sync=True)
+        ready = traitlets.Bool(False).tag(sync=True)
+        save_value = traitlets.Unicode("").tag(sync=True)
+
+    return (Bridge,)
+
+
+@app.cell
+def _(Bridge, mo):
+    bridge = mo.ui.anywidget(Bridge())
+    return (bridge,)
+
+
+@app.cell
+def _(delib, go, mo, np, plt):
+    _helpers = {k: getattr(delib, k) for k in delib.__all__}
+
+    def run_view(code):
+        import traceback
+        import matplotlib
+
+        ns = {"mo": mo, "np": np, "plt": plt, "go": go, "delib": delib, **_helpers}
+        try:
+            exec(code, ns)
+        except Exception:
+            return mo.callout(mo.md(f"```\n{traceback.format_exc()}\n```"), kind="danger")
+        view = ns.get("view")
+        if view is None:
+            return mo.callout("Code ran but never assigned `view`.", kind="warn")
+        if isinstance(view, matplotlib.axes.Axes):
+            view = view.figure
+        return view
+
+    return (run_view,)
+
+
+@app.cell
+def _(bridge, mo):
+    import json as _json
+
+    _cells = []
+    try:
+        _cells = _json.loads((bridge.value or {}).get("cells", "[]"))
+    except Exception:
+        _cells = []
+    _opts = {"(whole chapter)": ""}
+    for _i, _src in enumerate(_cells):
+        _flat = " ".join((_src or "").split())
+        if _flat:
+            _opts[f"Cell {_i + 1}: {_flat[:46]}"] = _src
+
+    api_field = mo.ui.text(label="Anthropic key (optional here)", kind="password", full_width=True)
+    mode = mo.ui.radio(["Ask", "Write code"], value="Ask", inline=True)
+    cell_pick = mo.ui.dropdown(options=_opts, value="(whole chapter)", label="Ask about", full_width=True)
+    code_input = mo.ui.code_editor(
+        value="view = delib.slope_field(lambda x, y: 1.0*y*(1 - y/4.0), (0, 10), (-1, 6))",
+        language="python",
+    )
+    run_btn = mo.ui.run_button(label="Run", full_width=True)
+    return api_field, cell_pick, code_input, mode, run_btn
+
+
+@app.cell
+def _(api_field, bridge):
+    # Persist a key typed here back to the shared slot (so the tutor sees it too).
+    if api_field.value:
+        bridge.widget.save_value = api_field.value
+    return
+
+
+@app.cell
+def _(api_field, bridge, cell_pick):
+    import json as _json
+
+    _MODEL = "claude-haiku-4-5-20251001"
+    _URL = "https://api.anthropic.com/v1/messages"
+    _CONTEXT = (
+        "This is Chapter 1 of a differential-equations course: first-order ODEs and "
+        "slope fields, worked through the logistic equation y' = a*y*(1 - y/K) with "
+        "growth rate a and carrying capacity K (equilibria at y=0 and y=K)."
+    )
+    _SYS = (
+        "You help a student in a marimo notebook. " + _CONTEXT + " Reply with a SHORT "
+        "(1-3 sentence) explanation, then exactly ONE ```python code block. The code "
+        "must be self-contained and use only these names: mo, np, plt, go, delib (with "
+        "helpers slope_field(f, xlim, ylim) -> matplotlib Axes, phase_portrait, "
+        "overlay_solution, solve_ode, solve_system). Do NO file or network I/O. END by "
+        "assigning the single renderable to a variable named `view`."
+    )
+
+    async def chat_model(messages, config):
+        key = api_field.value or (bridge.value or {}).get("key", "")
+        system = _SYS
+        if cell_pick.value:
+            system += '\n\nThe student is asking about this cell:\n"""\n' + cell_pick.value + '\n"""'
+        msgs = [
+            {"role": m.role, "content": m.content}
+            for m in messages
+            if m.role in ("user", "assistant") and m.content
+        ]
+        body = _json.dumps({"model": _MODEL, "max_tokens": 700, "system": system, "messages": msgs})
+        headers = {
+            "content-type": "application/json",
+            "x-api-key": key,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true",
+        }
+        from pyodide.http import pyfetch
+
+        resp = await pyfetch(_URL, method="POST", headers=headers, body=body)
+        data = await resp.json()
+        if isinstance(data, dict) and data.get("content"):
+            return "".join(b.get("text", "") for b in data["content"])
+        return "**API error**\n\n```json\n" + _json.dumps(data, indent=2)[:800] + "\n```"
+
+    return (chat_model,)
+
+
+@app.cell
+def _(chat_model, mo):
+    chatbox = mo.ui.chat(
+        chat_model,
+        prompts=[
+            "explain this chapter in a paragraph",
+            "show the solution when the growth rate a is negative",
+            "plot the phase line of the logistic equation",
+        ],
+    )
+    return (chatbox,)
+
+
+@app.cell(hide_code=True)
+def _(api_field, bridge, cell_pick, chatbox, code_input, mo, mode, run_btn):
+    _key_ok = bool(api_field.value or (bridge.value or {}).get("key"))
+    _status = mo.md(
+        "key loaded from the tutor ✓" if _key_ok else "⚠️ set your Anthropic key in the 💬 tutor (or below)"
+    )
+    _panel = chatbox if mode.value == "Ask" else mo.vstack([code_input, run_btn])
+    _items = [bridge, mo.hstack([mode, cell_pick], justify="start"), _status]
+    if not _key_ok:
+        _items.append(api_field)
+    _items.append(_panel)
+    mo.vstack(_items)
+    return
+
+
+@app.cell(hide_code=True)
+def _(chatbox, code_input, mo, mode, run_btn, run_view):
+    import re
+
+    if mode.value == "Write code":
+        mo.stop(not run_btn.value, mo.md("*Write code above and press **Run**.*"))
+        _out = run_view(code_input.value)
+    else:
+        _bot = [m for m in (chatbox.value or []) if m.role == "assistant" and m.content]
+        mo.stop(not _bot, mo.md("*Ask above to generate and run a plot.*"))
+        _hit = re.search(r"```(?:python)?\s*\n(.*?)```", _bot[-1].content, re.S)
+        mo.stop(_hit is None, mo.callout("The reply had no python block to run.", kind="warn"))
+        _out = run_view(_hit.group(1))
+    _out
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
         ## Recap & what's next
 
         A slope field turns an equation into a flow you can *see*; a solution curve is
