@@ -99,10 +99,11 @@ MARIMO_HIDE_JS = (
     "})();</script>"
 )
 
-# marimo renders math in its own mo.md cells, but the mo.ui.chat bubble shows the
-# model's reply as plain markdown without LaTeX. Re-add KaTeX auto-render to catch
-# the chat's $...$ . It only touches unrendered text (marimo's rendered math has no
-# literal $ in its text nodes), and code/pre are ignored.
+# marimo renders the chat inside Shadow DOM (style-encapsulated), so a page-level
+# KaTeX auto-render never reaches it. This walks every shadow root, injects KaTeX's
+# stylesheet into roots that contain math (shadow DOM doesn't inherit page CSS), and
+# observes each root so streaming chat messages get rendered too. Idempotent; code/
+# pre ignored; marimo's own math has no literal $ so it's untouched.
 KATEX_CSS = (
     '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />'
 )
@@ -110,12 +111,14 @@ MATH_RENDER_JS = (
     '<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>'
     '<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>'
     "<script>(function(){"
-    "function run(){if(!window.renderMathInElement)return;try{renderMathInElement(document.body,{"
-    "delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],"
-    "throwOnError:false,ignoredTags:['script','noscript','style','textarea','pre','code']});}catch(e){}}"
-    "var p=false;function s(){if(p)return;p=true;requestAnimationFrame(function(){p=false;run();});}"
-    "function start(){new MutationObserver(s).observe(document.body,{childList:true,subtree:true});"
-    "run();setTimeout(run,800);setTimeout(run,2000);}"
+    "var CSS='https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';"
+    "var seen=new WeakSet();"
+    "var OPTS={delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false,ignoredTags:['script','noscript','style','textarea','pre','code']};"
+    "function ensureCss(root){try{if(root.querySelector&&!root.querySelector('link[data-mlk]')){var l=document.createElement('link');l.rel='stylesheet';l.href=CSS;l.setAttribute('data-mlk','1');root.appendChild(l);}}catch(e){}}"
+    "function proc(root){if(!window.renderMathInElement)return;try{if((root.textContent||'').indexOf('$')>-1){ensureCss(root);var k=root.children||[];for(var i=0;i<k.length;i++){try{window.renderMathInElement(k[i],OPTS);}catch(e){}}}}catch(e){}}"
+    "function walk(root){proc(root);var els;try{els=root.querySelectorAll('*');}catch(e){return;}for(var i=0;i<els.length;i++){var sr=els[i].shadowRoot;if(sr){if(!seen.has(sr)){seen.add(sr);try{new MutationObserver(sch).observe(sr,{childList:true,subtree:true,characterData:true});}catch(e){}}walk(sr);}}}"
+    "var p=false;function sch(){if(p)return;p=true;requestAnimationFrame(function(){p=false;walk(document.body);});}"
+    "function start(){new MutationObserver(sch).observe(document.body,{childList:true,subtree:true});sch();setTimeout(sch,800);setTimeout(sch,2000);setTimeout(sch,4000);}"
     'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",start);}else{start();}'
     "})();</script>"
 )
