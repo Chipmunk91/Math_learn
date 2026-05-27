@@ -181,6 +181,58 @@ def _(mo):
 def _(mo):
     mo.md(
         r"""
+        ## Check yourself — in code
+
+        Write a short Python answer and press **Run & check**. Your code runs right
+        here and is graded automatically.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    ex_code = mo.ui.code_editor(
+        value=(
+            "# Logistic: y' = a*y*(1 - y/K) with a = 1, K = 4.\n"
+            "# Find the NONZERO equilibrium (where y' = 0 and y != 0)\n"
+            "# and store it in a variable named `answer`.\n"
+            "answer = ...\n"
+        ),
+        language="python",
+    )
+    ex_run = mo.ui.run_button(label="Run & check", full_width=True)
+    mo.vstack([
+        mo.md("**Task:** the population value where the logistic flow stops "
+              "changing and that isn't $0$."),
+        ex_code,
+        ex_run,
+    ])
+    return ex_code, ex_run
+
+
+@app.cell(hide_code=True)
+def _(delib, ex_code, ex_run):
+    def _check(ns):
+        a = ns.get("answer")
+        if a is None or a is Ellipsis:
+            return False, "Define a variable `answer` holding the equilibrium value."
+        try:
+            ok = abs(float(a) - 4.0) < 1e-6
+        except Exception:
+            return False, "`answer` should be a single number."
+        if ok:
+            return True, "Correct — the nonzero equilibrium is $y = K = 4$."
+        return False, f"You got {a}. Hint: solve $a\\,y(1 - y/K) = 0$ with $y \\neq 0$."
+
+    delib.run_exercise(ex_code.value, ex_run.value, check=_check)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
         ---
         ## Your turn — the playground
 
