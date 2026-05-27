@@ -205,6 +205,7 @@ def _(mo):
         ---
         ## Your turn — the playground
 
+        Use the **Playground** panel on the left (tap the ☰ toggle on mobile) to
         **Ask** in plain language or switch to **Write code** and type Python. It
         runs live in this notebook and the result appears right below. Bring your
         own Anthropic key — set it once in the 💬 tutor and it is shared here too.
@@ -372,11 +373,11 @@ def _(api_field, bridge, cell_pick, chatbox, code_input, mo, mode, run_btn):
         "key loaded from the tutor ✓" if _key_ok else "⚠️ set your Anthropic key in the 💬 tutor (or below)"
     )
     _panel = chatbox if mode.value == "Ask" else mo.vstack([code_input, run_btn])
-    _items = [bridge, mo.hstack([mode, cell_pick], justify="start"), _status]
+    _items = [mo.md("### Playground"), bridge, mode, cell_pick, _status]
     if not _key_ok:
         _items.append(api_field)
     _items.append(_panel)
-    mo.vstack(_items)
+    mo.sidebar(_items)
     return
 
 
