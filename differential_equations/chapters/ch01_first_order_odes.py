@@ -137,25 +137,44 @@ def _(K, a, delib, go, mo, np, y0):
     hi = float(max(finite.max(), K)) if finite.size else K + 1.0
     y_lo, y_hi = lo - 0.5, hi + 0.5
 
-    def _equilibria():
+    # A dark, glowing "3b1b-style" look: faint full curve for context, equilibria
+    # as quiet guide lines, then a bright trail with a soft glow and a glowing head
+    # dot that sweeps along as t advances.
+    GOLD = "#ffd166"
+
+    def _context():
         return [
             go.Scatter(x=[0, 10], y=[K, K], mode="lines",
-                       line=dict(color="#2a9d8f", dash="dash"), name="K"),
+                       line=dict(color="#2dd4bf", dash="dash", width=1.5),
+                       name="K", hoverinfo="skip"),
             go.Scatter(x=[0, 10], y=[0, 0], mode="lines",
-                       line=dict(color="#bbb", dash="dot"), name="y = 0"),
+                       line=dict(color="rgba(255,255,255,0.35)", dash="dot", width=1),
+                       name="y = 0", hoverinfo="skip"),
             go.Scatter(x=t_anim, y=ys, mode="lines",
-                       line=dict(color="#f0c9cf"), name="full solution"),
+                       line=dict(color="rgba(255,255,255,0.12)", width=2),
+                       name="full solution", hoverinfo="skip"),
         ]
 
     frames_data = [
         {
             "name": f"{t_anim[i]:.1f}",
-            "data": _equilibria()
+            "data": _context()
             + [
+                # soft glow behind the trail
                 go.Scatter(x=t_anim[: i + 1], y=ys[: i + 1], mode="lines",
-                           line=dict(color="#d1495b", width=3), name="y(t)"),
+                           line=dict(color=GOLD, width=12),
+                           opacity=0.18, hoverinfo="skip", name="glow"),
+                # bright trail
+                go.Scatter(x=t_anim[: i + 1], y=ys[: i + 1], mode="lines",
+                           line=dict(color=GOLD, width=3.5), hoverinfo="skip", name="y(t)"),
+                # glowing head: halo + bright core
                 go.Scatter(x=[t_anim[i]], y=[ys[i]], mode="markers",
-                           marker=dict(color="#d1495b", size=10), name="now"),
+                           marker=dict(color=GOLD, size=24, opacity=0.22),
+                           hoverinfo="skip", name="halo"),
+                go.Scatter(x=[t_anim[i]], y=[ys[i]], mode="markers",
+                           marker=dict(color="#fff8e1", size=9,
+                                       line=dict(color=GOLD, width=2)),
+                           hoverinfo="skip", name="now"),
             ],
         }
         for i in range(n)
@@ -163,12 +182,19 @@ def _(K, a, delib, go, mo, np, y0):
 
     anim_fig = delib.animate_plotly(
         frames_data,
+        template="plotly_dark",
+        transition_ms=40,
         layout=dict(
-            title="The solution being traced as t advances",
-            xaxis=dict(title="t", range=[0, 10]),
-            yaxis=dict(title="y", range=[y_lo, y_hi]),
+            title=dict(text="The solution tracing the flow as t advances", x=0.02),
+            xaxis=dict(title="t", range=[0, 10], showgrid=True,
+                       gridcolor="rgba(255,255,255,0.06)", zeroline=False),
+            yaxis=dict(title="y", range=[y_lo, y_hi], showgrid=True,
+                       gridcolor="rgba(255,255,255,0.06)", zeroline=False),
+            paper_bgcolor="#0d1117",
+            plot_bgcolor="#0d1117",
             height=480,
             showlegend=False,
+            margin=dict(l=60, r=20, t=70, b=40),
         ),
     )
     mo.md("## Time animation\n\nPress **▶ Play** to watch the solution follow the flow from $y_0$.")

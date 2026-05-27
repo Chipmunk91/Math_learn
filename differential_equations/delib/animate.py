@@ -52,12 +52,19 @@ def animate_plotly(
     *,
     layout: dict | None = None,
     fps: int = 30,
+    transition_ms: int | None = None,
+    easing: str = "cubic-in-out",
+    template: str | None = None,
 ):
     """Build a Plotly figure with play/pause buttons and a frame slider.
 
     ``frames_data`` is a sequence of dicts, each holding the traces for one
     frame, e.g. ``{"data": [go.Scatter(...)], "name": "0"}``. The first
     frame's data seeds the initial view.
+
+    Set ``transition_ms`` (defaults to one frame) to tween between frames for
+    fluid motion, ``easing`` for the tween curve, and ``template`` (e.g.
+    ``"plotly_dark"``) for a themed look.
     """
     import plotly.graph_objects as go
 
@@ -69,28 +76,40 @@ def animate_plotly(
         for i, fd in enumerate(frames_data)
     ]
     duration = int(1000 / fps)
+    tween = duration if transition_ms is None else int(transition_ms)
+    transition = {"duration": tween, "easing": easing}
 
     fig = go.Figure(data=frames_data[0]["data"], frames=frames)
     fig.update_layout(
         updatemenus=[
             {
                 "type": "buttons",
+                "direction": "left",
                 "showactive": False,
+                "x": 0.0,
+                "y": 1.12,
+                "xanchor": "left",
+                "yanchor": "top",
+                "pad": {"r": 8, "t": 4, "b": 4, "l": 8},
+                "bgcolor": "rgba(127,127,127,0.12)",
+                "bordercolor": "rgba(127,127,127,0.35)",
+                "borderwidth": 1,
+                "font": {"size": 13},
                 "buttons": [
                     {
-                        "label": "▶ Play",
+                        "label": "▶  Play",
                         "method": "animate",
                         "args": [
                             None,
                             {
                                 "frame": {"duration": duration, "redraw": True},
                                 "fromcurrent": True,
-                                "transition": {"duration": 0},
+                                "transition": transition,
                             },
                         ],
                     },
                     {
-                        "label": "❚❚ Pause",
+                        "label": "❚❚  Pause",
                         "method": "animate",
                         "args": [
                             [None],
@@ -105,6 +124,11 @@ def animate_plotly(
         ],
         sliders=[
             {
+                "x": 0.0,
+                "len": 1.0,
+                "pad": {"t": 36, "b": 8},
+                "currentvalue": {"prefix": "t = ", "font": {"size": 13}},
+                "transition": transition,
                 "steps": [
                     {
                         "label": f.name,
@@ -113,6 +137,7 @@ def animate_plotly(
                             [f.name],
                             {
                                 "frame": {"duration": 0, "redraw": True},
+                                "transition": transition,
                                 "mode": "immediate",
                             },
                         ],
@@ -122,6 +147,8 @@ def animate_plotly(
             }
         ],
     )
+    if template:
+        fig.update_layout(template=template)
     if layout:
         fig.update_layout(**layout)
     return fig
