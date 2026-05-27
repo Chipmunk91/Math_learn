@@ -46,6 +46,7 @@ PEP723_HEADER = """\
 # requires-python = ">=3.12"
 # dependencies = [
 #     "marimo",
+#     "anywidget",
 #     "numpy",
 #     "scipy",
 #     "matplotlib",
