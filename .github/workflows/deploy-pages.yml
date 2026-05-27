@@ -19,9 +19,10 @@ permissions:
   pages: write
   id-token: write
 
-# One live site; let a newer run supersede an in-flight one.
+# Supersede an in-flight run for the same ref. Scoped per-ref so a feature
+# branch's build can't cancel main's live deployment.
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -48,8 +49,12 @@ jobs:
         with:
           path: site
 
+  # Only main publishes to the live site. On other branches the build above
+  # still runs as a CI check, but the deploy is skipped (not failed) — the
+  # github-pages environment also only permits the default branch to deploy.
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

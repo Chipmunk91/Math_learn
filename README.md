@@ -41,13 +41,17 @@ grounding comes from two sidecar files next to the notebook:
 ## Live preview (mobile-friendly)
 
 Every push builds each chapter into a self-contained **WASM** page (runs in the
-browser via Pyodide — interactive sliders and animations, no server) and
-publishes them to GitHub Pages, so you can open a chapter from any device. Each
-chapter page gets a top bar to step to the previous / next chapter or jump back
-to the index, and the index lists every chapter.
+browser via Pyodide — interactive sliders and animations, no server). Pushes to
+`main` also **publish** the site to GitHub Pages, so you can open a chapter from
+any device. Each chapter page gets a top bar to step to the previous / next
+chapter or jump back to the index, and the index lists every chapter.
+
+Feature-branch pushes only run the build (as a CI check) — they do **not**
+deploy, so the live site always reflects `main`. To see a branch's changes,
+use the local preview below or merge to `main`.
 
 One-time setup: in the repo, go to **Settings → Pages → Build and deployment →
-Source** and select **GitHub Actions**. After the next push, the
+Source** and select **GitHub Actions**. After the next push to `main`, the
 `Deploy WASM playground to Pages` workflow publishes the site; its run page
 shows the URL (typically `https://<owner>.github.io/<repo>/`).
 
