@@ -18,6 +18,7 @@ from matplotlib.axes import Axes
 __all__ = [
     "slope_field_data",
     "slope_field",
+    "slope_field_plotly",
     "vector_field",
     "phase_portrait",
     "overlay_solution",
@@ -156,3 +157,47 @@ def overlay_solution(
     if label:
         ax.legend(loc="best")
     return ax
+
+
+def slope_field_plotly(
+    f: ScalarRHS,
+    xlim: tuple[float, float],
+    ylim: tuple[float, float],
+    *,
+    density: int = 18,
+    color: str = "#5b7db1",
+    title: str | None = None,
+):
+    """Light-theme Plotly slope field for ``y' = f(x, y)``; returns a go.Figure.
+
+    The Plotly counterpart of :func:`slope_field`, so a chapter's static, slider,
+    animated, and AI-generated views can all share one consistent look. Segments
+    are uniform-length direction marks (no arrowheads), drawn as a single trace.
+    """
+    import plotly.graph_objects as go
+
+    X, Y, U, V = slope_field_data(f, xlim, ylim, density=density)
+    sx = (xlim[1] - xlim[0]) / density * 0.42
+    sy = (ylim[1] - ylim[0]) / density * 0.42
+    xs: list = []
+    ys: list = []
+    for xi, yi, ui, vi in zip(X.ravel(), Y.ravel(), U.ravel(), V.ravel()):
+        xs += [xi - ui * sx, xi + ui * sx, None]
+        ys += [yi - vi * sy, yi + vi * sy, None]
+    fig = go.Figure(
+        go.Scatter(
+            x=xs, y=ys, mode="lines",
+            line=dict(color=color, width=1.4), opacity=0.7,
+            hoverinfo="skip", showlegend=False,
+        )
+    )
+    fig.update_layout(
+        template="plotly_white",
+        title=(dict(text=title, x=0.02) if title else None),
+        xaxis=dict(title="x", range=list(xlim), zeroline=False),
+        yaxis=dict(title="y", range=list(ylim), zeroline=False),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=460, showlegend=False,
+        margin=dict(l=55, r=20, t=50, b=45),
+    )
+    return fig

@@ -58,19 +58,21 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(delib, np, plt):
+def _(delib):
     def logistic_grid(a, K):
         """y' = a*y*(1 - y/K), vectorized over a slope-field grid."""
         return lambda x, y: a * y * (1.0 - y / K)
 
     # A static illustration with fixed parameters, before we make it interactive.
-    _f = logistic_grid(1.0, 4.0)
-    _ax = delib.slope_field(_f, xlim=(0, 10), ylim=(-1, 6), density=22)
-    _ax.axhline(4.0, color="#2a9d8f", lw=1.5, ls="--", label="K = 4 (equilibrium)")
-    _ax.axhline(0.0, color="#888", lw=1.0, ls=":", label="y = 0 (equilibrium)")
-    _ax.set_title("Slope field of the logistic equation (a = 1, K = 4)")
-    _ax.legend(loc="lower right")
-    _ax.figure
+    _fig = delib.slope_field_plotly(
+        logistic_grid(1.0, 4.0), (0, 10), (-1, 6), density=22,
+        title="Slope field of the logistic equation (a = 1, K = 4)",
+    )
+    _fig.add_hline(y=4.0, line=dict(color="#2a9d8f", dash="dash", width=1.5),
+                   annotation_text="K = 4", annotation_position="top right")
+    _fig.add_hline(y=0.0, line=dict(color="#9aa7b5", dash="dot", width=1),
+                   annotation_text="y = 0", annotation_position="bottom right")
+    _fig
     return (logistic_grid,)
 
 
@@ -97,113 +99,88 @@ def _(delib, mo):
 
 
 @app.cell(hide_code=True)
-def _(controls, delib, logistic_grid, np, plt):
+def _(controls, delib, go, logistic_grid):
     a = controls.value["a"]
     K = controls.value["K"]
     y0 = controls.value["y0"]
 
     f_grid = logistic_grid(a, K)
 
-    fig_explore, ax_explore = plt.subplots(figsize=(7, 5))
-    delib.slope_field(f_grid, xlim=(0, 10), ylim=(-1, 6), density=22, ax=ax_explore)
-
+    fig_explore = delib.slope_field_plotly(
+        f_grid, (0, 10), (-1, 6), density=22,
+        title=f"a = {a:.1f},  K = {K:.1f},  y₀ = {y0:.1f}",
+    )
     # Equilibria flatten the field; show them for reference.
-    ax_explore.axhline(K, color="#2a9d8f", lw=1.5, ls="--")
-    ax_explore.axhline(0.0, color="#888", lw=1.0, ls=":")
+    fig_explore.add_hline(y=K, line=dict(color="#2a9d8f", dash="dash", width=1.5))
+    fig_explore.add_hline(y=0.0, line=dict(color="#9aa7b5", dash="dot", width=1))
 
     # Integrate the single solution through y0 and overlay it on the flow.
     sol = delib.solve_ode(lambda t, y: a * y * (1.0 - y / K), (0.0, 10.0), y0)
-    delib.overlay_solution(ax_explore, sol.t, sol.y[0], label=f"y(0) = {y0:.1f}")
-    ax_explore.set_title(f"a = {a:.1f},  K = {K:.1f},  y₀ = {y0:.1f}")
+    fig_explore.add_trace(go.Scatter(
+        x=sol.t, y=sol.y[0], mode="lines",
+        line=dict(color="#d1495b", width=3), hoverinfo="skip", showlegend=False,
+    ))
+    fig_explore.add_trace(go.Scatter(
+        x=[sol.t[0]], y=[sol.y[0][0]], mode="markers",
+        marker=dict(color="#d1495b", size=9), hoverinfo="skip", showlegend=False,
+    ))
     fig_explore
     return K, a, f_grid, sol, y0
 
 
 @app.cell(hide_code=True)
-def _(K, a, delib, go, mo, np, y0):
-    # --- Section 4: time animation -------------------------------------------
-    # Trace the solution curve being drawn as t advances, with native play/pause.
-    n_frames = 60
-    t_request = np.linspace(0.0, 10.0, n_frames)
-    sol_anim = delib.solve_ode(lambda t, y: a * y * (1.0 - y / K), (0.0, 10.0), y0, t_eval=t_request)
-    # The solver stops early if the solution diverges, so use what it returned
-    # rather than assuming all n_frames points exist.
-    t_anim = sol_anim.t
-    ys = sol_anim.y[0]
-    n = len(t_anim)
-
-    finite = ys[np.isfinite(ys)]
-    lo = float(min(finite.min(), 0.0)) if finite.size else -1.0
-    hi = float(max(finite.max(), K)) if finite.size else K + 1.0
-    y_lo, y_hi = lo - 0.5, hi + 0.5
-
-    # A dark, glowing "3b1b-style" look: faint full curve for context, equilibria
-    # as quiet guide lines, then a bright trail with a soft glow and a glowing head
-    # dot that sweeps along as t advances.
-    GOLD = "#ffd166"
-
-    def _context():
-        return [
-            go.Scatter(x=[0, 10], y=[K, K], mode="lines",
-                       line=dict(color="#2dd4bf", dash="dash", width=1.5),
-                       name="K", hoverinfo="skip"),
-            go.Scatter(x=[0, 10], y=[0, 0], mode="lines",
-                       line=dict(color="rgba(255,255,255,0.35)", dash="dot", width=1),
-                       name="y = 0", hoverinfo="skip"),
-            go.Scatter(x=t_anim, y=ys, mode="lines",
-                       line=dict(color="rgba(255,255,255,0.12)", width=2),
-                       name="full solution", hoverinfo="skip"),
-        ]
-
-    frames_data = [
-        {
-            "name": f"{t_anim[i]:.1f}",
-            "data": _context()
-            + [
-                # soft glow behind the trail
-                go.Scatter(x=t_anim[: i + 1], y=ys[: i + 1], mode="lines",
-                           line=dict(color=GOLD, width=12),
-                           opacity=0.18, hoverinfo="skip", name="glow"),
-                # bright trail
-                go.Scatter(x=t_anim[: i + 1], y=ys[: i + 1], mode="lines",
-                           line=dict(color=GOLD, width=3.5), hoverinfo="skip", name="y(t)"),
-                # glowing head: halo + bright core
-                go.Scatter(x=[t_anim[i]], y=[ys[i]], mode="markers",
-                           marker=dict(color=GOLD, size=24, opacity=0.22),
-                           hoverinfo="skip", name="halo"),
-                go.Scatter(x=[t_anim[i]], y=[ys[i]], mode="markers",
-                           marker=dict(color="#fff8e1", size=9,
-                                       line=dict(color=GOLD, width=2)),
-                           hoverinfo="skip", name="now"),
-            ],
-        }
-        for i in range(n)
+def _(K, delib, f_grid, go, mo):
+    # The dynamical view: a cloud of particles advected along the field, so the
+    # whole flow comes alive instead of tracing one curve.
+    _eq = [
+        go.Scatter(x=[0, 10], y=[K, K], mode="lines",
+                   line=dict(color="#2a9d8f", dash="dash", width=1.5),
+                   hoverinfo="skip", showlegend=False),
+        go.Scatter(x=[0, 10], y=[0, 0], mode="lines",
+                   line=dict(color="#9aa7b5", dash="dot", width=1),
+                   hoverinfo="skip", showlegend=False),
     ]
-
-    anim_fig = delib.animate_plotly(
-        frames_data,
-        template="plotly_dark",
-        transition_ms=40,
-        layout=dict(
-            title=dict(text="The solution tracing the flow as t advances", x=0.02),
-            xaxis=dict(title="t", range=[0, 10], showgrid=True,
-                       gridcolor="rgba(255,255,255,0.06)", zeroline=False),
-            yaxis=dict(title="y", range=[y_lo, y_hi], showgrid=True,
-                       gridcolor="rgba(255,255,255,0.06)", zeroline=False),
-            paper_bgcolor="#0d1117",
-            plot_bgcolor="#0d1117",
-            height=480,
-            showlegend=False,
-            margin=dict(l=60, r=20, t=70, b=40),
-        ),
+    anim_fig = delib.flow_field(
+        f_grid, (0, 10), (-1, 6), extra_lines=_eq,
+        title="The flow coming alive — particles carried along the field",
     )
-    mo.md("## Time animation\n\nPress **▶ Play** to watch the solution follow the flow from $y_0$.")
+    mo.md(
+        "## Watch the flow\n\nPress **▶ Play**. Each dot is a solution being carried "
+        "along the field. Watch them all bend toward $y = K$ and peel away from "
+        "$y = 0$ — the field's attractor and repeller made visible."
+    )
     return (anim_fig,)
 
 
 @app.cell(hide_code=True)
 def _(anim_fig):
     anim_fig
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## All solutions at once — in 3-D
+
+        Each ridge is one solution $y(t)$ for a different starting value $y_0$ (the
+        depth axis). As $t$ grows, every ridge flattens onto the plane $y = K$ — the
+        attractor — no matter where it began. Drag to rotate.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, np):
+    surf = delib.solution_surface(
+        lambda t, y: 1.0 * y * (1.0 - y / 4.0),
+        (0.0, 10.0),
+        np.linspace(0.1, 7.0, 28),
+        title="Every start bends toward K = 4",
+    )
+    surf
     return
 
 
@@ -380,7 +357,7 @@ def _(mo):
     # One shared code string. Ask mode writes the tutor's code here; the editor
     # below reads it. This is the single code path — no separate Ask/Write modes.
     get_code, set_code = mo.state(
-        "view = delib.slope_field(lambda x, y: 1.0*y*(1 - y/4.0), (0, 10), (-1, 6))"
+        "view = delib.slope_field_plotly(lambda x, y: 1.0*y*(1 - y/4.0), (0, 10), (-1, 6))"
     )
     return get_code, set_code
 
@@ -440,10 +417,12 @@ def _(api_field, key_bridge, picker, set_code):
         "negative?'.\n\n"
         "After the explanation, append exactly ONE ```python fenced block (this is "
         "hidden from the student) containing the full self-contained solution and "
-        "nothing after it. The code may use only these names: mo, np, plt, go, delib "
-        "(helpers: slope_field(f, xlim, ylim) -> matplotlib Axes, phase_portrait, "
-        "overlay_solution, solve_ode, solve_system). Do NO file or network I/O. END by "
-        "assigning the single renderable to `view` (a matplotlib or plotly figure)."
+        "nothing after it. The code may use only these names: mo, np, plt, go, delib. "
+        "PREFER delib's light-theme Plotly helpers so the chart matches the chapter: "
+        "slope_field_plotly(f, xlim, ylim) -> go.Figure, flow_field(f, xlim, ylim) -> "
+        "animated go.Figure, solution_surface(f, t_span, y0_values) -> 3D go.Figure; "
+        "also solve_ode(f, t_span, y0). Do NO file or network I/O. END by assigning the "
+        "single renderable to `view` (ideally a Plotly figure)."
     )
 
     async def chat_model(messages, config):

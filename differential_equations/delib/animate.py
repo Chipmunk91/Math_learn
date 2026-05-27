@@ -20,7 +20,13 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.figure import Figure
 
-__all__ = ["animate_time", "animate_plotly", "frame_index"]
+__all__ = [
+    "animate_time",
+    "animate_plotly",
+    "flow_field",
+    "solution_surface",
+    "frame_index",
+]
 
 
 def animate_time(
@@ -151,6 +157,138 @@ def animate_plotly(
         fig.update_layout(template=template)
     if layout:
         fig.update_layout(**layout)
+    return fig
+
+
+def flow_field(
+    f: Callable,
+    xlim: tuple[float, float],
+    ylim: tuple[float, float],
+    *,
+    n_particles: int = 240,
+    n_frames: int = 90,
+    density: int = 16,
+    particle_color: str = "#d1495b",
+    field_color: str = "rgba(91,125,177,0.35)",
+    extra_lines: Sequence | None = None,
+    title: str | None = None,
+    seed: int = 0,
+):
+    """Animate the *flow* of ``y' = f(x, y)``: a cloud of particles advected
+    along the field, streaming rightward and converging onto its attractors.
+
+    A faint static field is drawn for context; ``extra_lines`` (e.g. equilibria
+    traces) are layered underneath. Returns a light-theme go.Figure with play/
+    slider. This is the dynamical view — you watch the field come alive.
+    """
+    import numpy as _np
+    import plotly.graph_objects as go
+
+    rng = _np.random.default_rng(seed)
+    x0, x1 = xlim
+    y0, y1 = ylim
+    dx = (x1 - x0) / (n_frames * 0.8)
+    px = rng.uniform(x0, x1, n_particles)
+    py = rng.uniform(y0, y1, n_particles)
+
+    # faint static field for context (uniform-length direction marks)
+    xs = _np.linspace(x0, x1, density)
+    ys = _np.linspace(y0, y1, density)
+    GX, GY = _np.meshgrid(xs, ys)
+    U = _np.ones_like(GX)
+    V = f(GX, GY)
+    nrm = _np.hypot(U, V)
+    nrm[nrm == 0] = 1.0
+    U, V = U / nrm, V / nrm
+    sx = (x1 - x0) / density * 0.4
+    sy = (y1 - y0) / density * 0.4
+    fxs: list = []
+    fys: list = []
+    for xi, yi, ui, vi in zip(GX.ravel(), GY.ravel(), U.ravel(), V.ravel()):
+        fxs += [xi - ui * sx, xi + ui * sx, None]
+        fys += [yi - vi * sy, yi + vi * sy, None]
+    field = go.Scatter(x=fxs, y=fys, mode="lines",
+                       line=dict(color=field_color, width=1.2),
+                       hoverinfo="skip", showlegend=False)
+    base = [field] + (list(extra_lines) if extra_lines else [])
+
+    frames_data = []
+    for k in range(n_frames):
+        dots = go.Scatter(x=px.copy(), y=py.copy(), mode="markers",
+                          marker=dict(color=particle_color, size=6, opacity=0.85),
+                          hoverinfo="skip", showlegend=False)
+        frames_data.append({"name": str(k), "data": base + [dots]})
+        slope = f(px, py)
+        py = py + slope * dx
+        px = px + dx
+        out = (px > x1) | (py < y0 - 1.5) | (py > y1 + 1.5)
+        m = int(out.sum())
+        if m:
+            px[out] = x0
+            py[out] = rng.uniform(y0, y1, m)
+
+    layout = dict(
+        template="plotly_white",
+        title=(dict(text=title, x=0.02) if title else None),
+        xaxis=dict(title="x", range=[x0, x1], zeroline=False),
+        yaxis=dict(title="y", range=[y0, y1], zeroline=False),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=460, showlegend=False,
+        margin=dict(l=55, r=20, t=70, b=45),
+    )
+    return animate_plotly(frames_data, fps=24, transition_ms=0, layout=layout)
+
+
+def solution_surface(
+    f: Callable,
+    t_span: tuple[float, float],
+    y0_values: Sequence[float],
+    *,
+    n_t: int = 60,
+    colorscale: str = "Tealrose",
+    title: str | None = None,
+):
+    """3D surface ``z = y(t; y0)`` over ``(t, y0)``: every initial condition's
+    trajectory at once, so you can see them all bend toward the attractor.
+
+    ``f`` is ``f(t, y)`` and must be vectorized over an array ``y`` (the ensemble
+    of initial conditions is integrated together with RK4). Returns a go.Figure.
+    """
+    import numpy as _np
+    import plotly.graph_objects as go
+
+    t0, t1 = t_span
+    ts = _np.linspace(t0, t1, n_t)
+    dt = (t1 - t0) / (n_t - 1)
+    y = _np.asarray(y0_values, dtype=float).copy()
+    rows = [y.copy()]
+    tt = t0
+    for _ in range(n_t - 1):
+        k1 = f(tt, y)
+        k2 = f(tt + 0.5 * dt, y + 0.5 * dt * k1)
+        k3 = f(tt + 0.5 * dt, y + 0.5 * dt * k2)
+        k4 = f(tt + dt, y + dt * k3)
+        y = y + dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+        tt += dt
+        rows.append(y.copy())
+    Z = _np.array(rows).T  # (len(y0), n_t): row = y0, col = t
+
+    fig = go.Figure(
+        go.Surface(
+            x=ts, y=_np.asarray(y0_values, dtype=float), z=Z,
+            colorscale=colorscale, showscale=False,
+            contours={"z": {"show": True, "usecolormap": True, "project": {"z": True}}},
+        )
+    )
+    fig.update_layout(
+        template="plotly_white",
+        title=(dict(text=title, x=0.02) if title else None),
+        scene=dict(
+            xaxis_title="t", yaxis_title="y₀", zaxis_title="y(t)",
+            camera=dict(eye=dict(x=1.6, y=-1.6, z=0.9)),
+        ),
+        height=520, margin=dict(l=0, r=0, t=40, b=0),
+    )
     return fig
 
 
