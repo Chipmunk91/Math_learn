@@ -350,10 +350,13 @@ def _(api_field, key_bridge, picker):
         "You are a friendly, concise math tutor inside a marimo notebook. " + _CONTEXT
         + " Explain clearly in plain language and ALWAYS use LaTeX for math — inline "
         "$...$ and display $$...$$ (never write bare expressions like y'=ay). When code "
-        "helps, you may include a ```python block using only mo, np, plt, go, delib "
-        "(helpers: vector_field_plotly, flow_field, solution_surface, solve_ode; assign "
-        "a Plotly figure to `view` to display it). The student can copy code into a "
-        "practice cell to run it. Keep answers focused."
+        "helps, you may include a ```python block using only mo, np, plt, go, delib. "
+        "delib API — call with these POSITIONAL args only; do NOT invent extra keyword "
+        "arguments: delib.vector_field_plotly(f, xlim, ylim) with f(x,y); "
+        "delib.flow_field(f, xlim, ylim) with f(x,y); delib.solution_surface(f, t_span, "
+        "y0_values) with f(t,y); delib.solve_ode(f, t_span, y0) with f(t,y) -> result "
+        "with .t and .y. Assign a Plotly figure to `view` to display it. The student "
+        "can copy code into a practice cell to run it. Keep answers focused."
     )
 
     async def chat_model(messages, config):

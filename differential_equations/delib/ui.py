@@ -115,8 +115,13 @@ async def ai_code(instruction, current_code, key, *, context="",
     system = (
         "You write and edit Python for a math notebook. Given the student's request "
         "and their current code, reply with the FULL updated program as exactly one "
-        "```python fenced block and nothing else. Use only mo, np, plt, go, delib "
-        "(helpers: vector_field_plotly, flow_field, solution_surface, solve_ode). "
+        "```python fenced block and nothing else. Use only mo, np, plt, go, delib.\n"
+        "delib API — call with these POSITIONAL args only; do NOT invent extra keyword "
+        "arguments:\n"
+        "  delib.vector_field_plotly(f, xlim, ylim)        # f(x, y); xlim/ylim are (lo, hi) -> Plotly fig\n"
+        "  delib.flow_field(f, xlim, ylim)                 # f(x, y); animated Plotly fig\n"
+        "  delib.solution_surface(f, t_span, y0_values)    # f(t, y); t_span=(t0,t1); y0_values list -> 3D fig\n"
+        "  delib.solve_ode(f, t_span, y0)                  # f(t, y) -> result with .t and .y (.y[0] = solution)\n"
         "Assign what the task needs — a number to `answer`, and/or a Plotly figure to "
         "`view`. Do no file or network I/O. " + context
     )
