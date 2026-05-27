@@ -209,8 +209,8 @@ def _(mo):
         **ask in plain language** — *"show the solution when a is negative."* The
         tutor writes the code straight into the editor; **review it and press Run**
         to see the result below. Prefer to type your own? Just edit the code and
-        Run. Bring your own Anthropic key — set it once in the 💬 tutor and it is
-        shared here too.
+        Run. Bring your own Anthropic key — enter it in the panel; it stays in your
+        browser.
         """
     )
     return
@@ -298,7 +298,7 @@ def _(bridge, mo):
         if _flat:
             _opts[f"Cell {_i + 1}: {_flat[:46]}"] = _src
 
-    api_field = mo.ui.text(label="Anthropic key (optional here)", kind="password", full_width=True)
+    api_field = mo.ui.text(label="Anthropic key (stays in your browser)", kind="password", full_width=True)
     cell_pick = mo.ui.dropdown(options=_opts, value="(whole chapter)", label="Ask about", full_width=True)
     return api_field, cell_pick
 
@@ -321,8 +321,9 @@ def _(api_field, bridge):
 
 
 @app.cell
-def _(api_field, bridge, cell_pick):
+def _(api_field, bridge, cell_pick, set_code):
     import json as _json
+    import re as _re
 
     _MODEL = "claude-haiku-4-5-20251001"
     _URL = "https://api.anthropic.com/v1/messages"
@@ -361,31 +362,24 @@ def _(api_field, bridge, cell_pick):
 
         resp = await pyfetch(_URL, method="POST", headers=headers, body=body)
         data = await resp.json()
-        if isinstance(data, dict) and data.get("content"):
-            return "".join(b.get("text", "") for b in data["content"])
-        return "**API error**\n\n```json\n" + _json.dumps(data, indent=2)[:800] + "\n```"
+        if not (isinstance(data, dict) and data.get("content")):
+            return "**API error**\n\n```json\n" + _json.dumps(data, indent=2)[:800] + "\n```"
+        full = "".join(b.get("text", "") for b in data["content"])
+        # Lift the code into the editor; show only the explanation in the chat.
+        _m = _re.search(r"```(?:python)?\s*\n(.*?)```", full, _re.S)
+        if _m:
+            set_code(_m.group(1).strip())
+            explanation = (full[: _m.start()] + full[_m.end():]).strip()
+            return explanation or "Code is in the editor below — review it and press **Run**."
+        return full
 
     return (chat_model,)
 
 
 @app.cell
-def _(chat_model, mo, set_code):
-    import re
-
-    def _on_message(messages):
-        # When the tutor replies, lift its python block into the shared code state
-        # so it appears in the editor for review + Run. This is the only insertion
-        # path — no marimo "Add to Notebook".
-        _bot = [m for m in messages if m.role == "assistant" and m.content]
-        if not _bot:
-            return
-        _hit = re.search(r"```(?:python)?\s*\n(.*?)```", _bot[-1].content, re.S)
-        if _hit:
-            set_code(_hit.group(1).strip())
-
+def _(chat_model, mo):
     chatbox = mo.ui.chat(
         chat_model,
-        on_message=_on_message,
         prompts=[
             "explain this chapter in a paragraph",
             "show the solution when the growth rate a is negative",
@@ -398,19 +392,20 @@ def _(chat_model, mo, set_code):
 @app.cell(hide_code=True)
 def _(api_field, bridge, cell_pick, chatbox, code_input, mo, run_btn):
     _key_ok = bool(api_field.value or (bridge.value or {}).get("key"))
-    _status = mo.md(
-        "key loaded from the tutor ✓" if _key_ok else "⚠️ set your Anthropic key in the 💬 tutor (or below)"
+    _status = mo.md("key set ✓" if _key_ok else "⚠️ enter your Anthropic key below to use Ask")
+    mo.sidebar(
+        [
+            mo.md("### Playground"),
+            bridge,
+            api_field,
+            _status,
+            cell_pick,
+            chatbox,
+            mo.md("**Code** — the tutor writes here; review or edit, then Run:"),
+            code_input,
+            run_btn,
+        ]
     )
-    _items = [mo.md("### Playground"), bridge, cell_pick, _status]
-    if not _key_ok:
-        _items.append(api_field)
-    _items += [
-        chatbox,
-        mo.md("**Code** — the tutor writes here; review or edit, then Run:"),
-        code_input,
-        run_btn,
-    ]
-    mo.sidebar(_items)
     return
 
 

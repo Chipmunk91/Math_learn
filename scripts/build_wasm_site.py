@@ -20,7 +20,6 @@ the owner nothing.
 from __future__ import annotations
 
 import base64
-import hashlib
 import json
 import re
 import subprocess
@@ -32,7 +31,6 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 CHAPTERS_DIR = REPO / "differential_equations" / "chapters"
 DELIB_DIR = REPO / "differential_equations" / "delib"
-WEB_DIR = REPO / "web"
 SITE = REPO / "site"
 
 # delib is a locally-installed package and does not exist in the browser's
@@ -54,8 +52,6 @@ PEP723_HEADER = """\
 # ]
 # ///
 """
-
-WEB_ASSETS = ["tutor.js", "tutor.css"]
 
 # Strip marimo's editor chrome down to just the notebook. The cells and their
 # per-cell controls (run, add, delete, edit) live outside these wrappers, so
@@ -212,29 +208,18 @@ def tutor_config(name: str) -> dict:
     }
 
 
-def asset_version(filename: str) -> str:
-    """Short content hash so deploys bust the browser cache for our assets."""
-    return hashlib.md5((WEB_DIR / filename).read_bytes()).hexdigest()[:8]
-
 
 def inject_tutor(page: Path, name: str) -> None:
-    """Inject the tutor stylesheet, per-chapter config, and script into a page."""
+    """Inject the per-chapter config and chrome-hiding into a page.
+
+    The floating JS tutor has been retired — the in-notebook playground is the
+    only AI surface. We still inject ``window.TUTOR_CONFIG`` because the
+    playground's main-thread bridge reads its ``cells`` list for the cell picker.
+    """
     html = page.read_text(encoding="utf-8")
     config = json.dumps(tutor_config(name))
-    css_v = asset_version("tutor.css")
-    js_v = asset_version("tutor.js")
-    head = (
-        '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />'
-        '<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>'
-        '<link rel="stylesheet" href="../tutor.css?v=' + css_v + '" />'
-        + MARIMO_CHROME_CSS
-        + "</head>"
-    )
-    body = (
-        f"<script>window.TUTOR_CONFIG = {config};</script>"
-        + MARIMO_HIDE_JS
-        + '<script src="../tutor.js?v=' + js_v + '"></script></body>'
-    )
+    head = MARIMO_CHROME_CSS + "</head>"
+    body = f"<script>window.TUTOR_CONFIG = {config};</script>" + MARIMO_HIDE_JS + "</body>"
     if "</head>" not in html or "</body>" not in html:
         raise ValueError(f"missing </head> or </body> in {page}")
     html = html.replace("</head>", head, 1).replace("</body>", body, 1)
@@ -269,7 +254,7 @@ def build_index(names: list[str]) -> str:
 <body>
   <h1>Differential Equations Playground</h1>
   <p>Interactive chapters that run entirely in your browser — drag the sliders,
-     play the animations, and ask the built-in tutor (tap the 💬 icon).</p>
+     play the animations, and ask the in-notebook playground to write and run code.</p>
   <p>Each chapter reads top-to-bottom; expand any cell to edit and re-run its
      code right in the browser.</p>
   <ul>
@@ -287,8 +272,6 @@ def main() -> int:
         return 1
 
     SITE.mkdir(parents=True, exist_ok=True)
-    for asset in WEB_ASSETS:
-        (SITE / asset).write_text((WEB_DIR / asset).read_text(encoding="utf-8"), encoding="utf-8")
 
     names: list[str] = []
     for nb in nbs:
