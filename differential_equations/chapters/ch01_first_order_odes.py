@@ -218,36 +218,74 @@ def _(mo):
 
 @app.cell
 def _():
-    # Bridge: runs on the main thread (the kernel is sandboxed in a Web Worker and
-    # cannot see sessionStorage or the page config). Reads the shared key slot and
-    # the chapter's cell sources, and writes the key back when set here.
+    # Two main-thread widgets (the kernel is sandboxed in a Web Worker and cannot
+    # see sessionStorage or the page DOM). KeyBridge reads/writes the shared key
+    # slot; CellPicker lets the student click a chapter cell to ask about it.
     import anywidget
     import traitlets
 
-    class Bridge(anywidget.AnyWidget):
+    class KeyBridge(anywidget.AnyWidget):
         _esm = """
         function render({ model, el }) {
           function readKey(){ try { return sessionStorage.getItem('mathlearn.anthropicKey')||''; } catch(e){ return ''; } }
-          function readCells(){ try { var c=(window.TUTOR_CONFIG||{}).cells||[]; return c.map(function(x){return (x.text||'').slice(0,1500);}); } catch(e){ return []; } }
-          function push(){ model.set('key', readKey()); model.set('cells', JSON.stringify(readCells())); model.set('ready', true); model.save_changes(); }
-          push();
+          model.set('key', readKey()); model.set('ready', true); model.save_changes();
           model.on('change:save_value', function(){ try{ sessionStorage.setItem('mathlearn.anthropicKey', model.get('save_value')); model.set('key', model.get('save_value')); model.save_changes(); }catch(e){} });
           el.style.display='none';
         }
         export default { render };
         """
         key = traitlets.Unicode("").tag(sync=True)
-        cells = traitlets.Unicode("[]").tag(sync=True)
         ready = traitlets.Bool(False).tag(sync=True)
         save_value = traitlets.Unicode("").tag(sync=True)
 
-    return (Bridge,)
+    class CellPicker(anywidget.AnyWidget):
+        _esm = """
+        function render({ model, el }) {
+          var cells = (window.TUTOR_CONFIG||{}).cells || [];
+          var overlay, banner, picking=false;
+          function list(){ return Array.prototype.slice.call(document.querySelectorAll('.marimo-cell')); }
+          function srcFor(i){ var c=cells[i]; return c ? (c.text||'') : ''; }
+          function ensure(){
+            if(overlay) return;
+            overlay=document.createElement('div');
+            overlay.style.cssText='position:fixed;z-index:9998;background:rgba(47,111,176,.18);border:2px solid #2f6fb0;border-radius:6px;pointer-events:none;display:none';
+            banner=document.createElement('div');
+            banner.style.cssText='position:fixed;z-index:9999;top:10px;left:50%;transform:translateX(-50%);background:#2f6fb0;color:#fff;padding:6px 12px;border-radius:6px;font:13px sans-serif;display:none';
+            banner.textContent='Click a cell to ask about it — Esc to cancel';
+            document.body.appendChild(overlay); document.body.appendChild(banner);
+          }
+          function under(t){ return t && t.closest ? t.closest('.marimo-cell') : null; }
+          function onMove(e){ var c=under(e.target); if(!c){ overlay.style.display='none'; return;} var r=c.getBoundingClientRect(); var o=overlay.style; o.display='block'; o.top=r.top+'px'; o.left=r.left+'px'; o.width=r.width+'px'; o.height=r.height+'px'; }
+          function onClick(e){ var c=under(e.target); if(!c) return; e.preventDefault(); e.stopPropagation(); var i=list().indexOf(c); exit(); select(i); }
+          function onKey(e){ if(e.key==='Escape') exit(); }
+          function enter(){ picking=true; ensure(); overlay.style.display='none'; banner.style.display='block'; document.addEventListener('mousemove',onMove,true); document.addEventListener('click',onClick,true); document.addEventListener('keydown',onKey,true); }
+          function exit(){ picking=false; if(overlay)overlay.style.display='none'; if(banner)banner.style.display='none'; document.removeEventListener('mousemove',onMove,true); document.removeEventListener('click',onClick,true); document.removeEventListener('keydown',onKey,true); }
+          function select(i){ model.set('picked_idx', i); model.set('picked_text', srcFor(i)); model.save_changes(); paint(); }
+          function clear(){ model.set('picked_idx', -1); model.set('picked_text', ''); model.save_changes(); paint(); }
+          var btn=document.createElement('button');
+          btn.style.cssText='width:100%;padding:8px 10px;border:1px solid #c7d2e0;border-radius:8px;background:#f3f7fc;cursor:pointer;font:13px sans-serif;color:#2c3e50;text-align:left';
+          function paint(){ var i=model.get('picked_idx'); btn.innerHTML = (i!=null && i>=0) ? ('\\u{1F4CC} Asking about <b>Cell '+(i+1)+'</b> &nbsp;&middot;&nbsp; clear \\u2715') : '\\u{1F4CC} Pick a cell to ask about'; }
+          btn.addEventListener('click', function(){ var i=model.get('picked_idx'); if(i!=null && i>=0){ clear(); } else { enter(); } });
+          el.appendChild(btn); paint();
+        }
+        export default { render };
+        """
+        picked_idx = traitlets.Int(-1).tag(sync=True)
+        picked_text = traitlets.Unicode("").tag(sync=True)
+
+    return CellPicker, KeyBridge
 
 
 @app.cell
-def _(Bridge, mo):
-    bridge = mo.ui.anywidget(Bridge())
-    return (bridge,)
+def _(KeyBridge, mo):
+    key_bridge = mo.ui.anywidget(KeyBridge())
+    return (key_bridge,)
+
+
+@app.cell
+def _(CellPicker, mo):
+    picker = mo.ui.anywidget(CellPicker())
+    return (picker,)
 
 
 @app.cell
@@ -284,23 +322,9 @@ def _(mo):
 
 
 @app.cell
-def _(bridge, mo):
-    import json as _json
-
-    _cells = []
-    try:
-        _cells = _json.loads((bridge.value or {}).get("cells", "[]"))
-    except Exception:
-        _cells = []
-    _opts = {"(whole chapter)": ""}
-    for _i, _src in enumerate(_cells):
-        _flat = " ".join((_src or "").split())
-        if _flat:
-            _opts[f"Cell {_i + 1}: {_flat[:46]}"] = _src
-
+def _(mo):
     api_field = mo.ui.text(label="Anthropic key (stays in your browser)", kind="password", full_width=True)
-    cell_pick = mo.ui.dropdown(options=_opts, value="(whole chapter)", label="Ask about", full_width=True)
-    return api_field, cell_pick
+    return (api_field,)
 
 
 @app.cell
@@ -313,15 +337,15 @@ def _(get_code, mo):
 
 
 @app.cell
-def _(api_field, bridge):
-    # Persist a key typed here back to the shared slot (so the tutor sees it too).
+def _(api_field, key_bridge):
+    # Persist a key typed here to the shared slot so it auto-loads next visit.
     if api_field.value:
-        bridge.widget.save_value = api_field.value
+        key_bridge.widget.save_value = api_field.value
     return
 
 
 @app.cell
-def _(api_field, bridge, cell_pick, set_code):
+def _(api_field, key_bridge, picker, set_code):
     import json as _json
     import re as _re
 
@@ -342,10 +366,11 @@ def _(api_field, bridge, cell_pick, set_code):
     )
 
     async def chat_model(messages, config):
-        key = api_field.value or (bridge.value or {}).get("key", "")
+        key = api_field.value or (key_bridge.value or {}).get("key", "")
         system = _SYS
-        if cell_pick.value:
-            system += '\n\nThe student is asking about this cell:\n"""\n' + cell_pick.value + '\n"""'
+        _picked = (picker.value or {}).get("picked_text", "")
+        if _picked:
+            system += '\n\nThe student is asking about this cell:\n"""\n' + _picked + '\n"""'
         msgs = [
             {"role": m.role, "content": m.content}
             for m in messages
@@ -390,22 +415,32 @@ def _(chat_model, mo):
 
 
 @app.cell(hide_code=True)
-def _(api_field, bridge, cell_pick, chatbox, code_input, mo, run_btn):
-    _key_ok = bool(api_field.value or (bridge.value or {}).get("key"))
-    _status = mo.md("key set ✓" if _key_ok else "⚠️ enter your Anthropic key below to use Ask")
-    mo.sidebar(
-        [
-            mo.md("### Playground"),
-            bridge,
-            api_field,
-            _status,
-            cell_pick,
+def _(api_field, chatbox, code_input, key_bridge, mo, picker, run_btn):
+    _key_ok = bool(api_field.value or (key_bridge.value or {}).get("key"))
+    _items = [mo.md("### Playground"), key_bridge, api_field]
+    if _key_ok:
+        _items += [
+            mo.md("key set ✓"),
+            picker,
             chatbox,
             mo.md("**Code** — the tutor writes here; review or edit, then Run:"),
             code_input,
             run_btn,
         ]
-    )
+    else:
+        _items.append(
+            mo.callout(
+                mo.md(
+                    "**Add your Anthropic API key** above to ask the tutor.\n\n"
+                    "No key yet? Create one at "
+                    "[console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys). "
+                    "It is stored only in this browser and sent only to Anthropic — "
+                    "never to this site."
+                ),
+                kind="info",
+            )
+        )
+    mo.sidebar(_items, width="420px")
     return
 
 
