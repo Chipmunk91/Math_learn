@@ -102,6 +102,9 @@ inlining), and animation-safe (static content in base, moving content in frames)
   for chaos. *(Ch 10)*
 - **`cobweb(g, x0, n)`** and **`orbit_diagram(make_g, r_range)`** — for maps.
   *(Ch 11)*
+- **`symbolic_steps(expr)`** — animated/step-by-step symbol manipulation (factor →
+  set to zero → roots), for later chapters where the algebra gets heavy. Ch1 uses
+  the static `equilibria_report`; this is the unfolding version. *(when needed)*
 
 ---
 
