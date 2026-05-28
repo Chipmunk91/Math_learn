@@ -139,10 +139,10 @@ def _(mo):
 def _(delib):
     delib.derivation(
         [
-            (r"\frac{dT}{dt} = -k\,(T - T_r)", "Start from the cooling law."),
-            (r"\frac{dT}{T - T_r} = -k\,dt", "Separate: every T on the left, every t on the right."),
-            (r"\ln\lvert T - T_r\rvert = -k\,t + C", "Integrate both sides."),
-            (r"T(t) = T_r + (T_0 - T_r)\,e^{-k t}", "Exponentiate, then fix C from T(0) = T_0."),
+            (r"\frac{\htmlId{dT}{dT}}{dt} = -k\,\htmlId{gap}{(T - T_r)}", "Start from the cooling law."),
+            (r"\frac{\htmlId{dT}{dT}}{\htmlId{gap}{(T - T_r)}} = -k\,\htmlId{dt}{dt}", "Separate: the (T - T_r) slides down to the left denominator, dt joins the right."),
+            (r"\htmlId{lhs}{\ln\lvert T - T_r\rvert} = -k\,t + C", "Integrate both sides."),
+            (r"\htmlId{Tt}{T(t)} = T_r + (T_0 - T_r)\,e^{-k t}", "Exponentiate, then fix C from T(0) = T_0."),
         ],
         title="Separation of variables",
     )
