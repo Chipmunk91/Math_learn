@@ -8,7 +8,7 @@ import marimo as mo
 
 __all__ = [
     "param_slider", "param_panel", "run_exercise", "ai_code", "equilibria_report",
-    "exercise_inputs", "exercise_ai", "exercise_view", "check_number", "closed_form_report",
+    "exercise_inputs", "exercise_ai", "exercise_view", "check_number", "closed_form_report", "solve_steps",
     "key_field", "key_bridge_widget", "cell_picker_widget", "persist_key",
     "tutor_chat", "tutor_sidebar",
 ]
@@ -185,6 +185,28 @@ async def ai_code(instruction, current_code, key, *, context="", coach=False,
     return m.group(1).strip() if m else (full.strip() or current_code)
 
 
+def _guard_expr(expr):
+    """Raise ValueError if a SymPy expression looks too wild to solve safely
+    (huge exponents/numbers, or very deep). dsolve/solve/integrate are called
+    only after this passes, so pathological input can't hang the single-threaded
+    WASM kernel (e.g. ``...*e^999``)."""
+    import sympy as sp
+
+    for p in expr.atoms(sp.Pow):
+        e = p.exp
+        if getattr(e, "is_Number", False) and abs(float(e)) > 12:
+            raise ValueError("that exponent is too large — try a smaller one")
+    for n in expr.atoms(sp.Number):
+        try:
+            big = abs(float(n)) > 1e6
+        except (OverflowError, TypeError):
+            big = True
+        if big:
+            raise ValueError("that number is too large")
+    if sp.count_ops(expr) > 60:
+        raise ValueError("that expression is too complex to solve here")
+
+
 def equilibria_report(expr_str, *, var="y"):
     """Symbolically find and classify the equilibria of ``d{var}/dt = expr``.
 
@@ -199,6 +221,7 @@ def equilibria_report(expr_str, *, var="y"):
     try:
         y = sp.Symbol(var)
         expr = sp.sympify(expr_str, locals={var: y})
+        _guard_expr(expr)
     except Exception as exc:
         return mo.callout(
             mo.md(f"Couldn't read that — try something like `a*y*(1 - y/K)`.\n\n`{exc}`"),
@@ -287,6 +310,7 @@ def closed_form_report(rhs_str, *, func="y", indep="t"):
     f = sp.Function(func)
     try:
         rhs = sp.sympify(rhs_str, locals={func: f(t), indep: t})
+        _guard_expr(rhs)
         sol = sp.dsolve(sp.Eq(f(t).diff(t), rhs), f(t))
         return mo.md(
             f"The equation $\\dfrac{{d{func}}}{{d{indep}}} = {sp.latex(rhs)}$ solves to\n\n"
@@ -295,6 +319,43 @@ def closed_form_report(rhs_str, *, func="y", indep="t"):
         )
     except Exception as exc:
         return mo.callout(mo.md(f"Couldn't solve that one symbolically.\n\n`{exc}`"), kind="warn")
+
+
+def solve_steps(rhs_str, *, func="y", indep="t"):
+    """Step-by-step reveal of solving a *separable* ``d{func}/d{indep} = rhs`` —
+    the method ``dsolve`` hides. Returns an ``mo.accordion`` (separate variables →
+    integrate both sides → solve). Best for autonomous rhs (depends on ``{func}``).
+    """
+    import sympy as sp
+
+    t = sp.Symbol(indep)
+    Y = sp.Symbol(func)
+    f = sp.Function(func)
+    try:
+        rhs = sp.sympify(rhs_str, locals={func: Y, indep: t})
+        _guard_expr(rhs)
+    except Exception as exc:
+        return mo.callout(mo.md(f"Let's keep it tame — try a simpler rate law.\n\n`{exc}`"), kind="warn")
+
+    steps = {}
+    steps["1 · The equation"] = mo.md(f"$$ \\frac{{d{func}}}{{d{indep}}} = {sp.latex(rhs)} $$")
+    steps["2 · Separate the variables"] = mo.md(
+        f"Gather every ${func}$ on the left and ${indep}$ on the right:\n\n"
+        f"$$ \\frac{{d{func}}}{{{sp.latex(rhs)}}} = d{indep} $$"
+    )
+    try:
+        lhs = sp.integrate(1 / rhs, Y)
+        steps["3 · Integrate both sides"] = mo.md(
+            f"$$ {sp.latex(lhs)} = {indep} + C $$"
+        )
+    except Exception:
+        steps["3 · Integrate both sides"] = mo.md("This one's integral has no elementary closed form.")
+    try:
+        sol = sp.dsolve(sp.Eq(f(t).diff(t), rhs.subs(Y, f(t))), f(t))
+        steps[f"4 · Solve for {func}({indep})"] = mo.md(f"$$ {sp.latex(sol)} $$")
+    except Exception:
+        steps[f"4 · Solve for {func}({indep})"] = mo.md("No explicit closed form for this one.")
+    return mo.accordion(steps)
 
 
 # --- tutor kit ----------------------------------------------------------------

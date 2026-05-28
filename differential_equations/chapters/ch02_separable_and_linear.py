@@ -121,15 +121,16 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Beat 3b — solve it exactly (live SymPy below).
+    # Beat 3b — solve it step by step (live SymPy below).
     mo.md(
         r"""
-        ## Solve it exactly
+        ## Solve it — step by step
 
-        Because it's separable *and* linear, we can get a real formula — not just a
-        picture. Edit the rate law below and watch it solved in **closed form**
-        (SymPy does the integral). The default is the cooling law; try `-k*T` (cooling
-        into a $0°$ room) or `q - k*T` (a heater fighting the cold).
+        `dsolve` would hand you the answer in one line, but that hides the *method*.
+        Because the equation is separable, we can watch it fall out: **separate the
+        variables → integrate each side → solve**. Edit the rate law, then expand each
+        step below. The default is the cooling law; try `-k*T` (cooling into a $0°$
+        room) or `q - k*T` (a heater fighting the cold).
         """
     )
     return
@@ -144,7 +145,7 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(cf_input, delib):
-    delib.closed_form_report(cf_input.value, func="T")
+    delib.solve_steps(cf_input.value, func="T")
     return
 
 
