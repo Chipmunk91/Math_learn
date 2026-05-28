@@ -9,6 +9,7 @@ import marimo as mo
 __all__ = [
     "param_slider", "param_panel", "run_exercise", "ai_code", "equilibria_report",
     "exercise_inputs", "exercise_ai", "exercise_view", "check_number", "closed_form_report", "solve_steps",
+    "derivation", "video",
     "key_field", "key_bridge_widget", "cell_picker_widget", "persist_key",
     "tutor_chat", "tutor_sidebar",
 ]
@@ -319,6 +320,90 @@ def closed_form_report(rhs_str, *, func="y", indep="t"):
         )
     except Exception as exc:
         return mo.callout(mo.md(f"Couldn't solve that one symbolically.\n\n`{exc}`"), kind="warn")
+
+
+def derivation(steps, *, autoplay_ms=1500, title=None):
+    """An in-browser ANIMATED derivation for the *teaching* (not an exercise).
+
+    ``steps`` is a list of LaTeX strings, or ``(latex, caption)`` pairs. Returns a
+    small player (anywidget): one equation at a time with Prev / Play / Next,
+    cross-fading between steps — a serverless, guided take on Manim-style algebra.
+    Emphasise a moving term inside the LaTeX with ``\\textcolor{...}{...}``. For a
+    true Manim morph on a hero derivation, render offline and embed with
+    :func:`video`.
+    """
+    import json
+    import anywidget
+    import traitlets
+
+    norm = []
+    for s in steps:
+        if isinstance(s, (list, tuple)):
+            norm.append({"tex": s[0], "note": s[1] if len(s) > 1 else ""})
+        else:
+            norm.append({"tex": s, "note": ""})
+
+    class _Derivation(anywidget.AnyWidget):
+        _esm = """
+        function render({ model, el }) {
+          var steps = []; try { steps = JSON.parse(model.get('steps')); } catch(e){}
+          var ms = model.get('ms') || 1500;
+          var ttl = model.get('title') || '';
+          var i = 0, timer = null;
+          var root = el.getRootNode();
+          try { if (root.querySelector && !root.querySelector('link[data-mlkd]')) { var l=document.createElement('link'); l.rel='stylesheet'; l.href='https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css'; l.setAttribute('data-mlkd','1'); (root.head||root).appendChild(l); } } catch(e){}
+          el.style.cssText='border:1px solid #e4e9f0;border-radius:10px;padding:14px 16px;background:#fff';
+          var bs='padding:6px 12px;border:1px solid #c7d2e0;border-radius:8px;background:#f3f7fc;cursor:pointer;font:13px sans-serif;color:#2c3e50';
+          el.innerHTML =
+            (ttl?('<div style="font-weight:600;color:#2c3e50;margin-bottom:8px">'+ttl+'</div>'):'')+
+            '<div class="ml-eq" style="min-height:52px;display:flex;align-items:center;justify-content:center;transition:opacity .22s"></div>'+
+            '<div class="ml-note" style="text-align:center;color:#56636f;font:13px sans-serif;min-height:18px;margin-top:6px"></div>'+
+            '<div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:10px">'+
+              '<button class="ml-prev" style="'+bs+'">\\u2039 Prev</button>'+
+              '<button class="ml-play" style="'+bs+'">\\u25B6 Play</button>'+
+              '<button class="ml-next" style="'+bs+'">Next \\u203A</button>'+
+              '<span class="ml-ind" style="color:#7c8aa0;font:12px sans-serif;margin-left:6px"></span>'+
+            '</div>';
+          var eqEl=el.querySelector('.ml-eq'), noteEl=el.querySelector('.ml-note'), indEl=el.querySelector('.ml-ind'), playBtn=el.querySelector('.ml-play');
+          function paint(){
+            var s = steps[i] || {tex:'', note:''};
+            try { eqEl.innerHTML = window.katex ? window.katex.renderToString(s.tex, {displayMode:true, throwOnError:false}) : s.tex; } catch(e){ eqEl.textContent = s.tex; }
+            noteEl.textContent = s.note || '';
+            indEl.textContent = (i+1)+' / '+steps.length;
+            eqEl.style.opacity = 1;
+          }
+          function show(k){ i = Math.max(0, Math.min(steps.length-1, k)); eqEl.style.opacity=0; setTimeout(paint, 170); }
+          function stop(){ if(timer){ clearInterval(timer); timer=null; playBtn.textContent='\\u25B6 Play'; } }
+          function play(){ if(timer){ stop(); return; } playBtn.textContent='\\u275A\\u275A Pause'; if(i>=steps.length-1) show(0); timer=setInterval(function(){ if(i>=steps.length-1){ stop(); } else { show(i+1); } }, ms); }
+          el.querySelector('.ml-prev').addEventListener('click', function(){ stop(); show(i-1); });
+          el.querySelector('.ml-next').addEventListener('click', function(){ stop(); show(i+1); });
+          playBtn.addEventListener('click', play);
+          show(0);
+        }
+        export default { render };
+        """
+        steps = traitlets.Unicode(json.dumps(norm)).tag(sync=True)
+        ms = traitlets.Int(int(autoplay_ms)).tag(sync=True)
+        title = traitlets.Unicode(title or "").tag(sync=True)
+
+    return mo.ui.anywidget(_Derivation())
+
+
+def video(src, *, caption=None, width="100%"):
+    """Embed a pre-rendered clip (e.g. a Manim derivation) from the site's assets.
+
+    ``src`` is a filename under ``assets/`` (the build copies the repo's ``assets/``
+    into ``site/assets/``); chapter pages live one level down, so the path resolves
+    as ``../assets/<src>``.
+    """
+    cap = (f'<figcaption style="text-align:center;color:#56636f;font:13px sans-serif;'
+           f'margin-top:6px">{caption}</figcaption>') if caption else ""
+    return mo.Html(
+        f'<figure style="margin:0">'
+        f'<video controls loop muted playsinline preload="metadata" '
+        f'style="width:{width};border-radius:8px;border:1px solid #e4e9f0" '
+        f'src="../assets/{src}"></video>{cap}</figure>'
+    )
 
 
 def solve_steps(rhs_str, *, func="y", indep="t"):

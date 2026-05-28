@@ -31,6 +31,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 CHAPTERS_DIR = REPO / "differential_equations" / "chapters"
 DELIB_DIR = REPO / "differential_equations" / "delib"
+ASSETS_DIR = REPO / "assets"  # pre-rendered media (e.g. Manim clips) -> site/assets/
 SITE = REPO / "site"
 
 # delib is a locally-installed package and does not exist in the browser's
@@ -356,6 +357,12 @@ def main() -> int:
         return 1
 
     SITE.mkdir(parents=True, exist_ok=True)
+
+    # Copy pre-rendered media (Manim clips, etc.) so delib.video() can find them.
+    if ASSETS_DIR.is_dir():
+        import shutil
+
+        shutil.copytree(ASSETS_DIR, SITE / "assets", dirs_exist_ok=True)
 
     names = [nb.stem for nb in nbs]
     for idx, nb in enumerate(nbs):

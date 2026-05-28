@@ -90,7 +90,10 @@ chapter; it turns hard-won lessons into a repeatable recipe so each chapter is
 
 - **Mobile polish** — title/nav clearance and chart sizing are improved but not final.
 - **SymPy load** — first use downloads a chunky package in the browser; watch the pause.
-- **Animated symbol manipulation** — step-by-step algebra reveal (factor → solve →
-  roots), needed once later chapters get symbol-heavy. Tracked in `ROADMAP.md`.
+- **Animated derivations (built):** `delib.derivation([tex, ...])` is the serverless
+  in-browser player (Prev/Play/Next, cross-fade) for teaching algebra step by step;
+  for cinematic Manim term-morphing on a hero derivation, render offline (see
+  `manim/`) and embed with `delib.video("clip.mp4")` (the build copies `assets/` →
+  `site/assets/`). Both belong in the **concept** beat, not the exercises.
 - **Packaging** — the per-challenge wiring is ~5 cells each; factor into a tighter
   `delib` helper before the challenge count grows across chapters.
