@@ -240,10 +240,15 @@ def _(delib, mo):
     )
     mo.md(
         f"""
-        ## Interactive exploration
+        ## Now make it your campus
 
-        Drag the sliders. The slope field redraws and the red solution curve — the
-        one passing through $y(0) = y_0$ — bends to follow the new flow in real time.
+        The picture so far used one set of numbers — grab the sliders and make the
+        rumor your own. Here $a$ is how **chatty** the campus is (how fast word
+        travels), $K$ is how many people are even reachable, and $y_0$ is how many
+        were in on it from day zero. As you drag them the field redraws, and the
+        **red curve** — the single rumor that starts at $y(0) = y_0$ — bends to follow
+        the new flow. Try pushing $a$ below zero, or starting $y_0$ *above* $K$, and
+        watch where the story ends up.
 
         {mo.as_html(controls)}
         """
@@ -299,10 +304,14 @@ def _(K, a, delib, go, mo):
         title=f"Particles riding the field  (a = {a:.1f},  K = {K:.1f})",
     )
     mo.md(
-        "## Watch particles ride the field\n\nThe arrows are the field — fixed for "
-        "these parameters. Press **▶ Play** and watch particles flow *along* them, "
-        "all bending toward $y = K$ and peeling off $y = 0$. Then drag the **$a$ / $K$ "
-        "sliders above** to reshape the field and play again."
+        "## Many rumors at once\n\nEach dot is a *different* rumor — a different "
+        "number of people in on it at the start — set loose on the same campus. Press "
+        "**▶ Play** and watch them all ride the arrows: every story, wherever it "
+        "begins, is carried toward $y = K$ (everyone knows) and away from $y = 0$. "
+        "That *many-starts, one-destiny* convergence is the signature of a **stable "
+        "equilibrium** — and you can read it straight off the field, without solving a "
+        "single curve. Reshape the field with the **$a$ / $K$ sliders above** and play "
+        "again."
     )
     return (anim_fig,)
 
@@ -319,9 +328,10 @@ def _(mo):
         r"""
         ## Try it — in code
 
-        Each task below is a little code ground. Type and run your own answer, or ask
-        the tutor (the ✨ box) to write or edit the code for you — then **Run & check**
-        to see the output and whether it's right.
+        You've watched the rumor off the field by eye; now pin it down with code. Each
+        task below is a small code ground — type and run your own answer, or ask the
+        tutor (the ✨ box) to write or edit it for you — then **Run & check**. (From
+        here on we'll lean on the math directly; the campus is yours to experiment on.)
         """
     )
     return
