@@ -343,6 +343,10 @@ def derivation(steps, *, autoplay_ms=1500, title=None):
         else:
             norm.append({"tex": s, "note": ""})
 
+    _steps_json = json.dumps(norm)
+    _ms = int(autoplay_ms)
+    _title = title or ""
+
     class _Derivation(anywidget.AnyWidget):
         _esm = """
         function render({ model, el }) {
@@ -382,9 +386,9 @@ def derivation(steps, *, autoplay_ms=1500, title=None):
         }
         export default { render };
         """
-        steps = traitlets.Unicode(json.dumps(norm)).tag(sync=True)
-        ms = traitlets.Int(int(autoplay_ms)).tag(sync=True)
-        title = traitlets.Unicode(title or "").tag(sync=True)
+        steps = traitlets.Unicode(_steps_json).tag(sync=True)
+        ms = traitlets.Int(_ms).tag(sync=True)
+        title = traitlets.Unicode(_title).tag(sync=True)
 
     return mo.ui.anywidget(_Derivation())
 
