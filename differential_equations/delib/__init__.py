@@ -34,6 +34,12 @@ from delib.ui import (
     exercise_view,
     check_number,
     closed_form_report,
+    key_field,
+    key_bridge_widget,
+    cell_picker_widget,
+    persist_key,
+    tutor_chat,
+    tutor_sidebar,
 )
 
 __all__ = [
@@ -61,4 +67,10 @@ __all__ = [
     "exercise_view",
     "check_number",
     "closed_form_report",
+    "key_field",
+    "key_bridge_widget",
+    "cell_picker_widget",
+    "persist_key",
+    "tutor_chat",
+    "tutor_sidebar",
 ]

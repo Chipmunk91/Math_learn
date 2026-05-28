@@ -9,7 +9,18 @@ import marimo as mo
 __all__ = [
     "param_slider", "param_panel", "run_exercise", "ai_code", "equilibria_report",
     "exercise_inputs", "exercise_ai", "exercise_view", "check_number", "closed_form_report",
+    "key_field", "key_bridge_widget", "cell_picker_widget", "persist_key",
+    "tutor_chat", "tutor_sidebar",
 ]
+
+_ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
+_DELIB_API = (
+    "delib API — call with these POSITIONAL args only; do NOT invent extra keyword "
+    "arguments: delib.vector_field_plotly(f, xlim, ylim) with f(x,y); "
+    "delib.flow_field(f, xlim, ylim) with f(x,y); delib.solution_surface(f, t_span, "
+    "y0_values) with f(t,y); delib.solve_ode(f, t_span, y0) with f(t,y) -> result with "
+    ".t and .y. Assign a Plotly figure to `view` to display it."
+)
 
 
 def param_slider(
@@ -284,3 +295,161 @@ def closed_form_report(rhs_str, *, func="y", indep="t"):
         )
     except Exception as exc:
         return mo.callout(mo.md(f"Couldn't solve that one symbolically.\n\n`{exc}`"), kind="warn")
+
+
+# --- tutor kit ----------------------------------------------------------------
+# The BYO-key chat tutor, factored so each chapter wires it in ~6 one-line cells
+# instead of duplicating the widget JS. The kernel runs in a Web Worker (no DOM /
+# sessionStorage), so the key bridge and cell picker are main-thread anywidgets.
+
+def key_field():
+    """The BYO-key input (password); the value stays in the browser only."""
+    return mo.ui.text(label="Anthropic key (stays in your browser)", kind="password", full_width=True)
+
+
+def key_bridge_widget():
+    """Hidden main-thread widget that reads/writes the shared sessionStorage key."""
+    import anywidget
+    import traitlets
+
+    class _KeyBridge(anywidget.AnyWidget):
+        _esm = """
+        function render({ model, el }) {
+          function readKey(){ try { return sessionStorage.getItem('mathlearn.anthropicKey')||''; } catch(e){ return ''; } }
+          model.set('key', readKey()); model.set('ready', true); model.save_changes();
+          model.on('change:save_value', function(){ try{ sessionStorage.setItem('mathlearn.anthropicKey', model.get('save_value')); model.set('key', model.get('save_value')); model.save_changes(); }catch(e){} });
+          el.style.display='none';
+        }
+        export default { render };
+        """
+        key = traitlets.Unicode("").tag(sync=True)
+        ready = traitlets.Bool(False).tag(sync=True)
+        save_value = traitlets.Unicode("").tag(sync=True)
+
+    return mo.ui.anywidget(_KeyBridge())
+
+
+def cell_picker_widget():
+    """Click-to-pick widget: the student clicks any chapter cell and its rendered
+    text becomes context for the next tutor question."""
+    import anywidget
+    import traitlets
+
+    class _CellPicker(anywidget.AnyWidget):
+        _esm = """
+        function render({ model, el }) {
+          var overlay, banner, picking=false;
+          function selfCell(){ return el.closest ? el.closest('.marimo-cell') : null; }
+          function under(t){ var c = (t && t.closest) ? t.closest('.marimo-cell') : null; return (c && c===selfCell()) ? null : c; }
+          function cellText(c){
+            var a = c.querySelector('.output-area') || c;
+            var clone = a.cloneNode(true);
+            var mm = clone.querySelectorAll('.katex-mathml'); for (var j=0;j<mm.length;j++) mm[j].remove();
+            return (clone.innerText || '').replace(/\\n{3,}/g,'\\n\\n').trim();
+          }
+          function titleOf(t){
+            var lines = t.split('\\n');
+            for (var k=0;k<lines.length;k++){ var s=lines[k].trim(); if(s){ return s.replace(/[*_`#$]/g,'').trim().slice(0,40); } }
+            return 'selected cell';
+          }
+          function ensure(){
+            if(overlay) return;
+            overlay=document.createElement('div');
+            overlay.style.cssText='position:fixed;z-index:9998;background:rgba(47,111,176,.18);border:2px solid #2f6fb0;border-radius:6px;pointer-events:none;display:none';
+            banner=document.createElement('div');
+            banner.style.cssText='position:fixed;z-index:9999;top:10px;left:50%;transform:translateX(-50%);background:#2f6fb0;color:#fff;padding:6px 12px;border-radius:6px;font:13px sans-serif;display:none';
+            banner.textContent='Click a cell to ask about it — Esc to cancel';
+            document.body.appendChild(overlay); document.body.appendChild(banner);
+          }
+          function onMove(e){ var c=under(e.target); if(!c){ overlay.style.display='none'; return;} var r=c.getBoundingClientRect(); var o=overlay.style; o.display='block'; o.top=r.top+'px'; o.left=r.left+'px'; o.width=r.width+'px'; o.height=r.height+'px'; }
+          function onClick(e){ var c=under(e.target); if(!c) return; e.preventDefault(); e.stopPropagation(); exit(); select(c); }
+          function onKey(e){ if(e.key==='Escape') exit(); }
+          function enter(){
+            model.set('picked_text',''); model.set('picked_title',''); model.save_changes(); paint();
+            picking=true; ensure(); overlay.style.display='none'; banner.style.display='block';
+            document.addEventListener('mousemove',onMove,true); document.addEventListener('click',onClick,true); document.addEventListener('keydown',onKey,true);
+          }
+          function exit(){ picking=false; if(overlay)overlay.style.display='none'; if(banner)banner.style.display='none'; document.removeEventListener('mousemove',onMove,true); document.removeEventListener('click',onClick,true); document.removeEventListener('keydown',onKey,true); }
+          function select(c){ var t=cellText(c); model.set('picked_text', t.slice(0,2000)); model.set('picked_title', titleOf(t)); model.save_changes(); paint(); }
+          var btn=document.createElement('button');
+          btn.style.cssText='width:100%;padding:8px 10px;border:1px solid #c7d2e0;border-radius:8px;background:#f3f7fc;cursor:pointer;font:13px sans-serif;color:#2c3e50;text-align:left';
+          function paint(){ var ti=model.get('picked_title'); btn.textContent = ti ? ('\\u{1F4CC} Asking about: '+ti) : '\\u{1F4CC} Pick a cell to ask about'; }
+          btn.addEventListener('click', function(){ enter(); });
+          el.appendChild(btn); paint();
+        }
+        export default { render };
+        """
+        picked_text = traitlets.Unicode("").tag(sync=True)
+        picked_title = traitlets.Unicode("").tag(sync=True)
+
+    return mo.ui.anywidget(_CellPicker())
+
+
+def persist_key(api_field, key_bridge):
+    """Persist a key typed in ``api_field`` to the shared slot via the bridge."""
+    if api_field.value:
+        key_bridge.widget.save_value = api_field.value
+
+
+def tutor_chat(api_field, key_bridge, picker, context, *, prompts=None,
+               model="claude-haiku-4-5-20251001"):
+    """A BYO-key chat tutor (``mo.ui.chat``) wired to Claude client-side, with the
+    chapter ``context`` and any picked-cell text folded into the system prompt."""
+    import json
+
+    system = (
+        "You are a friendly, concise math tutor inside a marimo notebook. " + context
+        + " Explain clearly in plain language and ALWAYS use LaTeX for math — inline "
+        "$...$ and display $$...$$ (never write bare expressions). When code helps, you "
+        "may include a ```python block using only mo, np, plt, go, delib. " + _DELIB_API
+        + " The student can copy code into a practice cell to run it. Keep answers focused."
+    )
+
+    async def chat_model(messages, config):
+        key = api_field.value or (key_bridge.value or {}).get("key", "")
+        sys = system
+        picked = (picker.value or {}).get("picked_text", "")
+        if picked:
+            sys += '\n\nThe student is asking about this cell:\n"""\n' + picked + '\n"""'
+        msgs = [{"role": m.role, "content": m.content} for m in messages
+                if m.role in ("user", "assistant") and m.content]
+        body = json.dumps({"model": model, "max_tokens": 800, "system": sys, "messages": msgs})
+        headers = {"content-type": "application/json", "x-api-key": key,
+                   "anthropic-version": "2023-06-01",
+                   "anthropic-dangerous-direct-browser-access": "true"}
+        try:
+            from pyodide.http import pyfetch
+
+            resp = await pyfetch(_ANTHROPIC_URL, method="POST", headers=headers, body=body)
+            data = await resp.json()
+        except ModuleNotFoundError:
+            import urllib.request
+            import urllib.error
+
+            req = urllib.request.Request(_ANTHROPIC_URL, data=body.encode(), headers=headers, method="POST")
+            try:
+                with urllib.request.urlopen(req) as r:
+                    data = json.loads(r.read().decode())
+            except urllib.error.HTTPError as exc:
+                data = json.loads(exc.read().decode())
+        if not (isinstance(data, dict) and data.get("content")):
+            return "**API error**\n\n```json\n" + json.dumps(data, indent=2)[:800] + "\n```"
+        return "".join(b.get("text", "") for b in data["content"])
+
+    return mo.ui.chat(chat_model, prompts=prompts or [])
+
+
+def tutor_sidebar(api_field, key_bridge, picker, chatbox, *, title="Tutor"):
+    """Render the tutor as a left sidebar: key field, then (once a key is set) the
+    cell picker and chat; otherwise a prompt to add a key."""
+    key_ok = bool(api_field.value or (key_bridge.value or {}).get("key"))
+    items = [mo.md(f"### {title}"), key_bridge, api_field]
+    if key_ok:
+        items += [mo.md("key set ✓"), picker, chatbox]
+    else:
+        items.append(mo.callout(mo.md(
+            "**Add your Anthropic API key** above to ask the tutor.\n\nNo key yet? "
+            "Create one at [console.anthropic.com/settings/keys]"
+            "(https://console.anthropic.com/settings/keys). It is stored only in this "
+            "browser and sent only to Anthropic — never to this site."), kind="info"))
+    return mo.sidebar(items, width="420px")

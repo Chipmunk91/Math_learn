@@ -110,8 +110,10 @@ inlining), and animation-safe (static content in base, moving content in frames)
 
 ## Status
 
-- **Ch 01** — built (field, sliders, particle flow, playground). The template.
-- **Ch 02–12** — to author against this roadmap.
+- **Ch 01** — built (rumor hook, live SymPy, field/flow, challenges, playground). The template.
+- **Ch 02** — built (cooling-coffee hook, closed-form SymPy `dsolve`, field/flow, challenges).
+  First chapter on the factored `delib` challenge + tutor kit.
+- **Ch 03–12** — to author against this roadmap.
 - Cross-cutting features in flight (other sessions): chapter **navigation**.
 
 When packaging the playground into a reusable `delib.playground(context)` lands,
