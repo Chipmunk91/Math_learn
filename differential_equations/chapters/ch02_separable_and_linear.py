@@ -121,31 +121,31 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Beat 3b — solve it step by step (live SymPy below).
+    # Beat 3b — watch the separable method unfold (animated, in the teaching).
     mo.md(
         r"""
-        ## Solve it — step by step
+        ## Solve it — watch the method
 
-        `dsolve` would hand you the answer in one line, but that hides the *method*.
-        Because the equation is separable, we can watch it fall out: **separate the
-        variables → integrate each side → solve**. Edit the rate law, then expand each
-        step below. The default is the cooling law; try `-k*T` (cooling into a $0°$
-        room) or `q - k*T` (a heater fighting the cold).
+        `dsolve` would spit out the answer in one line, but that hides *how*. Because
+        the equation is **separable**, we can watch it fall out: gather the $T$'s on one
+        side and the $t$'s on the other, integrate each side, then solve for $T$. Press
+        **▶ Play** to step through it.
         """
     )
     return
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    cf_input = mo.ui.text(value="-k*(T - Tr)", full_width=True, label="dT/dt =")
-    cf_input
-    return (cf_input,)
-
-
-@app.cell(hide_code=True)
-def _(cf_input, delib):
-    delib.solve_steps(cf_input.value, func="T")
+def _(delib):
+    delib.derivation(
+        [
+            (r"\frac{dT}{dt} = -k\,(T - T_r)", "Start from the cooling law."),
+            (r"\frac{dT}{T - T_r} = -k\,dt", "Separate: every T on the left, every t on the right."),
+            (r"\ln\lvert T - T_r\rvert = -k\,t + C", "Integrate both sides."),
+            (r"T(t) = T_r + (T_0 - T_r)\,e^{-k t}", "Exponentiate, then fix C from T(0) = T_0."),
+        ],
+        title="Separation of variables",
+    )
     return
 
 
