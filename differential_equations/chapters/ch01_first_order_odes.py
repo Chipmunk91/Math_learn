@@ -53,20 +53,61 @@ def _(delib, go, mo, np):
     mo.vstack([
         mo.md(
             r"""
-            ## A rumor gets out
+            ## A story about change
 
-            Monday morning, **3 people** on a 1,000-person campus know a juicy rumor.
-            By Friday, *everyone* does. Plot how many have heard it each day and you
-            don't get a straight line — you get this lazy **S**: slow at first, then
-            explosive, then leveling off.
+            Most of the math you've met so far describes where things *are* — a point,
+            a length, a value. **Differential equations** capture something subtler and
+            far more powerful: how things *change*. They rarely hand you the answer
+            outright. Instead they hand you a **rule for the rate of change** at each
+            instant, and let the whole story unfold from it. Populations, epidemics,
+            cooling coffee, orbiting planets, the charge on your phone — all of them are
+            stories told by differential equations.
 
-            Why that shape? Spreading takes **two** people: one who knows and one who
-            doesn't. Early on there are few tellers; late on there's almost no one
-            left to tell. All the action is in the middle.
+            The quickest way to *feel* that is with a story. So here's one.
+
+            Monday morning, **3 people** on a 1,000-person campus know a juicy rumor. By
+            Friday, *everyone* does. If you plot how many have heard it each day, you
+            don't get a straight line — you get this lazy **S**: a slow start, an
+            explosive middle, and a gentle leveling-off.
+
+            Why that exact shape? Because spreading takes **two** people: one who knows
+            and one who doesn't. On Monday there are only a handful of tellers, so it
+            creeps. By midweek there are plenty of tellers *and* plenty of fresh ears,
+            so it erupts. By Friday almost everyone has heard it, so there's hardly
+            anyone left to tell — and it flattens. All the drama lives in the middle.
             """
         ),
         _fig,
     ])
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Bridge — name the concept the story just illustrated.
+    mo.md(
+        r"""
+        ## What the story is really saying
+
+        Notice we never wrote a formula for "how many know it on day 7." We described
+        something more *local*: how fast the number is changing **right now**, in terms
+        of how many already know. That is exactly what a **differential equation** is —
+        a rule of the form
+
+        $$ \frac{dy}{dt} = f(t, y), $$
+
+        which reads *"tell me where you are, and I'll tell you how fast you're moving."*
+        The equation is called **first-order** because the rule uses only the current
+        value $y$ (and possibly the time $t$) — no acceleration, no higher rates of
+        change. That's all a solver needs: give it the rule plus a starting point and it
+        can trace the entire curve, one small step at a time. The S-shape above is
+        simply what you get when you **follow the rate** day by day.
+
+        So the rest of this chapter is three moves: **(1)** turn the rumor story into
+        such a rate-rule, **(2)** read what the rule tells us *before* solving it, and
+        **(3)** watch the family of solutions it implies.
+        """
+    )
     return
 
 
@@ -77,19 +118,28 @@ def _(mo):
         r"""
         ## Turning the story into an equation
 
-        Let $y(t)$ be how many people have heard the rumor by day $t$, out of a
-        population $K$. A fresh telling happens when a *knower* meets a *non-knower*,
-        so the number of new tellings per day is proportional to
+        Let $y(t)$ be how many people have heard the rumor by day $t$, out of a campus
+        of $K$ people. We don't know $y(t)$ yet — that's the whole point. But we *can*
+        describe its **rate of change** straight from the mechanism of gossip.
 
-        $$ \underbrace{y}_{\text{knowers}} \times \underbrace{(K - y)}_{\text{not yet}}. $$
+        A fresh telling happens only when a **knower** runs into a **non-knower**. There
+        are $y$ knowers and $K - y$ people who haven't heard yet, so the number of
+        possible "telling" encounters — and therefore the rate at which new people learn
+        the rumor — is proportional to their product:
 
-        That is the **logistic equation**
+        $$ \frac{dy}{dt} = b\,y\,(K - y). $$
 
-        $$ \frac{dy}{dt} = b\,y\,(K - y) \;=\; a\,y\left(1 - \frac{y}{K}\right), $$
+        It reads more cleanly if we factor out the capacity and write the very same rule
+        as
 
-        with early growth rate $a = bK$ and carrying capacity $K$ — here, the whole
-        campus. Two terms, two roles: $y$ drives the spread, and $(1 - y/K)$ hits the
-        brakes as the crowd of non-knowers runs out.
+        $$ \frac{dy}{dt} = a\,y\left(1 - \frac{y}{K}\right), \qquad a = bK, $$
+
+        the famous **logistic equation**. Hear it as two voices in tension. The factor
+        $y$ is the **engine**: more knowers means more spreading, which is why a rumor
+        with no one to start it never moves. The factor $(1 - y/K)$ is the **brake**: as
+        $y$ climbs toward the whole campus $K$, the pool of fresh ears shrinks toward
+        zero and the brake clamps down. Their tug-of-war — engine winning early, brake
+        winning late — is *exactly* the S-curve we observed.
         """
     )
     return
@@ -102,9 +152,22 @@ def _(mo):
         r"""
         ## Play with the symbols
 
-        Where does the spread **stop**? Wherever $dy/dt = 0$ — an **equilibrium**.
-        Edit the rate law below and watch the equilibria (and their stability)
-        re-solve live. Try `a*y` (no ceiling), or `a*y*(1 - y/K)*(2 - y/K)`.
+        Here's the quiet superpower of writing the rule down: we can mine it for
+        insight *before drawing or solving anything*. The most revealing question is —
+        where does the spread **stop**? It stops wherever the rate is zero, $dy/dt = 0$.
+        The $y$-values that satisfy that are the **equilibria**: populations that, once
+        reached, never change.
+
+        For our rumor, $a\,y(1 - y/K) = 0$ has two answers — $y = 0$ (nobody knows) and
+        $y = K$ (everybody does) — and they behave oppositely. One is a **stable**
+        resting point that nearby solutions are pulled *toward*; the other is
+        **unstable**, with solutions pushed *away*. The tell is the slope of the rate,
+        $f'(y)$: negative means stable, positive means unstable.
+
+        Don't take that on faith — **change the rate law below and watch the equilibria
+        and their stability re-solve symbolically**, live. Try `a*y` (spreading with no
+        ceiling), or stack a second brake with `a*y*(1 - y/K)*(2 - y/K)` and see a third
+        equilibrium appear.
         """
     )
     return
@@ -130,10 +193,18 @@ def _(mo):
         r"""
         ## See the whole flow at once — the slope field
 
-        The equation gives a *slope* at every point $(t, y)$: draw a tiny arrow there
-        and you get the **slope field**, a map that every possible spread-story must
-        follow. The two equilibria show up as flat, horizontal lanes — $y = 0$ (no one
-        knows) and $y = K$ (everyone does).
+        Solving the equation from one starting point gives one curve. But the rule
+        $dy/dt = f(t, y)$ does something more generous: it assigns a slope to **every**
+        point $(t, y)$ in the plane. So at each point we can draw a tiny arrow pointing
+        the way a solution passing through there would head — and doing that across a
+        grid gives the **slope field**, a picture of *every* possible spread-story at
+        once, without solving a thing.
+
+        Read it like a current in water: drop a cork anywhere and it drifts along the
+        arrows. The equilibria you just found by hand reappear here as flat, horizontal
+        lanes — $y = 0$ (nobody knows) and $y = K$ (everybody does) — where the arrows
+        lie perfectly level because the rate is zero. Everywhere between them the arrows
+        tilt upward, carrying solutions from the empty rumor toward the full campus.
         """
     )
     return
