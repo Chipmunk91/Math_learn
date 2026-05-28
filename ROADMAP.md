@@ -12,21 +12,25 @@ redesigning anything.
 
 ---
 
-## The chapter template
+## The chapter template — a narrative arc
 
-Every chapter follows the shape proven in Chapter 1, so they feel consistent and
-authoring is "fill the outline":
+Every chapter tells a story: start from something real, build the math from it,
+play with it, then visualize and practice. Concrete first, formalism second.
 
-1. **Concept** — plain-language explanation with LaTeX math (`mo.md`).
-2. **Static field** — the relevant `delib` Plotly visual at fixed parameters.
-3. **Interactive exploration** — `param_panel` sliders that reshape the field live.
-4. **Dynamical view** — a `flow_field`-style animation: particles riding the static
-   field, replayed as the sliders change the parameters.
-5. **3-D view** *(where it earns its place)* — e.g. a solution surface or a 3-D
-   trajectory.
-6. **Try it** — 3–4 conceptual questions.
-7. **Playground** — the BYO-key tutor: ask in plain language → code lands in an
-   editor → Run renders it. Single AI surface, light Plotly theme.
+1. **Hook** — a real-world observation/case study + a picture, posing the question.
+   (Ch1: a rumor spreading across a 1,000-person campus → the S-curve.)
+2. **Build the model** — reason from the phenomenon to the equation, justifying
+   each term, landing on the chapter's ODE.
+3. **Play with the symbols** — manipulate the formalism live: `delib.equilibria_report`
+   solves `dy/dt = 0` with SymPy and classifies stability as the student edits the
+   rate law.
+4. **See it** — the `delib` Plotly visuals: static field → `param_panel` sliders →
+   `flow_field` animation (particles riding the field). 3-D where it earns its place.
+5. **Try it** — interactive code grounds: each task is AI-assist (`delib.ai_code`,
+   coach mode) → editable code → output → auto-eval (`delib.run_exercise`).
+6. **Playground** — an open, ungraded sandbox: editable code + ✨ AI assist + Run.
+
+The tutor sidebar (chat, BYO-key) is always present alongside, for free-form help.
 
 ## Conventions
 

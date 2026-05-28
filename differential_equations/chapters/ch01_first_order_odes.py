@@ -36,22 +36,104 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
+def _(delib, go, mo, np):
+    # Beat 1 — the real-world observation that motivates the whole chapter.
+    _t = np.linspace(0, 14, 80)
+    _sol = delib.solve_ode(lambda t, y: 0.9 * y * (1 - y / 1000.0), (0.0, 14.0), 3.0, t_eval=_t)
+    _fig = go.Figure(go.Scatter(x=_sol.t, y=_sol.y[0], mode="lines",
+                                line=dict(color="#2f6fb0", width=3),
+                                hoverinfo="skip", showlegend=False))
+    _fig.update_layout(
+        template="plotly_white",
+        title=dict(text="One rumor on a 1,000-person campus", x=0.02),
+        xaxis=dict(title="day"), yaxis=dict(title="people who've heard it"),
+        height=320, margin=dict(l=60, r=20, t=46, b=42),
+        paper_bgcolor="white", plot_bgcolor="white",
+    )
+    mo.vstack([
+        mo.md(
+            r"""
+            ## A rumor gets out
+
+            Monday morning, **3 people** on a 1,000-person campus know a juicy rumor.
+            By Friday, *everyone* does. Plot how many have heard it each day and you
+            don't get a straight line — you get this lazy **S**: slow at first, then
+            explosive, then leveling off.
+
+            Why that shape? Spreading takes **two** people: one who knows and one who
+            doesn't. Early on there are few tellers; late on there's almost no one
+            left to tell. All the action is in the middle.
+            """
+        ),
+        _fig,
+    ])
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo):
+    # Beat 2 — build the model from the story.
     mo.md(
         r"""
-        ## Concept
+        ## Turning the story into an equation
 
-        A first-order ODE $y' = f(x, y)$ doesn't hand you one solution — it hands
-        you a *rule for the slope* at every point of the plane. Draw a tiny arrow
-        with slope $f(x, y)$ at a grid of points and you get the **slope field**:
-        a map of the flow that every solution must follow.
+        Let $y(t)$ be how many people have heard the rumor by day $t$, out of a
+        population $K$. A fresh telling happens when a *knower* meets a *non-knower*,
+        so the number of new tellings per day is proportional to
 
-        Our worked equation is the **logistic** model
+        $$ \underbrace{y}_{\text{knowers}} \times \underbrace{(K - y)}_{\text{not yet}}. $$
 
-        $$ y' = a\,y\left(1 - \frac{y}{K}\right), $$
+        That is the **logistic equation**
 
-        with growth rate $a$ and carrying capacity $K$. It has two equilibria,
-        $y = 0$ and $y = K$, where the slope is zero and the field goes flat.
+        $$ \frac{dy}{dt} = b\,y\,(K - y) \;=\; a\,y\left(1 - \frac{y}{K}\right), $$
+
+        with early growth rate $a = bK$ and carrying capacity $K$ — here, the whole
+        campus. Two terms, two roles: $y$ drives the spread, and $(1 - y/K)$ hits the
+        brakes as the crowd of non-knowers runs out.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 3 — play with the symbols (live SymPy below).
+    mo.md(
+        r"""
+        ## Play with the symbols
+
+        Where does the spread **stop**? Wherever $dy/dt = 0$ — an **equilibrium**.
+        Edit the rate law below and watch the equilibria (and their stability)
+        re-solve live. Try `a*y` (no ceiling), or `a*y*(1 - y/K)*(2 - y/K)`.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    eq_input = mo.ui.text(value="a*y*(1 - y/K)", full_width=True, label="dy/dt =")
+    eq_input
+    return (eq_input,)
+
+
+@app.cell(hide_code=True)
+def _(delib, eq_input):
+    delib.equilibria_report(eq_input.value)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 4 — bridge into the visuals.
+    mo.md(
+        r"""
+        ## See the whole flow at once — the slope field
+
+        The equation gives a *slope* at every point $(t, y)$: draw a tiny arrow there
+        and you get the **slope field**, a map that every possible spread-story must
+        follow. The two equilibria show up as flat, horizontal lanes — $y = 0$ (no one
+        knows) and $y = K$ (everyone does).
         """
     )
     return

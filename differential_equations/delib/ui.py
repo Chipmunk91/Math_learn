@@ -6,7 +6,7 @@ from collections.abc import Mapping, Sequence
 
 import marimo as mo
 
-__all__ = ["param_slider", "param_panel", "run_exercise", "ai_code"]
+__all__ = ["param_slider", "param_panel", "run_exercise", "ai_code", "equilibria_report"]
 
 
 def param_slider(
@@ -169,3 +169,45 @@ async def ai_code(instruction, current_code, key, *, context="", coach=False,
     full = "".join(b.get("text", "") for b in data["content"])
     m = re.search(r"```(?:python)?\s*\n(.*?)```", full, re.S)
     return m.group(1).strip() if m else (full.strip() or current_code)
+
+
+def equilibria_report(expr_str, *, var="y"):
+    """Symbolically find and classify the equilibria of ``d{var}/dt = expr``.
+
+    Parses ``expr_str`` (free symbols like ``a``, ``K`` are allowed), solves
+    ``expr = 0`` for ``var``, and reports each equilibrium with ``f'(var)`` (an
+    equilibrium is stable where the slope of the rate is negative). Rendered as
+    marimo markdown with LaTeX. Uses SymPy in the kernel; lets students edit the
+    rate law and watch the formalism re-solve live.
+    """
+    import sympy as sp
+
+    try:
+        y = sp.Symbol(var)
+        expr = sp.sympify(expr_str, locals={var: y})
+    except Exception as exc:
+        return mo.callout(
+            mo.md(f"Couldn't read that — try something like `a*y*(1 - y/K)`.\n\n`{exc}`"),
+            kind="warn",
+        )
+    try:
+        sols = sp.solve(sp.Eq(expr, 0), y)
+    except Exception:
+        sols = []
+    fprime = sp.diff(expr, y)
+    lines = [f"Rate law: $\\dfrac{{d{var}}}{{dt}} = {sp.latex(expr)}$."]
+    if sols:
+        lines.append(
+            "**Equilibria** (where the rate is $0$): "
+            + ", ".join(f"${var} = {sp.latex(s)}$" for s in sols) + "."
+        )
+        lines.append(
+            f"Slope of the rate $f'({var}) = {sp.latex(sp.simplify(fprime))}$ — an "
+            "equilibrium is **stable** where this is negative:"
+        )
+        for s in sols:
+            d = sp.simplify(fprime.subs(y, s))
+            lines.append(f"- at ${var} = {sp.latex(s)}$: &nbsp; $f' = {sp.latex(d)}$")
+    else:
+        lines.append(f"No equilibrium in ${var}$ for this rate law.")
+    return mo.md("\n\n".join(lines))
