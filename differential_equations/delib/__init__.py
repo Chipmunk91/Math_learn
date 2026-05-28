@@ -23,7 +23,18 @@ from delib.animate import (
     solution_surface,
     frame_index,
 )
-from delib.ui import param_slider, param_panel, run_exercise, ai_code, equilibria_report
+from delib.ui import (
+    param_slider,
+    param_panel,
+    run_exercise,
+    ai_code,
+    equilibria_report,
+    exercise_inputs,
+    exercise_ai,
+    exercise_view,
+    check_number,
+    closed_form_report,
+)
 
 __all__ = [
     "solve_ode",
@@ -45,4 +56,9 @@ __all__ = [
     "run_exercise",
     "ai_code",
     "equilibria_report",
+    "exercise_inputs",
+    "exercise_ai",
+    "exercise_view",
+    "check_number",
+    "closed_form_report",
 ]

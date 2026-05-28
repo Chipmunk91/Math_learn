@@ -350,52 +350,38 @@ def _(mo):
 
 
 @app.cell
-def _(c1_get, mo):
-    c1_ai = mo.ui.text(placeholder="✨ ask the tutor to write/edit the code…", full_width=True)
-    c1_gen = mo.ui.run_button(label="✨ Write / edit")
-    c1_code = mo.ui.code_editor(value=c1_get(), language="python")
-    c1_run = mo.ui.run_button(label="Run & check", full_width=True)
+def _(c1_get, delib):
+    c1_ai, c1_gen, c1_code, c1_run = delib.exercise_inputs(c1_get())
     return c1_ai, c1_code, c1_gen, c1_run
 
 
 @app.cell
-async def _(api_field, c1_ai, c1_code, c1_gen, c1_set, delib, key_bridge, mo):
-    mo.stop(not c1_gen.value)
-    _key = api_field.value or (key_bridge.value or {}).get("key", "")
-    c1_set(await delib.ai_code(
-        c1_ai.value, c1_code.value, _key, coach=True,
-        context="Logistic y'=a*y*(1-y/K). The task: which equilibrium is stable when a<0; put its y-value in `answer`.",
-    ))
+async def _(api_field, c1_ai, c1_code, c1_gen, c1_set, delib, key_bridge):
+    await delib.exercise_ai(
+        c1_gen, c1_ai, c1_code, c1_set,
+        api_field.value or (key_bridge.value or {}).get("key", ""),
+        context="Logistic y'=a*y*(1-y/K). Task: which equilibrium is stable when a<0; put its y-value in `answer`.",
+    )
     return
 
 
 @app.cell(hide_code=True)
-def _(c1_ai, c1_code, c1_gen, c1_run, mo):
-    mo.vstack([
-        mo.md("**1.** With $a<0$, which equilibrium becomes the **attractor**? "
-              "Assign its $y$-value to `answer`."),
-        mo.vstack([c1_ai, c1_gen]),
-        c1_code,
-        c1_run,
-    ])
+def _(c1_ai, c1_code, c1_gen, c1_run, delib):
+    delib.exercise_view(
+        "**1.** With $a<0$, which equilibrium becomes the **attractor**? Assign its "
+        "$y$-value to `answer`.",
+        c1_ai, c1_gen, c1_code, c1_run,
+    )
     return
 
 
 @app.cell(hide_code=True)
 def _(c1_code, c1_run, delib):
-    def _c1_check(ns):
-        a = ns.get("answer")
-        if a is None or a is Ellipsis:
-            return False, "Assign the attracting equilibrium's $y$-value to `answer`."
-        try:
-            ok = abs(float(a)) < 1e-9
-        except Exception:
-            return False, "`answer` should be a single number."
-        if ok:
-            return True, "Right — for $a<0$, $y=0$ is the attractor (and $y=K$ repels)."
-        return False, f"You got {a}. With $a<0$ the flow points toward $y=0$."
-
-    delib.run_exercise(c1_code.value, c1_run.value, check=_c1_check)
+    delib.run_exercise(c1_code.value, c1_run.value, check=lambda ns: delib.check_number(
+        ns, target=0.0,
+        ok="Right — for $a<0$, $y=0$ is the attractor (and $y=K$ repels).",
+        hint="With $a<0$ the flow points toward $y=0$.",
+    ))
     return
 
 
@@ -411,53 +397,39 @@ def _(mo):
 
 
 @app.cell
-def _(c2_get, mo):
-    c2_ai = mo.ui.text(placeholder="✨ ask the tutor to write/edit the code…", full_width=True)
-    c2_gen = mo.ui.run_button(label="✨ Write / edit")
-    c2_code = mo.ui.code_editor(value=c2_get(), language="python")
-    c2_run = mo.ui.run_button(label="Run & check", full_width=True)
+def _(c2_get, delib):
+    c2_ai, c2_gen, c2_code, c2_run = delib.exercise_inputs(c2_get())
     return c2_ai, c2_code, c2_gen, c2_run
 
 
 @app.cell
-async def _(api_field, c2_ai, c2_code, c2_gen, c2_set, delib, key_bridge, mo):
-    mo.stop(not c2_gen.value)
-    _key = api_field.value or (key_bridge.value or {}).get("key", "")
-    c2_set(await delib.ai_code(
-        c2_ai.value, c2_code.value, _key, coach=True,
+async def _(api_field, c2_ai, c2_code, c2_gen, c2_set, delib, key_bridge):
+    await delib.exercise_ai(
+        c2_gen, c2_ai, c2_code, c2_set,
+        api_field.value or (key_bridge.value or {}).get("key", ""),
         context="Logistic y'=a*y*(1-y/K), a=1, K=4, y0=6 (above K). Task: integrate to t=10 and put y(10) in `answer` (use delib.solve_ode).",
-    ))
+    )
     return
 
 
 @app.cell(hide_code=True)
-def _(c2_ai, c2_code, c2_gen, c2_run, mo):
-    mo.vstack([
-        mo.md("**2.** Start **above** the capacity ($y_0=6$, $a=1$, $K=4$). Integrate "
-              "to $t=10$ and put the final value $y(10)$ in `answer`. Does it fall to "
-              "$K$ or overshoot?"),
-        mo.vstack([c2_ai, c2_gen]),
-        c2_code,
-        c2_run,
-    ])
+def _(c2_ai, c2_code, c2_gen, c2_run, delib):
+    delib.exercise_view(
+        "**2.** Start **above** the capacity ($y_0=6$, $a=1$, $K=4$). Integrate to "
+        "$t=10$ and put the final value $y(10)$ in `answer`. Does it fall to $K$ or "
+        "overshoot?",
+        c2_ai, c2_gen, c2_code, c2_run,
+    )
     return
 
 
 @app.cell(hide_code=True)
 def _(c2_code, c2_run, delib):
-    def _c2_check(ns):
-        a = ns.get("answer")
-        if a is None or a is Ellipsis:
-            return False, "Assign $y(10)$ to `answer` — try `delib.solve_ode`."
-        try:
-            ok = abs(float(a) - 4.0) < 0.1
-        except Exception:
-            return False, "`answer` should be a single number."
-        if ok:
-            return True, "Right — it settles onto $K=4$ from above, no overshoot."
-        return False, f"You got {a}. Integrate $y'=a y(1-y/K)$ from $y_0=6$; it approaches $4$."
-
-    delib.run_exercise(c2_code.value, c2_run.value, check=_c2_check)
+    delib.run_exercise(c2_code.value, c2_run.value, check=lambda ns: delib.check_number(
+        ns, target=4.0, tol=0.1,
+        ok="Right — it settles onto $K=4$ from above, no overshoot.",
+        hint="Integrate $y'=a y(1-y/K)$ from $y_0=6$; it approaches $4$.",
+    ))
     return
 
 
@@ -474,52 +446,38 @@ def _(mo):
 
 
 @app.cell
-def _(c3_get, mo):
-    c3_ai = mo.ui.text(placeholder="✨ ask the tutor to write/edit the code…", full_width=True)
-    c3_gen = mo.ui.run_button(label="✨ Write / edit")
-    c3_code = mo.ui.code_editor(value=c3_get(), language="python")
-    c3_run = mo.ui.run_button(label="Run & check", full_width=True)
+def _(c3_get, delib):
+    c3_ai, c3_gen, c3_code, c3_run = delib.exercise_inputs(c3_get())
     return c3_ai, c3_code, c3_gen, c3_run
 
 
 @app.cell
-async def _(api_field, c3_ai, c3_code, c3_gen, c3_set, delib, key_bridge, mo):
-    mo.stop(not c3_gen.value)
-    _key = api_field.value or (key_bridge.value or {}).get("key", "")
-    c3_set(await delib.ai_code(
-        c3_ai.value, c3_code.value, _key, coach=True,
+async def _(api_field, c3_ai, c3_code, c3_gen, c3_set, delib, key_bridge):
+    await delib.exercise_ai(
+        c3_gen, c3_ai, c3_code, c3_set,
+        api_field.value or (key_bridge.value or {}).get("key", ""),
         context="Logistic y'=a*y*(1-y/K), a=1, K=4. Task: find the y that maximizes the growth rate y'; put it in `answer`.",
-    ))
+    )
     return
 
 
 @app.cell(hide_code=True)
-def _(c3_ai, c3_code, c3_gen, c3_run, mo):
-    mo.vstack([
-        mo.md("**3.** The growth rate $y'=a\\,y(1-y/K)$ is **steepest** at one value of "
-              "$y$. Find it (for $a=1$, $K=4$) and put it in `answer`."),
-        mo.vstack([c3_ai, c3_gen]),
-        c3_code,
-        c3_run,
-    ])
+def _(c3_ai, c3_code, c3_gen, c3_run, delib):
+    delib.exercise_view(
+        "**3.** The growth rate $y'=a\\,y(1-y/K)$ is **steepest** at one value of $y$. "
+        "Find it (for $a=1$, $K=4$) and put it in `answer`.",
+        c3_ai, c3_gen, c3_code, c3_run,
+    )
     return
 
 
 @app.cell(hide_code=True)
 def _(c3_code, c3_run, delib):
-    def _c3_check(ns):
-        a = ns.get("answer")
-        if a is None or a is Ellipsis:
-            return False, "Assign the $y$ of steepest growth to `answer`."
-        try:
-            ok = abs(float(a) - 2.0) < 0.05
-        except Exception:
-            return False, "`answer` should be a single number."
-        if ok:
-            return True, "Yes — growth peaks at $y=K/2=2$, halfway to capacity."
-        return False, f"You got {a}. Maximize $a y(1-y/K)$ over $y$; the peak is at $y=K/2$."
-
-    delib.run_exercise(c3_code.value, c3_run.value, check=_c3_check)
+    delib.run_exercise(c3_code.value, c3_run.value, check=lambda ns: delib.check_number(
+        ns, target=2.0, tol=0.05,
+        ok="Yes — growth peaks at $y=K/2=2$, halfway to capacity.",
+        hint="Maximize $a y(1-y/K)$ over $y$; the peak is at $y=K/2$.",
+    ))
     return
 
 
@@ -734,32 +692,25 @@ def _(mo):
 
 
 @app.cell
-def _(mo, pg_get):
-    pg_ai = mo.ui.text(placeholder="✨ ask the tutor to write/edit the code…", full_width=True)
-    pg_gen = mo.ui.run_button(label="✨ Write / edit")
-    pg_code = mo.ui.code_editor(value=pg_get(), language="python")
-    pg_run = mo.ui.run_button(label="Run", full_width=True)
+def _(delib, pg_get):
+    pg_ai, pg_gen, pg_code, pg_run = delib.exercise_inputs(pg_get(), run_label="Run")
     return pg_ai, pg_code, pg_gen, pg_run
 
 
 @app.cell
-async def _(api_field, delib, key_bridge, mo, pg_ai, pg_code, pg_gen, pg_set):
-    mo.stop(not pg_gen.value)
-    _key = api_field.value or (key_bridge.value or {}).get("key", "")
-    pg_set(await delib.ai_code(
-        pg_ai.value, pg_code.value, _key,
+async def _(api_field, delib, key_bridge, pg_ai, pg_code, pg_gen, pg_set):
+    await delib.exercise_ai(
+        pg_gen, pg_ai, pg_code, pg_set,
+        api_field.value or (key_bridge.value or {}).get("key", ""),
+        coach=False,
         context="Open sandbox for chapter 1 (first-order ODEs, logistic). Write complete, runnable code; assign a Plotly figure to `view`.",
-    ))
+    )
     return
 
 
 @app.cell(hide_code=True)
-def _(mo, pg_ai, pg_code, pg_gen, pg_run):
-    mo.vstack([
-        mo.vstack([pg_ai, pg_gen]),
-        pg_code,
-        pg_run,
-    ])
+def _(delib, pg_ai, pg_code, pg_gen, pg_run):
+    delib.exercise_view(None, pg_ai, pg_gen, pg_code, pg_run)
     return
 
 

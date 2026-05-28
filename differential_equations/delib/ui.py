@@ -6,7 +6,10 @@ from collections.abc import Mapping, Sequence
 
 import marimo as mo
 
-__all__ = ["param_slider", "param_panel", "run_exercise", "ai_code", "equilibria_report"]
+__all__ = [
+    "param_slider", "param_panel", "run_exercise", "ai_code", "equilibria_report",
+    "exercise_inputs", "exercise_ai", "exercise_view", "check_number", "closed_form_report",
+]
 
 
 def param_slider(
@@ -211,3 +214,73 @@ def equilibria_report(expr_str, *, var="y"):
     else:
         lines.append(f"No equilibrium in ${var}$ for this rate law.")
     return mo.md("\n\n".join(lines))
+
+
+# --- code-challenge kit -------------------------------------------------------
+# A challenge is five tiny cells (state, inputs, AI, view, eval). These helpers
+# carry the repeated wiring so each chapter writes ~1 line per cell. UI elements
+# must still be created as globals in a cell (marimo reactivity), so the cell
+# count stays; the boilerplate does not.
+
+def exercise_inputs(default_code, *, run_label="Run & check"):
+    """The four controls for a code challenge: AI box, ✨ button, editor, run.
+
+    Use in one cell (bind to globals): ``ai, gen, code, run =
+    delib.exercise_inputs(get_code())`` where ``get_code`` is an ``mo.state`` so
+    the AI can refill the editor.
+    """
+    ai = mo.ui.text(placeholder="✨ ask the tutor to write/edit the code…", full_width=True)
+    gen = mo.ui.run_button(label="✨ Write / edit")
+    code = mo.ui.code_editor(value=default_code, language="python")
+    run = mo.ui.run_button(label=run_label, full_width=True)
+    return ai, gen, code, run
+
+
+async def exercise_ai(gen, ai, code, set_code, key, *, context="", coach=True):
+    """Glue for the ✨ button — call in an async cell. Stops until pressed, then
+    writes the AI's code into the editor state. ``coach=True`` scaffolds without
+    filling in the graded ``answer``."""
+    mo.stop(not gen.value)
+    set_code(await ai_code(ai.value, code.value, key, context=context, coach=coach))
+
+
+def exercise_view(prompt, ai, gen, code, run):
+    """Lay out a challenge: prompt (optional), then AI box + button, editor, run."""
+    items = []
+    if prompt is not None:
+        items.append(mo.md(prompt) if isinstance(prompt, str) else prompt)
+    items += [mo.vstack([ai, gen]), code, run]
+    return mo.vstack(items)
+
+
+def check_number(ns, *, target, tol=1e-6, key="answer", ok="Correct.", hint=""):
+    """A ready-made ``run_exercise`` checker: pass when ``ns[key]`` is within
+    ``tol`` of ``target``."""
+    v = ns.get(key)
+    if v is None or v is Ellipsis:
+        return False, f"Define `{key}`."
+    try:
+        good = abs(float(v) - target) < tol
+    except Exception:
+        return False, f"`{key}` should be a single number."
+    return (True, ok) if good else (False, hint or f"You got {v}.")
+
+
+def closed_form_report(rhs_str, *, func="y", indep="t"):
+    """Symbolically solve ``d{func}/d{indep} = rhs`` for its closed form (SymPy
+    ``dsolve``), rendered as marimo markdown — the symbol-play beat for chapters
+    about solving exactly. Free symbols (e.g. ``k``) are allowed."""
+    import sympy as sp
+
+    t = sp.Symbol(indep)
+    f = sp.Function(func)
+    try:
+        rhs = sp.sympify(rhs_str, locals={func: f(t), indep: t})
+        sol = sp.dsolve(sp.Eq(f(t).diff(t), rhs), f(t))
+        return mo.md(
+            f"The equation $\\dfrac{{d{func}}}{{d{indep}}} = {sp.latex(rhs)}$ solves to\n\n"
+            f"$$ {sp.latex(sol)} $$\n\n"
+            "where the constant is pinned down by the starting value."
+        )
+    except Exception as exc:
+        return mo.callout(mo.md(f"Couldn't solve that one symbolically.\n\n`{exc}`"), kind="warn")
