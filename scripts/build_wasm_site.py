@@ -141,8 +141,14 @@ MATH_RENDER_JS = (
 # to display:none on narrow screens.
 NAV_CSS = (
     "<style>"
-    ".ml-chapter-nav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;"
-    "align-items:center;justify-content:space-between;gap:.5rem;height:44px;"
+    # 3-column grid so "All chapters" is always dead-centre in the viewport
+    # (the auto centre column is centred by the two equal 1fr side columns,
+    # regardless of the Previous/Next label widths). Previous hugs the right of
+    # col 1 and Next the left of col 3, so both sit the same gap from the centre.
+    # The Tutor button is pulled out of the flow (absolute, right edge) so it
+    # can't pull the trio off-centre.
+    ".ml-chapter-nav{position:fixed;top:0;left:0;right:0;z-index:1000;display:grid;"
+    "grid-template-columns:1fr auto 1fr;align-items:center;column-gap:1.5rem;height:44px;"
     "padding:0 .75rem;background:rgba(255,255,255,.92);"
     "-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);"
     "border-bottom:1px solid #d6dde6;box-sizing:border-box;"
@@ -166,13 +172,19 @@ NAV_CSS = (
     "@media (max-width:640px){.js-plotly-plot,.plot-container,.plotly,.svg-container,.main-svg{max-width:100% !important;}"
     ".marimo-cell{overflow-x:auto;max-width:100%;}.modebar-container,.modebar{display:none !important;}}"
     ".ml-chapter-nav a{max-width:34vw;overflow:hidden;text-overflow:ellipsis;}"
+    # Symmetric trio: Previous at the inner edge of col 1, Next at the inner edge
+    # of col 3, "All chapters" centred in the auto column between them.
+    ".ml-nav-prev{justify-self:end;}.ml-nav-home{justify-self:center;}"
+    ".ml-nav-next{justify-self:start;}"
     # We take full ownership of the tutor sidebar's visibility rather than trying
     # to detect marimo's own collapse states. marimo has THREE: inline, a narrow
     # icon bar (desktop "awkward bar"), and display:none (mobile). Detecting only
     # display:none missed the narrow bar. So: force the sidebar hidden always, and
     # let our nav "Tutor" button (always shown) be the single show/hide toggle.
     "aside.app-sidebar{display:none !important;}"
-    ".ml-nav-tutor{display:inline-block;}"
+    # Tutor is a utility button anchored to the right edge, out of the grid flow
+    # so it never shifts the centred Previous / All chapters / Next trio.
+    ".ml-nav-tutor{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);}"
     # When toggled on, float the sidebar as an overlay below the nav. The more
     # specific selector beats the blanket hide above.
     "body.ml-show-tutor aside.app-sidebar{display:block !important;position:fixed !important;"
@@ -190,14 +202,14 @@ def nav_bar(names: list[str], idx: int) -> str:
     """Build the prev / index / next navigation bar for chapter ``idx``."""
     if idx > 0:
         prev = names[idx - 1]
-        left = f'<a href="../{prev}/" title="{pretty(prev)}">&larr; Previous</a>'
+        left = f'<a class="ml-nav-prev" href="../{prev}/" title="{pretty(prev)}">&larr; Previous</a>'
     else:
-        left = '<span class="ml-nav-disabled">&larr; Previous</span>'
+        left = '<span class="ml-nav-prev ml-nav-disabled">&larr; Previous</span>'
     if idx < len(names) - 1:
         nxt = names[idx + 1]
-        right = f'<a href="../{nxt}/" title="{pretty(nxt)}">Next &rarr;</a>'
+        right = f'<a class="ml-nav-next" href="../{nxt}/" title="{pretty(nxt)}">Next &rarr;</a>'
     else:
-        right = '<span class="ml-nav-disabled">Next &rarr;</span>'
+        right = '<span class="ml-nav-next ml-nav-disabled">Next &rarr;</span>'
     home = '<a class="ml-nav-home" href="../">All chapters</a>'
     # Tutor toggle (visible only when the sidebar auto-collapses): flip a body
     # class our CSS uses to float aside.app-sidebar, and expand it so its content

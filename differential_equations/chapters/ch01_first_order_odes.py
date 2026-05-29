@@ -511,165 +511,38 @@ def _(c3_code, c3_run, delib):
     return
 
 
+# --- Tutor (BYO-key chat, from delib) ------------------------------------------
 @app.cell
-def _():
-    # Two main-thread widgets (the kernel is sandboxed in a Web Worker and cannot
-    # see sessionStorage or the page DOM). KeyBridge reads/writes the shared key
-    # slot; CellPicker lets the student click a chapter cell to ask about it.
-    import anywidget
-    import traitlets
-
-    class KeyBridge(anywidget.AnyWidget):
-        _esm = """
-        function render({ model, el }) {
-          function readKey(){ try { return sessionStorage.getItem('mathlearn.anthropicKey')||''; } catch(e){ return ''; } }
-          model.set('key', readKey()); model.set('ready', true); model.save_changes();
-          model.on('change:save_value', function(){ try{ sessionStorage.setItem('mathlearn.anthropicKey', model.get('save_value')); model.set('key', model.get('save_value')); model.save_changes(); }catch(e){} });
-          el.style.display='none';
-        }
-        export default { render };
-        """
-        key = traitlets.Unicode("").tag(sync=True)
-        ready = traitlets.Bool(False).tag(sync=True)
-        save_value = traitlets.Unicode("").tag(sync=True)
-
-    class CellPicker(anywidget.AnyWidget):
-        _esm = """
-        function render({ model, el }) {
-          var overlay, banner, picking=false;
-          function selfCell(){ return el.closest ? el.closest('.marimo-cell') : null; }
-          function under(t){ var c = (t && t.closest) ? t.closest('.marimo-cell') : null; return (c && c===selfCell()) ? null : c; }
-          function cellText(c){
-            var a = c.querySelector('.output-area') || c;
-            var clone = a.cloneNode(true);
-            var mm = clone.querySelectorAll('.katex-mathml'); for (var j=0;j<mm.length;j++) mm[j].remove();
-            return (clone.innerText || '').replace(/\\n{3,}/g,'\\n\\n').trim();
-          }
-          function titleOf(t){
-            var lines = t.split('\\n');
-            for (var k=0;k<lines.length;k++){ var s=lines[k].trim(); if(s){ return s.replace(/[*_`#$]/g,'').trim().slice(0,40); } }
-            return 'selected cell';
-          }
-          function ensure(){
-            if(overlay) return;
-            overlay=document.createElement('div');
-            overlay.style.cssText='position:fixed;z-index:9998;background:rgba(47,111,176,.18);border:2px solid #2f6fb0;border-radius:6px;pointer-events:none;display:none';
-            banner=document.createElement('div');
-            banner.style.cssText='position:fixed;z-index:9999;top:10px;left:50%;transform:translateX(-50%);background:#2f6fb0;color:#fff;padding:6px 12px;border-radius:6px;font:13px sans-serif;display:none';
-            banner.textContent='Click a cell to ask about it — Esc to cancel';
-            document.body.appendChild(overlay); document.body.appendChild(banner);
-          }
-          function onMove(e){ var c=under(e.target); if(!c){ overlay.style.display='none'; return;} var r=c.getBoundingClientRect(); var o=overlay.style; o.display='block'; o.top=r.top+'px'; o.left=r.left+'px'; o.width=r.width+'px'; o.height=r.height+'px'; }
-          function onClick(e){ var c=under(e.target); if(!c) return; e.preventDefault(); e.stopPropagation(); exit(); select(c); }
-          function onKey(e){ if(e.key==='Escape') exit(); }
-          var reopen=false;  // restore the floated tutor overlay after a pick
-          function enter(){
-            // Clear first: one click re-picks, and cancelling leaves nothing selected.
-            model.set('picked_text',''); model.set('picked_title',''); model.save_changes(); paint();
-            // Hide the tutor sidebar so it can't cover the cells; it reappears on exit.
-            reopen=document.body.classList.contains('ml-show-tutor'); if(reopen) document.body.classList.remove('ml-show-tutor');
-            picking=true; ensure(); overlay.style.display='none'; banner.style.display='block';
-            document.addEventListener('mousemove',onMove,true); document.addEventListener('click',onClick,true); document.addEventListener('keydown',onKey,true);
-          }
-          function exit(){ picking=false; if(overlay)overlay.style.display='none'; if(banner)banner.style.display='none'; document.removeEventListener('mousemove',onMove,true); document.removeEventListener('click',onClick,true); document.removeEventListener('keydown',onKey,true); if(reopen){document.body.classList.add('ml-show-tutor'); reopen=false;} }
-          function select(c){ var t=cellText(c); model.set('picked_text', t.slice(0,2000)); model.set('picked_title', titleOf(t)); model.save_changes(); paint(); }
-          var btn=document.createElement('button');
-          btn.style.cssText='width:100%;padding:8px 10px;border:1px solid #c7d2e0;border-radius:8px;background:#f3f7fc;cursor:pointer;font:13px sans-serif;color:#2c3e50;text-align:left';
-          function paint(){ var ti=model.get('picked_title'); btn.textContent = ti ? ('\\u{1F4CC} Asking about: '+ti) : '\\u{1F4CC} Pick a cell to ask about'; }
-          btn.addEventListener('click', function(){ enter(); });
-          el.appendChild(btn); paint();
-        }
-        export default { render };
-        """
-        picked_text = traitlets.Unicode("").tag(sync=True)
-        picked_title = traitlets.Unicode("").tag(sync=True)
-
-    return CellPicker, KeyBridge
-
-
-@app.cell
-def _(KeyBridge, mo):
-    key_bridge = mo.ui.anywidget(KeyBridge())
+def _(delib):
+    key_bridge = delib.key_bridge_widget()
     return (key_bridge,)
 
 
 @app.cell
-def _(CellPicker, mo):
-    picker = mo.ui.anywidget(CellPicker())
+def _(delib):
+    picker = delib.cell_picker_widget()
     return (picker,)
 
 
 @app.cell
-def _(mo):
-    api_field = mo.ui.text(label="Anthropic key (stays in your browser)", kind="password", full_width=True)
+def _(delib):
+    api_field = delib.key_field()
     return (api_field,)
 
 
 @app.cell
-def _(api_field, key_bridge):
-    # Persist a key typed here to the shared slot so it auto-loads next visit.
-    if api_field.value:
-        key_bridge.widget.save_value = api_field.value
+def _(api_field, delib, key_bridge):
+    delib.persist_key(api_field, key_bridge)
     return
 
 
 @app.cell
-def _(api_field, key_bridge, picker):
-    import json as _json
-
-    _MODEL = "claude-haiku-4-5-20251001"
-    _URL = "https://api.anthropic.com/v1/messages"
-    _CONTEXT = (
+def _(api_field, delib, key_bridge, picker):
+    chatbox = delib.tutor_chat(
+        api_field, key_bridge, picker,
         "This is Chapter 1 of a differential-equations course: first-order ODEs and "
         "slope fields, worked through the logistic equation y' = a*y*(1 - y/K) with "
-        "growth rate a and carrying capacity K (equilibria at y=0 and y=K)."
-    )
-    _SYS = (
-        "You are a friendly, concise math tutor inside a marimo notebook. " + _CONTEXT
-        + " Explain clearly in plain language and ALWAYS use LaTeX for math — inline "
-        "$...$ and display $$...$$ (never write bare expressions like y'=ay). When code "
-        "helps, you may include a ```python block using only mo, np, plt, go, delib. "
-        "delib API — call with these POSITIONAL args only; do NOT invent extra keyword "
-        "arguments: delib.vector_field_plotly(f, xlim, ylim) with f(x,y); "
-        "delib.flow_field(f, xlim, ylim) with f(x,y); delib.solution_surface(f, t_span, "
-        "y0_values) with f(t,y); delib.solve_ode(f, t_span, y0) with f(t,y) -> result "
-        "with .t and .y. Assign a Plotly figure to `view` to display it. The student "
-        "can copy code into a practice cell to run it. Keep answers focused."
-    )
-
-    async def chat_model(messages, config):
-        key = api_field.value or (key_bridge.value or {}).get("key", "")
-        system = _SYS
-        _picked = (picker.value or {}).get("picked_text", "")
-        if _picked:
-            system += '\n\nThe student is asking about this cell:\n"""\n' + _picked + '\n"""'
-        msgs = [
-            {"role": m.role, "content": m.content}
-            for m in messages
-            if m.role in ("user", "assistant") and m.content
-        ]
-        body = _json.dumps({"model": _MODEL, "max_tokens": 800, "system": system, "messages": msgs})
-        headers = {
-            "content-type": "application/json",
-            "x-api-key": key,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true",
-        }
-        from pyodide.http import pyfetch
-
-        resp = await pyfetch(_URL, method="POST", headers=headers, body=body)
-        data = await resp.json()
-        if not (isinstance(data, dict) and data.get("content")):
-            return "**API error**\n\n```json\n" + _json.dumps(data, indent=2)[:800] + "\n```"
-        return "".join(b.get("text", "") for b in data["content"])
-
-    return (chat_model,)
-
-
-@app.cell
-def _(chat_model, mo):
-    chatbox = mo.ui.chat(
-        chat_model,
+        "growth rate a and carrying capacity K (equilibria at y=0 and y=K).",
         prompts=[
             "explain this chapter in a paragraph",
             "show the solution when the growth rate a is negative",
@@ -680,25 +553,8 @@ def _(chat_model, mo):
 
 
 @app.cell(hide_code=True)
-def _(api_field, chatbox, key_bridge, mo, picker):
-    _key_ok = bool(api_field.value or (key_bridge.value or {}).get("key"))
-    _items = [mo.md("### Tutor"), key_bridge, api_field]
-    if _key_ok:
-        _items += [mo.md("key set ✓"), picker, chatbox]
-    else:
-        _items.append(
-            mo.callout(
-                mo.md(
-                    "**Add your Anthropic API key** above to ask the tutor.\n\n"
-                    "No key yet? Create one at "
-                    "[console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys). "
-                    "It is stored only in this browser and sent only to Anthropic — "
-                    "never to this site."
-                ),
-                kind="info",
-            )
-        )
-    mo.sidebar(_items, width="420px")
+def _(api_field, chatbox, delib, key_bridge, picker):
+    delib.tutor_sidebar(api_field, key_bridge, picker, chatbox)
     return
 
 
