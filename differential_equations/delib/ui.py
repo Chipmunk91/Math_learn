@@ -351,9 +351,9 @@ def derivation(steps, *, autoplay_ms=1500, title=None):
         _esm = """
         function render({ model, el }) {
           var steps = []; try { steps = JSON.parse(model.get('steps')); } catch(e){}
-          var ms = model.get('ms') || 1800;
+          var ms = model.get('ms') || 2100;
           var ttl = model.get('title') || '';
-          var DUR = 750;
+          var DUR = 900;
           var i = 0, timer = null, busy = false;
           var root = el.getRootNode();
           try { if (root.querySelector && !root.querySelector('link[data-mlkd]')) { var l=document.createElement('link'); l.rel='stylesheet'; l.href='https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css'; l.setAttribute('data-mlkd','1'); (root.head||root).appendChild(l); } } catch(e){}
@@ -374,6 +374,7 @@ def derivation(steps, *, autoplay_ms=1500, title=None):
           function relRect(elm, base){ var r=elm.getBoundingClientRect(); return {l:r.left-base.left, t:r.top-base.top, w:r.width, h:r.height}; }
           function meta(){ var s=steps[i]||{}; noteEl.textContent=s.note||''; indEl.textContent=(i+1)+' / '+steps.length; }
           function setStep(k){ i=Math.max(0,Math.min(steps.length-1,k)); var h=document.createElement('div'); h.style.position='relative'; h.innerHTML=kx((steps[i]||{}).tex||''); stage.innerHTML=''; stage.appendChild(h); meta(); }
+          function ease(p){ return p<0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2; }
           function animTo(k){
             if(busy) return;
             var from=i; i=Math.max(0,Math.min(steps.length-1,k)); if(i===from){ return; }
@@ -383,20 +384,33 @@ def derivation(steps, *, autoplay_ms=1500, title=None):
             var h=document.createElement('div'); h.style.position='relative'; h.innerHTML=kx((steps[i]||{}).tex||'');
             stage.appendChild(h);
             var newMap=tagged(h), newR={}; for(var id2 in newMap){ newR[id2]=relRect(newMap[id2], base); }
-            var ghosts=[];
-            for(var oid in oldMap){ if(!(oid in newMap)){ var g=oldMap[oid].cloneNode(true); var r=oldR[oid]; g.style.position='absolute'; g.style.display='inline-block'; g.style.left=r.l+'px'; g.style.top=r.t+'px'; g.style.margin='0'; g.style.transition='opacity '+DUR+'ms ease'; stage.appendChild(g); ghosts.push(g); } }
-            if(oldH) oldH.remove();
-            for(var nid in newMap){ var nEl=newMap[nid];
-              nEl.style.display='inline-block';  // transforms don't apply to inline KaTeX spans
-              if(oldR[nid]){ var o=oldR[nid], n=newR[nid]; nEl.style.transformOrigin='left top'; nEl.style.transition='none'; nEl.style.transform='translate('+(o.l-n.l)+'px,'+(o.t-n.t)+'px)'; }
-              else { nEl.style.transition='none'; nEl.style.opacity='0'; }
+            var matched=[], fadeIns=[], ghosts=[];
+            for(var nid in newMap){ var nEl=newMap[nid]; nEl.style.display='inline-block'; nEl.style.willChange='transform,opacity';
+              if(oldR[nid]){ var o=oldR[nid], n=newR[nid]; var dx=o.l-n.l, dy=o.t-n.t; var len=Math.hypot(dx,dy)||1;
+                matched.push({el:nEl, dx:dx, dy:dy, px:-dy/len, py:dx/len, arc:Math.min(46, len*0.35)});
+                nEl.style.transformOrigin='center'; nEl.style.transform='translate('+dx+'px,'+dy+'px)'; nEl.style.color='#2f6fb0';
+              } else { nEl.style.opacity='0'; fadeIns.push(nEl); }
             }
-            void stage.offsetWidth; busy=true;
-            requestAnimationFrame(function(){ requestAnimationFrame(function(){
-              for(var nid2 in newMap){ var e2=newMap[nid2]; e2.style.transition='transform '+DUR+'ms cubic-bezier(.4,0,.2,1), opacity '+DUR+'ms ease'; e2.style.transform='translate(0,0)'; e2.style.opacity='1'; }
-              for(var gi=0; gi<ghosts.length; gi++){ ghosts[gi].style.opacity='0'; }
-              setTimeout(function(){ for(var g2=0; g2<ghosts.length; g2++){ if(ghosts[g2].parentNode) ghosts[g2].remove(); } busy=false; }, DUR+60);
-            }); });
+            for(var oid in oldMap){ if(!(oid in newMap)){ var g=oldMap[oid].cloneNode(true); var r=oldR[oid]; g.style.position='absolute'; g.style.display='inline-block'; g.style.left=r.l+'px'; g.style.top=r.t+'px'; g.style.margin='0'; stage.appendChild(g); ghosts.push(g); } }
+            if(oldH) oldH.remove();
+            void stage.offsetWidth; busy=true; var t0=null;
+            function frame(now){
+              if(t0===null) t0=now;
+              var p=Math.min(1,(now-t0)/DUR), e=ease(p), bump=Math.sin(Math.PI*e);
+              for(var a=0;a<matched.length;a++){ var m=matched[a];
+                var x=(1-e)*m.dx + m.px*m.arc*bump, y=(1-e)*m.dy + m.py*m.arc*bump;
+                m.el.style.transform='translate('+x+'px,'+y+'px) scale('+(1+0.14*bump)+')';
+              }
+              for(var f=0;f<fadeIns.length;f++){ fadeIns[f].style.opacity=String(e); }
+              for(var gg=0;gg<ghosts.length;gg++){ ghosts[gg].style.opacity=String(1-e); }
+              if(p<1){ requestAnimationFrame(frame); }
+              else {
+                for(var a2=0;a2<matched.length;a2++){ var m2=matched[a2].el; m2.style.transform=''; m2.style.color=''; m2.style.willChange=''; }
+                for(var g2=0;g2<ghosts.length;g2++){ if(ghosts[g2].parentNode) ghosts[g2].remove(); }
+                busy=false;
+              }
+            }
+            requestAnimationFrame(frame);
             meta();
           }
           function stop(){ if(timer){ clearInterval(timer); timer=null; playBtn.textContent='\\u25B6 Play'; } }
