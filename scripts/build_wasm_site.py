@@ -149,14 +149,17 @@ NAV_CSS = (
     ".ml-chapter-nav .ml-nav-home{color:#1d2733;}"
     ".ml-chapter-nav .ml-nav-disabled{color:#aab4c0;font-weight:600;"
     "padding:.35rem .6rem;white-space:nowrap;}"
-    # Padding #root / the scroller didn't move the content (its page anchors to
-    # the viewport top). Margin-top moves the whole #root box — and its absolutely
-    # positioned descendants with it — so the content clears the fixed bar.
-    "#root{margin-top:44px !important;min-height:calc(100vh - 44px) !important;box-sizing:border-box;}"
+    # The content sits in a `position:absolute; top:0` wrapper with no positioned
+    # ancestor, so it anchored to the VIEWPORT top — which is why padding/margin on
+    # a static #root did nothing. Make #root the positioned, height-bounded
+    # container (relative + height) and offset it; the inset-0 content now fills
+    # #root, which starts at 44px.
+    "#root{position:relative !important;margin-top:44px !important;height:calc(100vh - 44px) !important;box-sizing:border-box;}"
     "html{scroll-padding-top:48px;}"
-    # Chapter content is light DOM, so clamp wide charts here (mobile crop fix).
+    # Chapter content is light DOM, so clamp wide charts here (mobile crop fix) and
+    # hide Plotly's toolbar on small screens (it overlaps titles).
     "@media (max-width:640px){.js-plotly-plot,.plot-container,.plotly,.svg-container,.main-svg{max-width:100% !important;}"
-    ".marimo-cell{overflow-x:auto;max-width:100%;}}"
+    ".marimo-cell{overflow-x:auto;max-width:100%;}.modebar-container,.modebar{display:none !important;}}"
     ".ml-chapter-nav a{max-width:34vw;overflow:hidden;text-overflow:ellipsis;}"
     # Tutor toggle: shown only when the sidebar has auto-collapsed (narrow screens).
     ".ml-nav-tutor{display:none;}"
