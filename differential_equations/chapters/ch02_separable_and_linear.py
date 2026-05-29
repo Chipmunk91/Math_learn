@@ -166,7 +166,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(delib):
     _fig = delib.vector_field_plotly(
-        lambda x, y: -0.2 * (y - 20.0), (0, 30), (10, 95), density=13,
+        lambda x, y: -0.2 * (y - 20.0), (0, 30), (10, 95), density=18,
         title="Cooling field  (k = 0.2, room = 20°C)",
     )
     _fig.add_hline(y=20, line=dict(color="#2a9d8f", dash="dash", width=1.5),
@@ -206,7 +206,7 @@ def _(controls, delib, go):
     T0 = controls.value["T0"]
 
     fig = delib.vector_field_plotly(
-        lambda x, y: -k * (y - Tr), (0, 30), (10, 100), density=13,
+        lambda x, y: -k * (y - Tr), (0, 30), (10, 100), density=18,
         title=f"k = {k:.2f},  room = {Tr:.0f}°C,  start = {T0:.0f}°C",
     )
     fig.add_hline(y=Tr, line=dict(color="#2a9d8f", dash="dash", width=1.5))

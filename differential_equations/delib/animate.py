@@ -160,19 +160,33 @@ def animate_plotly(
     return fig
 
 
-def _arrows_xy(GX, GY, U, V, Lx, Ly, *, head: float = 0.32, spread: float = 0.5):
-    """(xs, ys) for one Scatter of arrows with heads; fixed coords per arrow."""
+def _arrows_xy(GX, GY, S, xspan, yspan, *, density, aspect=2.2, scale=1.0,
+               head: float = 0.32, spread: float = 0.5):
+    """(xs, ys) for one Scatter of arrows with heads; fixed coords per arrow.
+
+    Arrows are sized in display-pixel space (the direction ``(1, S)`` converted
+    to pixels via an assumed box ``aspect``, normalised to a uniform on-screen
+    length, then mapped back to data) so they read uniformly regardless of how
+    differently the axes are scaled. Mirrors ``fields._field_arrows``.
+    """
     import numpy as _np
 
     ca, sa = float(_np.cos(spread)), float(_np.sin(spread))
+    pxx = aspect / xspan
+    pxy = 1.0 / yspan
+    length = scale / density
     xs: list = []
     ys: list = []
-    for xi, yi, ui, vi in zip(GX.ravel(), GY.ravel(), U.ravel(), V.ravel()):
-        dx, dy = ui * Lx, vi * Ly
-        hx, hy = xi + dx, yi + dy
-        bx, by = -dx * head, -dy * head
-        xs += [xi, hx, None, hx, hx + (bx * ca - by * sa), None, hx, hx + (bx * ca + by * sa), None]
-        ys += [yi, hy, None, hy, hy + (bx * sa + by * ca), None, hy, hy + (-bx * sa + by * ca), None]
+    for xi, yi, si in zip(GX.ravel(), GY.ravel(), S.ravel()):
+        vx, vy = pxx, pxy * si
+        n = (vx * vx + vy * vy) ** 0.5 or 1.0
+        ux, uy = vx / n, vy / n
+        hx, hy = xi + ux * length / pxx, yi + uy * length / pxy
+        bx, by = -ux * length * head, -uy * length * head
+        w1x, w1y = hx + (bx * ca - by * sa) / pxx, hy + (bx * sa + by * ca) / pxy
+        w2x, w2y = hx + (bx * ca + by * sa) / pxx, hy + (-bx * sa + by * ca) / pxy
+        xs += [xi, hx, None, hx, w1x, None, hx, w2x, None]
+        ys += [yi, hy, None, hy, w1y, None, hy, w2y, None]
     return xs, ys
 
 
@@ -212,14 +226,8 @@ def flow_field(
 
     # static field of arrows — drawn ONCE in the base, never per frame
     GX, GY = _np.meshgrid(_np.linspace(x0, x1, density), _np.linspace(y0, y1, density))
-    U = _np.ones_like(GX)
-    V = f(GX, GY)
-    nrm = _np.hypot(U, V)
-    nrm[nrm == 0] = 1.0
-    U, V = U / nrm, V / nrm
-    Lx = (x1 - x0) / density * 0.8
-    Ly = (y1 - y0) / density * 0.8
-    fxs, fys = _arrows_xy(GX, GY, U, V, Lx, Ly)
+    S = f(GX, GY) * _np.ones_like(GX)
+    fxs, fys = _arrows_xy(GX, GY, S, x1 - x0, y1 - y0, density=density)
     field = go.Scatter(x=fxs, y=fys, mode="lines",
                        line=dict(color=field_color, width=1.2),
                        hoverinfo="skip", showlegend=False)

@@ -204,22 +204,39 @@ def slope_field_plotly(
     return fig
 
 
-def _field_arrows(X, Y, U, V, Lx, Ly, *, head: float = 0.32, spread: float = 0.5):
+def _field_arrows(GX, GY, S, xspan, yspan, *, density, aspect=2.2, scale=1.0,
+                  head: float = 0.32, spread: float = 0.5):
     """Build (xs, ys) for a single Scatter of arrows with heads.
 
-    Each arrow emits a fixed 9 coordinates (shaft + two head strokes, None-
-    separated), so the count is identical regardless of direction — which lets
-    Plotly tween the whole field smoothly between animation frames.
+    Arrows are sized in *display-pixel* space, not per-axis data space: the
+    direction ``(1, S)`` is converted to pixels using an assumed plot-box
+    width:height ``aspect`` (the x- and y-axes are scaled to very different
+    pixels-per-unit when their ranges differ — e.g. temperature 10..95 vs time
+    0..30), normalised to a uniform on-screen length, then mapped back to data
+    units. So every arrow reads the same visual length and the heads stay
+    undistorted, regardless of the axis ranges. Each arrow emits a fixed 9
+    coordinates (shaft + two head strokes, None-separated) so the count is
+    identical regardless of direction, which lets Plotly tween the field
+    smoothly between animation frames.
     """
+    import numpy as np
+
     ca, sa = float(np.cos(spread)), float(np.sin(spread))
+    pxx = aspect / xspan          # pixels per x-unit (treat box height as 1)
+    pxy = 1.0 / yspan             # pixels per y-unit
+    length = scale / density      # uniform arrow length, in box-height fractions
     xs: list = []
     ys: list = []
-    for xi, yi, ui, vi in zip(X.ravel(), Y.ravel(), U.ravel(), V.ravel()):
-        dx, dy = ui * Lx, vi * Ly
-        hx, hy = xi + dx, yi + dy
-        bx, by = -dx * head, -dy * head
-        xs += [xi, hx, None, hx, hx + (bx * ca - by * sa), None, hx, hx + (bx * ca + by * sa), None]
-        ys += [yi, hy, None, hy, hy + (bx * sa + by * ca), None, hy, hy + (-bx * sa + by * ca), None]
+    for xi, yi, si in zip(GX.ravel(), GY.ravel(), S.ravel()):
+        vx, vy = pxx, pxy * si
+        n = (vx * vx + vy * vy) ** 0.5 or 1.0
+        ux, uy = vx / n, vy / n               # unit direction in pixel space
+        hx, hy = xi + ux * length / pxx, yi + uy * length / pxy
+        bx, by = -ux * length * head, -uy * length * head
+        w1x, w1y = hx + (bx * ca - by * sa) / pxx, hy + (bx * sa + by * ca) / pxy
+        w2x, w2y = hx + (bx * ca + by * sa) / pxx, hy + (-bx * sa + by * ca) / pxy
+        xs += [xi, hx, None, hx, w1x, None, hx, w2x, None]
+        ys += [yi, hy, None, hy, w1y, None, hy, w2y, None]
     return xs, ys
 
 
@@ -231,18 +248,26 @@ def vector_field_plotly(
     density: int = 16,
     color: str = "#5b7db1",
     title: str | None = None,
+    scale: float = 1.0,
+    aspect: float = 2.2,
 ):
     """Light-theme Plotly *vector* field (arrows with heads) for ``y' = f(x, y)``.
 
     Like :func:`slope_field_plotly` but draws true arrows pointing along the flow
-    direction ``(1, f)``, for a 3b1b-style vector-field look. Returns a go.Figure.
+    direction ``(1, f)``, for a 3b1b-style vector-field look. Arrows are sized in
+    display-pixel space (see :func:`_field_arrows`) so they read at a uniform
+    on-screen length even when the axes have very different ranges; ``aspect`` is
+    the assumed plot width:height and ``scale`` tunes the arrow length. Returns a
+    go.Figure.
     """
     import plotly.graph_objects as go
 
-    X, Y, U, V = slope_field_data(f, xlim, ylim, density=density)
-    Lx = (xlim[1] - xlim[0]) / density * 0.8
-    Ly = (ylim[1] - ylim[0]) / density * 0.8
-    xs, ys = _field_arrows(X, Y, U, V, Lx, Ly)
+    xs_grid = np.linspace(xlim[0], xlim[1], density)
+    ys_grid = np.linspace(ylim[0], ylim[1], density)
+    X, Y = np.meshgrid(xs_grid, ys_grid)
+    S = f(X, Y) * np.ones_like(X)
+    xs, ys = _field_arrows(X, Y, S, xlim[1] - xlim[0], ylim[1] - ylim[0],
+                           density=density, aspect=aspect, scale=scale)
     fig = go.Figure(
         go.Scatter(x=xs, y=ys, mode="lines",
                    line=dict(color=color, width=1.4), opacity=0.85,
