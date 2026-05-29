@@ -96,10 +96,7 @@ MARIMO_HIDE_JS = (
     # top-left, just under our fixed nav. Our nav "Tutor" button replaces it.
     'if(!n.closest(".ml-chapter-nav")){var r=n.getBoundingClientRect();'
     "if(r.top>=40&&r.top<96&&r.left<64&&r.width<=56&&r.height<=56){"
-    'n.style.display="none";n.dataset.mlHidden="1";}}}'
-    # Show our nav Tutor button only when marimo has fully hidden the sidebar.
-    'var sb=document.querySelector("aside.app-sidebar");'
-    'if(sb){document.body.classList.toggle("ml-sb-collapsed",getComputedStyle(sb).display==="none");}}'
+    'n.style.display="none";n.dataset.mlHidden="1";}}}}'
     "var pend=false;function schedule(){if(pend)return;pend=true;"
     "requestAnimationFrame(function(){pend=false;sweep();});}"
     "function start(){new MutationObserver(schedule).observe(document.body,"
@@ -169,16 +166,21 @@ NAV_CSS = (
     "@media (max-width:640px){.js-plotly-plot,.plot-container,.plotly,.svg-container,.main-svg{max-width:100% !important;}"
     ".marimo-cell{overflow-x:auto;max-width:100%;}.modebar-container,.modebar{display:none !important;}}"
     ".ml-chapter-nav a{max-width:34vw;overflow:hidden;text-overflow:ellipsis;}"
-    # Tutor toggle: shown only when marimo has actually hidden the sidebar
-    # (display:none, set at runtime by the sweep below) — never on desktop where
-    # the sidebar is inline.
-    ".ml-nav-tutor{display:none;}"
-    "body.ml-sb-collapsed .ml-nav-tutor{display:inline-block;}"
-    # When toggled on, float the sidebar as an overlay below the nav.
+    # We take full ownership of the tutor sidebar's visibility rather than trying
+    # to detect marimo's own collapse states. marimo has THREE: inline, a narrow
+    # icon bar (desktop "awkward bar"), and display:none (mobile). Detecting only
+    # display:none missed the narrow bar. So: force the sidebar hidden always, and
+    # let our nav "Tutor" button (always shown) be the single show/hide toggle.
+    "aside.app-sidebar{display:none !important;}"
+    ".ml-nav-tutor{display:inline-block;}"
+    # When toggled on, float the sidebar as an overlay below the nav. The more
+    # specific selector beats the blanket hide above.
     "body.ml-show-tutor aside.app-sidebar{display:block !important;position:fixed !important;"
     "top:44px !important;bottom:0 !important;left:0 !important;width:min(420px,92vw) !important;"
     "z-index:1500 !important;overflow:auto !important;background:#fff !important;"
     "box-shadow:0 8px 30px rgba(0,0,0,.18);}"
+    # Make the active Tutor button read as a close affordance.
+    "body.ml-show-tutor .ml-nav-tutor{background:#e7f0fb;color:#16223a;}"
     "@media (max-width:480px){.ml-chapter-nav{font-size:.8rem;padding:0 .4rem;}}"
     "</style>"
 )
