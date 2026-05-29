@@ -428,21 +428,24 @@ def derivation(steps, *, autoplay_ms=1500, title=None):
     return mo.ui.anywidget(_Derivation())
 
 
-def video(src, *, caption=None, width="100%"):
+def video(src, *, caption=None, width="100%", fallback="This animation is being rendered — check back soon."):
     """Embed a pre-rendered clip (e.g. a Manim derivation) from the site's assets.
 
     ``src`` is a filename under ``assets/`` (the build copies the repo's ``assets/``
     into ``site/assets/``); chapter pages live one level down, so the path resolves
-    as ``../assets/<src>``.
+    as ``../assets/<src>``. If the file isn't present yet (not rendered), the video
+    hides itself and a ``fallback`` note shows instead — so wiring it in before the
+    asset exists never breaks the page.
     """
     cap = (f'<figcaption style="text-align:center;color:#56636f;font:13px sans-serif;'
            f'margin-top:6px">{caption}</figcaption>') if caption else ""
-    return mo.Html(
-        f'<figure style="margin:0">'
-        f'<video controls loop muted playsinline preload="metadata" '
-        f'style="width:{width};border-radius:8px;border:1px solid #e4e9f0" '
-        f'src="../assets/{src}"></video>{cap}</figure>'
-    )
+    return mo.Html(f'''<figure style="margin:0">
+<video controls loop muted playsinline preload="metadata"
+  style="width:{width};border-radius:8px;border:1px solid #e4e9f0"
+  src="../assets/{src}"
+  onerror="this.style.display='none';this.nextElementSibling.style.display='block'"></video>
+<div style="display:none;padding:18px;border:1px dashed #c7d2e0;border-radius:8px;color:#7c8aa0;font:13px sans-serif;text-align:center">{fallback}</div>
+{cap}</figure>''')
 
 
 def solve_steps(rhs_str, *, func="y", indep="t"):

@@ -121,15 +121,16 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Beat 3b — watch the separable method unfold (animated, in the teaching).
+    # Beat 3b — watch the separable method unfold (Manim clip, rendered offline).
     mo.md(
         r"""
         ## Solve it — watch the method
 
         `dsolve` would spit out the answer in one line, but that hides *how*. Because
-        the equation is **separable**, we can watch it fall out: gather the $T$'s on one
-        side and the $t$'s on the other, integrate each side, then solve for $T$. Press
-        **▶ Play** to step through it.
+        the equation is **separable**, we can watch the algebra move: $(T - T_r)$ flies
+        into the denominator, the integral signs appear and evaluate, and finally $T$ is
+        isolated. The highlighted symbols are the ones being manipulated at each step.
+        Press **▶** to play.
         """
     )
     return
@@ -137,14 +138,10 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(delib):
-    delib.derivation(
-        [
-            (r"\frac{\htmlId{dT}{dT}}{dt} = -k\,\htmlId{gap}{(T - T_r)}", "Start from the cooling law."),
-            (r"\frac{\htmlId{dT}{dT}}{\htmlId{gap}{(T - T_r)}} = -k\,\htmlId{dt}{dt}", "Separate: the (T - T_r) slides down to the left denominator, dt joins the right."),
-            (r"\htmlId{lhs}{\ln\lvert T - T_r\rvert} = -k\,t + C", "Integrate both sides."),
-            (r"\htmlId{Tt}{T(t)} = T_r + (T_0 - T_r)\,e^{-k t}", "Exponentiate, then fix C from T(0) = T_0."),
-        ],
-        title="Separation of variables",
+    delib.video(
+        "newton_cooling.mp4",
+        caption="Separation of variables, term by term",
+        fallback="The animated derivation is being rendered (see manim/newton_cooling.py).",
     )
     return
 
