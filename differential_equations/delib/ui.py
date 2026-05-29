@@ -83,13 +83,22 @@ def run_exercise(code: str, run_pressed: bool, *, check=None, ns_extra: Mapping 
         return mo.md("*Write your answer above and press **Run**.*")
 
     import traceback
+    import math
     import numpy as np
     import matplotlib
     import matplotlib.pyplot as plt
     import plotly.graph_objects as go
     import delib as _delib
 
-    ns = {"mo": mo, "np": np, "plt": plt, "go": go, "delib": _delib}
+    # Common math names are pre-bound so a student can write exp(-k*t), e, pi,
+    # sqrt(...) directly without an import — the array-aware numpy versions, so
+    # they work on scalars and grids alike. ns_extra (below) can override any.
+    ns = {
+        "mo": mo, "np": np, "plt": plt, "go": go, "delib": _delib, "math": math,
+        "e": math.e, "pi": math.pi, "tau": math.tau, "inf": math.inf,
+        "exp": np.exp, "log": np.log, "log10": np.log10, "sqrt": np.sqrt,
+        "sin": np.sin, "cos": np.cos, "tan": np.tan, "abs": abs,
+    }
     if ns_extra:
         ns.update(ns_extra)
     try:
@@ -149,7 +158,14 @@ async def ai_code(instruction, current_code, key, *, context="", coach=False,
             "problem with code and short hint comments, but do NOT compute or fill in "
             "the final graded value — leave the `answer = ...` line for them to finish."
         )
-    user = f"Current code:\n```python\n{current_code}\n```\n\nRequest: {instruction}"
+    # Strip any error banner a previous failed attempt left at the top, so the
+    # AI never sees it and banners don't stack up in the editor.
+    base = re.sub(r"\A(?:#\s*⚠ tutor:.*\n)+", "", current_code)
+
+    def _banner(reason):
+        return f"#  ⚠ tutor: {reason}\n" + base
+
+    user = f"Current code:\n```python\n{base}\n```\n\nRequest: {instruction}"
     body = json.dumps({
         "model": model, "max_tokens": 800, "system": system,
         "messages": [{"role": "user", "content": user}],
@@ -176,14 +192,17 @@ async def ai_code(instruction, current_code, key, *, context="", coach=False,
                 data = json.loads(r.read().decode())
         except urllib.error.HTTPError as exc:
             data = json.loads(exc.read().decode())
-    except Exception:
-        return current_code
+    except Exception as exc:
+        return _banner(f"request failed ({type(exc).__name__}: {exc}). Check your key and retry.")
 
     if not (isinstance(data, dict) and data.get("content")):
-        return current_code
+        reason = "no response from the API."
+        if isinstance(data, dict) and isinstance(data.get("error"), dict):
+            reason = data["error"].get("message", reason)
+        return _banner(reason)
     full = "".join(b.get("text", "") for b in data["content"])
     m = re.search(r"```(?:python)?\s*\n(.*?)```", full, re.S)
-    return m.group(1).strip() if m else (full.strip() or current_code)
+    return m.group(1).strip() if m else (full.strip() or base)
 
 
 def _guard_expr(expr):

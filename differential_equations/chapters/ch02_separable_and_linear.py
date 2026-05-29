@@ -55,8 +55,13 @@ def _(delib, go, mo, np):
             r"""
             ## A story about change — round two
 
-            In Chapter 1 we *read* an equation off a field but never solved it. This
-            time we'll get an exact formula. Here's the story.
+            Chapter 1 told *one* differential-equation story — a rumor spreading across
+            a campus — and we read its behaviour straight off a slope field, never
+            solving it. But differential equations describe far more than rumors, so
+            this chapter opens a **completely new story**, unrelated to the last one.
+            That's the real lesson: the *same kind of rate-rule* turns up behind wildly
+            different phenomena. And this time we won't stop at the picture — we'll get
+            an exact formula.
 
             Pour a coffee at **90°C** in a **20°C** room and it cools — fast at first,
             then ever more slowly, easing toward room temperature but (in principle)
@@ -100,20 +105,89 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
+    # Quick self-check: classify each equation. An equation can be BOTH.
+    _opts = ["Separable only", "Linear only", "Both", "Neither"]
+    family_quiz = mo.ui.dictionary(
+        {k: mo.ui.dropdown(_opts, label="your answer") for k in ("a", "b", "c", "d")}
+    )
+    return (family_quiz,)
+
+
+@app.cell(hide_code=True)
+def _(family_quiz, mo):
+    mo.md(
+        f"""
+        ### Quick check — which family?
+
+        Decide whether each equation is **separable**, **linear**, **both**, or
+        **neither**. (Separable means it factors as $g(t)\\,h(y)$; linear means $y$ and
+        $y'$ appear only to the first power, never multiplied together.)
+
+        **(a)** $\\dfrac{{dy}}{{dt}} = y\\,(1 - y)$ &nbsp; {mo.as_html(family_quiz['a'])}
+
+        **(b)** $\\dfrac{{dy}}{{dt}} + 2y = \\sin t$ &nbsp; {mo.as_html(family_quiz['b'])}
+
+        **(c)** $\\dfrac{{dy}}{{dt}} = t\\,y$ &nbsp; {mo.as_html(family_quiz['c'])}
+
+        **(d)** $\\dfrac{{dy}}{{dt}} = y^2 + t$ &nbsp; {mo.as_html(family_quiz['d'])}
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(family_quiz, mo):
+    _key = {"a": "Separable only", "b": "Linear only", "c": "Both", "d": "Neither"}
+    _why = {
+        "a": "separable ($g(t)=1$, $h(y)=y(1-y)$), but the $y^2$ hidden in $y(1-y)$ makes it **nonlinear**.",
+        "b": "**linear** ($y$ and $y'$ are first-power), but not separable — $\\sin t - 2y$ won't split into (only-$t$)$\\times$(only-$y$).",
+        "c": "**both**: $\\dfrac{dy}{y} = t\\,dt$ separates, and $y' - t\\,y = 0$ is linear.",
+        "d": "**neither**: the $y^2$ rules out linear, and $y^2 + t$ won't factor for separable.",
+    }
+    _answered = [k for k in _key if family_quiz[k].value]
+    if not _answered:
+        _out = mo.md("*Pick a family for each equation to check your answers.*")
+    else:
+        _rows = []
+        for k in ("a", "b", "c", "d"):
+            v = family_quiz[k].value
+            if not v:
+                continue
+            ok = v == _key[k]
+            verdict = "Correct" if ok else "Not quite"
+            _rows.append(f"{'✅' if ok else '❌'} **({k})** {verdict} — it's {_why[k]}")
+        _out = mo.md("\n\n".join(_rows))
+    _out
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
     # Beat 3a — build the model.
     mo.md(
         r"""
-        ## Newton's law of cooling
+        ## Building the cooling equation
 
-        Let $T(t)$ be the coffee's temperature and $T_r$ the room's. "Cools in
-        proportion to the gap above the room" is, word for word,
+        We don't need to already *know* a law for this — we can build the equation
+        from the one observation we just made: **a cup cools in proportion to how far
+        its temperature sits above the room.** Let's turn that sentence into symbols,
+        piece by piece.
+
+        - Call the coffee's temperature $T(t)$ and the room's $T_r$ (a constant). The
+          **gap** above the room is $T - T_r$.
+        - "Cools in proportion to the gap" means the rate $\dfrac{dT}{dt}$ is
+          *proportional to* that gap:
+          $\dfrac{dT}{dt} = (\text{constant})\times(T - T_r)$.
+        - While the coffee is hotter than the room ($T > T_r$) the gap is positive, yet
+          $T$ must *fall* — so $dT/dt$ has to be negative there. That forces the
+          constant to be negative; we write it as $-k$ with $k > 0$:
 
         $$ \frac{dT}{dt} = -k\,(T - T_r), \qquad k > 0. $$
 
-        The minus sign makes it *cool* (the rate is negative while $T > T_r$); the
-        constant $k$ is how fast. This is **separable** — group the $T$'s and the
-        $t$'s — and also **linear**: rewrite it as $T' + kT = kT_r$. One equation, both
-        recipes apply.
+        That equation has a name — **Newton's law of cooling** — and the constant $k$
+        sets *how fast* (a thin paper cup has a larger $k$ than an insulated mug). Notice
+        it is **separable** — we can group the $T$'s and the $t$'s — and also
+        **linear**: rearranged, it's $T' + kT = kT_r$. One equation, both recipes apply.
         """
     )
     return
@@ -126,11 +200,11 @@ def _(mo):
         r"""
         ## Solve it — watch the method
 
-        `dsolve` would spit out the answer in one line, but that hides *how*. Because
-        the equation is **separable**, we can watch the algebra move: $(T - T_r)$ flies
-        into the denominator, the integral signs appear and evaluate, and finally $T$ is
-        isolated. The highlighted symbols are the ones being manipulated at each step.
-        Press **▶** to play.
+        A computer could spit out the answer in one line, but that hides *how* it's
+        found. Because the equation is **separable**, we can watch the algebra move
+        instead: $(T - T_r)$ slides into a denominator, integral signs appear on both
+        sides and evaluate, and finally $T$ is isolated. The highlighted symbols are the
+        ones being manipulated at each step. Press **▶** to play.
         """
     )
     return
