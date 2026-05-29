@@ -129,8 +129,11 @@ MATH_RENDER_JS = (
 
 
 # A slim fixed bar at the top of every chapter linking to the previous/next
-# chapter and back to the index. ``#root`` is marimo's mount point; padding it
-# down keeps the bar from covering the first cell.
+# chapter and back to the index. marimo's real scroll container is .dvn-scroller
+# (its page is position:sticky/absolute top:0, so it ignores #root padding); we
+# pad THAT so the bar never covers the first cell. The bar also carries a Tutor
+# toggle that reveals marimo's mo.sidebar (aside.app-sidebar), which auto-collapses
+# to display:none on narrow screens.
 NAV_CSS = (
     "<style>"
     ".ml-chapter-nav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;"
@@ -139,14 +142,25 @@ NAV_CSS = (
     "-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);"
     "border-bottom:1px solid #d6dde6;box-sizing:border-box;"
     "font-family:system-ui,sans-serif;font-size:.9rem;}"
-    ".ml-chapter-nav a{text-decoration:none;color:#2a5d9c;font-weight:600;"
-    "padding:.35rem .6rem;border-radius:.4rem;white-space:nowrap;}"
-    ".ml-chapter-nav a:hover{background:#f0f5fb;}"
+    ".ml-chapter-nav a,.ml-chapter-nav button{text-decoration:none;color:#2a5d9c;"
+    "font-weight:600;padding:.35rem .6rem;border-radius:.4rem;white-space:nowrap;"
+    "border:none;background:transparent;cursor:pointer;font:inherit;}"
+    ".ml-chapter-nav a:hover,.ml-chapter-nav button:hover{background:#f0f5fb;}"
     ".ml-chapter-nav .ml-nav-home{color:#1d2733;}"
     ".ml-chapter-nav .ml-nav-disabled{color:#aab4c0;font-weight:600;"
     "padding:.35rem .6rem;white-space:nowrap;}"
-    "#root{padding-top:60px !important;box-sizing:border-box;}"
-    ".ml-chapter-nav a{max-width:40vw;overflow:hidden;text-overflow:ellipsis;}"
+    # Offset the actual scroll container (not #root, which the content ignores).
+    ".dvn-scroller,.overflow-y-scroll{padding-top:44px !important;box-sizing:border-box;}"
+    "html{scroll-padding-top:48px;}"
+    ".ml-chapter-nav a{max-width:34vw;overflow:hidden;text-overflow:ellipsis;}"
+    # Tutor toggle: shown only when the sidebar has auto-collapsed (narrow screens).
+    ".ml-nav-tutor{display:none;}"
+    "@media (max-width:1024px){.ml-nav-tutor{display:inline-block;}}"
+    # When toggled on, float the sidebar as an overlay below the nav.
+    "body.ml-show-tutor aside.app-sidebar{display:block !important;position:fixed !important;"
+    "top:44px !important;bottom:0 !important;left:0 !important;width:min(420px,92vw) !important;"
+    "z-index:1500 !important;overflow:auto !important;background:#fff !important;"
+    "box-shadow:0 8px 30px rgba(0,0,0,.18);}"
     "@media (max-width:480px){.ml-chapter-nav{font-size:.8rem;padding:0 .4rem;}}"
     "</style>"
 )
@@ -165,7 +179,19 @@ def nav_bar(names: list[str], idx: int) -> str:
     else:
         right = '<span class="ml-nav-disabled">Next &rarr;</span>'
     home = '<a class="ml-nav-home" href="../">All chapters</a>'
-    return f'<nav class="ml-chapter-nav" aria-label="Chapter navigation">{left}{home}{right}</nav>'
+    # Tutor toggle (visible only when the sidebar auto-collapses): flip a body
+    # class our CSS uses to float aside.app-sidebar, and expand it so its content
+    # (hidden when data-expanded=false) shows.
+    tutor = (
+        '<button class="ml-nav-tutor" aria-label="Toggle tutor" '
+        "onclick=\"document.body.classList.toggle('ml-show-tutor');"
+        "var a=document.querySelector('aside.app-sidebar');"
+        "if(a){a.setAttribute('data-expanded','true');}\">&#128172; Tutor</button>"
+    )
+    return (
+        '<nav class="ml-chapter-nav" aria-label="Chapter navigation">'
+        f"{left}{home}{right}{tutor}</nav>"
+    )
 
 
 def inject_nav(page: Path, names: list[str], idx: int) -> None:
