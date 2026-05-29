@@ -10,6 +10,8 @@ on:
       - "differential_equations/delib/**"
       - "web/**"
       - "scripts/build_wasm_site.py"
+      - "manim/**"
+      - "assets/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
@@ -26,10 +28,64 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  # Render the Manim hero derivations (manim/*.py) to mp4s. The heavy LaTeX
+  # install + render only runs when manim/** changes (keyed cache); otherwise the
+  # cached videos are reused. Failure-tolerant: if a render breaks, the build
+  # still proceeds and the chapter shows delib.video's fallback note instead.
+  render:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Ensure output dir
+        run: mkdir -p assets-rendered
+
+      - name: Cache rendered media
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: assets-rendered
+          key: manim-${{ hashFiles('manim/**') }}
+
+      - name: Install Manim + system deps
+        if: steps.cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libcairo2-dev libpango1.0-dev \
+            texlive texlive-latex-extra texlive-fonts-extra dvisvgm
+          python -m pip install --upgrade pip
+          pip install manim
+
+      - name: Render scenes
+        if: steps.cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        run: |
+          # Add a line per hero scene as chapters grow.
+          manim render -qm -o newton_cooling manim/newton_cooling.py SceneNewtonCoolingFull || true
+          find media -name 'newton_cooling.mp4' -exec cp {} assets-rendered/ \; || true
+          ls -la assets-rendered || true
+
+      - name: Upload rendered media
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-media
+          path: assets-rendered
+          if-no-files-found: ignore
+
+  build:
+    needs: render
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch rendered media
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: rendered-media
+          path: assets
 
       - name: Set up Python
         uses: actions/setup-python@v5
