@@ -91,7 +91,12 @@ MARIMO_HIDE_JS = (
     'var ns=document.querySelectorAll(\'button,[role="menuitem"],a[role="menuitem"]\');'
     "for(var i=0;i<ns.length;i++){var n=ns[i];if(n.dataset.mlHidden)continue;"
     'var label=norm(n.getAttribute("aria-label"))||norm(n.textContent);'
-    'if(LABELS.indexOf(label)!==-1||label.indexOf("add to notebook")!==-1){n.style.display="none";n.dataset.mlHidden="1";}}}'
+    'if(LABELS.indexOf(label)!==-1||label.indexOf("add to notebook")!==-1){n.style.display="none";n.dataset.mlHidden="1";continue;}'
+    # Hide marimo's own sidebar opener: a small icon button parked at the very
+    # top-left, just under our fixed nav. Our nav "Tutor" button replaces it.
+    'if(!n.closest(".ml-chapter-nav")){var r=n.getBoundingClientRect();'
+    "if(r.top>=40&&r.top<96&&r.left<64&&r.width<=56&&r.height<=56){"
+    'n.style.display="none";n.dataset.mlHidden="1";}}}}'
     "var pend=false;function schedule(){if(pend)return;pend=true;"
     "requestAnimationFrame(function(){pend=false;sweep();});}"
     "function start(){new MutationObserver(schedule).observe(document.body,"
