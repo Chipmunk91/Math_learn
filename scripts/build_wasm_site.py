@@ -149,9 +149,14 @@ NAV_CSS = (
     ".ml-chapter-nav .ml-nav-home{color:#1d2733;}"
     ".ml-chapter-nav .ml-nav-disabled{color:#aab4c0;font-weight:600;"
     "padding:.35rem .6rem;white-space:nowrap;}"
-    # Offset the actual scroll container (not #root, which the content ignores).
-    ".dvn-scroller,.overflow-y-scroll{padding-top:44px !important;box-sizing:border-box;}"
+    # Padding #root / the scroller didn't move the content (its page anchors to
+    # the viewport top). Margin-top moves the whole #root box — and its absolutely
+    # positioned descendants with it — so the content clears the fixed bar.
+    "#root{margin-top:44px !important;min-height:calc(100vh - 44px) !important;box-sizing:border-box;}"
     "html{scroll-padding-top:48px;}"
+    # Chapter content is light DOM, so clamp wide charts here (mobile crop fix).
+    "@media (max-width:640px){.js-plotly-plot,.plot-container,.plotly,.svg-container,.main-svg{max-width:100% !important;}"
+    ".marimo-cell{overflow-x:auto;max-width:100%;}}"
     ".ml-chapter-nav a{max-width:34vw;overflow:hidden;text-overflow:ellipsis;}"
     # Tutor toggle: shown only when the sidebar has auto-collapsed (narrow screens).
     ".ml-nav-tutor{display:none;}"
