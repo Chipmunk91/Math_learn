@@ -97,11 +97,19 @@ def _(mo):
         $$ \frac{dy}{dt} = f(t, y), $$
 
         which reads *"tell me where you are, and I'll tell you how fast you're moving."*
-        The equation is called **first-order** because the rule uses only the current
-        value $y$ (and possibly the time $t$) — no acceleration, no higher rates of
-        change. That's all a solver needs: give it the rule plus a starting point and it
-        can trace the entire curve, one small step at a time. The S-shape above is
-        simply what you get when you **follow the rate** day by day.
+        Think of $f$ as a little machine: feed it the current day $t$ and the current
+        count $y$, and it hands back the **slope** — how fast $y$ is climbing at that
+        instant. Plug in a *different* $(t, y)$ and you generally get a different slope.
+        So the equation never states an answer outright; it states a **rule you can
+        apply at any point**. Hand a solver that rule plus a starting value and it walks
+        forward in tiny steps: read the slope here, nudge $y$ a little, read the new
+        slope there, nudge again — and the whole curve grows out of the rule. The
+        S-shape above is exactly what you get when you **follow the rate**, day by day.
+
+        (You'll hear an equation like this called **first-order**. The name just means
+        the rule needs only the present value $y$ — not its acceleration or any
+        higher rate of change — to tell you the slope. Nothing more mysterious than
+        that.)
 
         So the rest of this chapter is three moves: **(1)** turn the rumor story into
         such a rate-rule, **(2)** read what the rule tells us *before* solving it, and
@@ -138,8 +146,21 @@ def _(mo):
         $y$ is the **engine**: more knowers means more spreading, which is why a rumor
         with no one to start it never moves. The factor $(1 - y/K)$ is the **brake**: as
         $y$ climbs toward the whole campus $K$, the pool of fresh ears shrinks toward
-        zero and the brake clamps down. Their tug-of-war — engine winning early, brake
-        winning late — is *exactly* the S-curve we observed.
+        zero and the brake clamps down.
+
+        Put numbers to the product $y(K - y)$ on a campus of $K = 1000$ to feel why the
+        rate rises then falls:
+
+        - **Early**, $y = 10$ know. Fresh ears are everywhere ($K - y = 990$), but there
+          are only $10$ tellers, so $y(K-y)=10\times 990$ is small — the rumor *barely
+          moves*.
+        - **Late**, $y = 990$ know. Now tellers are everywhere, but only $10$ fresh
+          ears remain, so $y(K-y)=990\times 10$ is small *again* — it barely moves.
+        - **Middle**, $y = 500$. Both factors are large at once ($500\times 500$), the
+          product peaks, and the rumor *erupts*.
+
+        Small at both ends, biggest in the middle: that tug-of-war — engine winning
+        early, brake winning late — is *exactly* the S-curve we observed.
         """
     )
     return
@@ -152,17 +173,21 @@ def _(mo):
         r"""
         ## Play with the symbols
 
-        Here's the quiet superpower of writing the rule down: we can mine it for
-        insight *before drawing or solving anything*. The most revealing question is —
-        where does the spread **stop**? It stops wherever the rate is zero, $dy/dt = 0$.
-        The $y$-values that satisfy that are the **equilibria**: populations that, once
-        reached, never change.
+        Once we have the rule, the most revealing question is: where does the spread
+        **stop**? Change stops exactly where the rate is zero, $dy/dt = 0$. A $y$-value
+        where that happens is called an **equilibrium** — plug it back into the rule and
+        the rate vanishes, so the count just sits there forever, unchanging. Equilibria
+        exist because $f(y)$ *is* the rate of change: wherever $f$ passes through zero,
+        the system is momentarily told to move at speed zero, and a population sitting
+        exactly there has nowhere to go.
 
-        For our rumor, $a\,y(1 - y/K) = 0$ has two answers — $y = 0$ (nobody knows) and
-        $y = K$ (everybody does) — and they behave oppositely. One is a **stable**
-        resting point that nearby solutions are pulled *toward*; the other is
-        **unstable**, with solutions pushed *away*. The tell is the slope of the rate,
-        $f'(y)$: negative means stable, positive means unstable.
+        For our rumor, setting $a\,y(1 - y/K) = 0$ gives two of them — $y = 0$ (nobody
+        knows) and $y = K$ (everybody does) — and they behave oppositely. Near $y = 0$
+        the smallest spark grows, so solutions are pushed *away*: that's an **unstable**
+        equilibrium. Near $y = K$ any wobble gets pulled back, so solutions settle
+        *onto* it: that's a **stable** one. The quick test is the slope of the rate
+        itself, $f'(y)$ — negative means stable (pulls back), positive means unstable
+        (pushes away).
 
         Don't take that on faith — **change the rate law below and watch the equilibria
         and their stability re-solve symbolically**, live. Try `a*y` (spreading with no
@@ -193,12 +218,15 @@ def _(mo):
         r"""
         ## See the whole flow at once — the slope field
 
-        Solving the equation from one starting point gives one curve. But the rule
-        $dy/dt = f(t, y)$ does something more generous: it assigns a slope to **every**
-        point $(t, y)$ in the plane. So at each point we can draw a tiny arrow pointing
-        the way a solution passing through there would head — and doing that across a
-        grid gives the **slope field**, a picture of *every* possible spread-story at
-        once, without solving a thing.
+        Solving the equation from one starting point gives one curve. But notice what
+        the rule really hands us: $dy/dt$ *is a slope*. So at any point $(t, y)$ you
+        care to pick, plug it into $f(t, y)$ and out comes the slope a solution would
+        have right there — and you can draw a tiny line segment at that point, tilted to
+        match. Pick a neighboring point and the rule usually gives a slightly different
+        slope, so a slightly different tilt. Do this at a whole **grid** of points and
+        those little segments together form the **slope field**: a sky full of arrows,
+        each one a local instruction for *"which way is the flow heading here."* It's a
+        picture of *every* possible spread-story at once, drawn without solving a thing.
 
         Read it like a current in water: drop a cork anywhere and it drifts along the
         arrows. The equilibria you just found by hand reappear here as flat, horizontal
@@ -416,8 +444,8 @@ async def _(api_field, c2_ai, c2_code, c2_gen, c2_set, delib, key_bridge):
 def _(c2_ai, c2_code, c2_gen, c2_run, delib):
     delib.exercise_view(
         "**2.** Start **above** the capacity ($y_0=6$, $a=1$, $K=4$). Integrate to "
-        "$t=10$ and put the final value $y(10)$ in `answer`. Does it fall to $K$ or "
-        "overshoot?",
+        "$t=10$ and put the final value $y(10)$ in `answer`. Does it settle back onto "
+        "the equilibrium $K$, or stray away from it?",
         c2_ai, c2_gen, c2_code, c2_run,
     )
     return
@@ -427,7 +455,7 @@ def _(c2_ai, c2_code, c2_gen, c2_run, delib):
 def _(c2_code, c2_run, delib):
     delib.run_exercise(c2_code.value, c2_run.value, check=lambda ns: delib.check_number(
         ns, target=4.0, tol=0.1,
-        ok="Right — it settles onto $K=4$ from above, no overshoot.",
+        ok="Right — it settles back down onto the equilibrium $K=4$ rather than straying away.",
         hint="Integrate $y'=a y(1-y/K)$ from $y_0=6$; it approaches $4$.",
     ))
     return
@@ -464,8 +492,10 @@ async def _(api_field, c3_ai, c3_code, c3_gen, c3_set, delib, key_bridge):
 @app.cell(hide_code=True)
 def _(c3_ai, c3_code, c3_gen, c3_run, delib):
     delib.exercise_view(
-        "**3.** The growth rate $y'=a\\,y(1-y/K)$ is **steepest** at one value of $y$. "
-        "Find it (for $a=1$, $K=4$) and put it in `answer`.",
+        "**3.** No matter where a rising rumor starts (any $0<y_0<4$, with $a=1$, "
+        "$K=4$), it races through its **fastest growth** at the *same* value of $y$ "
+        "every time. Find that $y$ where the rate $y'=a\\,y(1-y/K)$ peaks and put it in "
+        "`answer`.",
         c3_ai, c3_gen, c3_code, c3_run,
     )
     return
