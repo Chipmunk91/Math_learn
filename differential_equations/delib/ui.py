@@ -552,12 +552,14 @@ def cell_picker_widget():
           function onMove(e){ var c=under(e.target); if(!c){ overlay.style.display='none'; return;} var r=c.getBoundingClientRect(); var o=overlay.style; o.display='block'; o.top=r.top+'px'; o.left=r.left+'px'; o.width=r.width+'px'; o.height=r.height+'px'; }
           function onClick(e){ var c=under(e.target); if(!c) return; e.preventDefault(); e.stopPropagation(); exit(); select(c); }
           function onKey(e){ if(e.key==='Escape') exit(); }
+          var reopen=false;  // restore the floated tutor overlay after a pick
           function enter(){
             model.set('picked_text',''); model.set('picked_title',''); model.save_changes(); paint();
+            reopen=document.body.classList.contains('ml-show-tutor'); if(reopen) document.body.classList.remove('ml-show-tutor');
             picking=true; ensure(); overlay.style.display='none'; banner.style.display='block';
             document.addEventListener('mousemove',onMove,true); document.addEventListener('click',onClick,true); document.addEventListener('keydown',onKey,true);
           }
-          function exit(){ picking=false; if(overlay)overlay.style.display='none'; if(banner)banner.style.display='none'; document.removeEventListener('mousemove',onMove,true); document.removeEventListener('click',onClick,true); document.removeEventListener('keydown',onKey,true); }
+          function exit(){ picking=false; if(overlay)overlay.style.display='none'; if(banner)banner.style.display='none'; document.removeEventListener('mousemove',onMove,true); document.removeEventListener('click',onClick,true); document.removeEventListener('keydown',onKey,true); if(reopen){document.body.classList.add('ml-show-tutor'); reopen=false;} }
           function select(c){ var t=cellText(c); model.set('picked_text', t.slice(0,2000)); model.set('picked_title', titleOf(t)); model.save_changes(); paint(); }
           var btn=document.createElement('button');
           btn.style.cssText='width:100%;padding:8px 10px;border:1px solid #c7d2e0;border-radius:8px;background:#f3f7fc;cursor:pointer;font:13px sans-serif;color:#2c3e50;text-align:left';

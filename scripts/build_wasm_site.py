@@ -96,11 +96,14 @@ MARIMO_HIDE_JS = (
     # top-left, just under our fixed nav. Our nav "Tutor" button replaces it.
     'if(!n.closest(".ml-chapter-nav")){var r=n.getBoundingClientRect();'
     "if(r.top>=40&&r.top<96&&r.left<64&&r.width<=56&&r.height<=56){"
-    'n.style.display="none";n.dataset.mlHidden="1";}}}}'
+    'n.style.display="none";n.dataset.mlHidden="1";}}}'
+    # Show our nav Tutor button only when marimo has fully hidden the sidebar.
+    'var sb=document.querySelector("aside.app-sidebar");'
+    'if(sb){document.body.classList.toggle("ml-sb-collapsed",getComputedStyle(sb).display==="none");}}'
     "var pend=false;function schedule(){if(pend)return;pend=true;"
     "requestAnimationFrame(function(){pend=false;sweep();});}"
     "function start(){new MutationObserver(schedule).observe(document.body,"
-    "{childList:true,subtree:true});sweep();}"
+    "{childList:true,subtree:true});window.addEventListener('resize',schedule);sweep();}"
     'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",start);}'
     "else{start();}"
     "})();</script>"
@@ -166,9 +169,11 @@ NAV_CSS = (
     "@media (max-width:640px){.js-plotly-plot,.plot-container,.plotly,.svg-container,.main-svg{max-width:100% !important;}"
     ".marimo-cell{overflow-x:auto;max-width:100%;}.modebar-container,.modebar{display:none !important;}}"
     ".ml-chapter-nav a{max-width:34vw;overflow:hidden;text-overflow:ellipsis;}"
-    # Tutor toggle: shown only when the sidebar has auto-collapsed (narrow screens).
+    # Tutor toggle: shown only when marimo has actually hidden the sidebar
+    # (display:none, set at runtime by the sweep below) — never on desktop where
+    # the sidebar is inline.
     ".ml-nav-tutor{display:none;}"
-    "@media (max-width:1024px){.ml-nav-tutor{display:inline-block;}}"
+    "body.ml-sb-collapsed .ml-nav-tutor{display:inline-block;}"
     # When toggled on, float the sidebar as an overlay below the nav.
     "body.ml-show-tutor aside.app-sidebar{display:block !important;position:fixed !important;"
     "top:44px !important;bottom:0 !important;left:0 !important;width:min(420px,92vw) !important;"
