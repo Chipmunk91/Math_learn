@@ -230,6 +230,40 @@ def _(delib):
 
 @app.cell(hide_code=True)
 def _(mo):
+    # Beat 3c — read the closed form: what is the formula actually telling us?
+    mo.md(
+        r"""
+        ### What the formula is telling us
+
+        Out of all that algebra came
+
+        $$ T(t) \;=\; T_r \;+\; A\,e^{-k t}, $$
+
+        and once the starting temperature $T(0) = T_0$ pins $A = T_0 - T_r$,
+
+        $$ T(t) \;=\; T_r \;+\; (T_0 - T_r)\,e^{-k t}. $$
+
+        Read it slowly. The $T_r$ out front is the **room** — the temperature the cup is
+        heading toward. The piece $(T_0 - T_r)$ is the **initial gap** above (or below)
+        the room. The factor $e^{-k t}$ is a **decay knob** that starts at $1$ when
+        $t = 0$ and shrinks toward $0$ as time grows. So the formula is just one sentence
+        in symbols:
+
+        > the cup's temperature equals the room plus a leftover gap that **shrinks
+        > exponentially** — closing in on $T_r$ fast at first, then ever more slowly,
+        > but never quite reaching it.
+
+        Two reads pop out immediately. **(1)** As $t \to \infty$, $e^{-kt} \to 0$, so
+        $T \to T_r$ regardless of how hot or cold it started — every cup forgets its
+        past. **(2)** Doubling $k$ halves the time to close any given fraction of the
+        gap, which is what "$k$ is how fast" really means.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
     # Beat 4 — bridge into the field.
     mo.md(
         r"""
@@ -258,7 +292,7 @@ def _(delib):
 
 
 @app.cell(hide_code=True)
-def _(delib, mo):
+def _(delib):
     controls = delib.param_panel(
         [
             {"name": "k", "label": "cooling rate k", "start": 0.05, "stop": 0.6, "step": 0.05, "value": 0.2},
@@ -266,19 +300,27 @@ def _(delib, mo):
             {"name": "T0", "label": "starting temp T₀", "start": 40.0, "stop": 100.0, "step": 1.0, "value": 90.0},
         ]
     )
-    mo.md(
-        f"""
-        ## Make it your kitchen
-
-        Drag the sliders: $k$ is how fast it cools, $T_r$ is the room, and $T_0$ is how
-        hot it started. The field redraws and the **red curve** — the exact solution
-        from $T(0) = T_0$ — bends to follow it. Notice every curve, hot or cold, slides
-        onto the room-temperature line.
-
-        {mo.as_html(controls)}
-        """
-    )
     return (controls,)
+
+
+@app.cell(hide_code=True)
+def _(controls, mo):
+    # Render the controls directly (not via mo.as_html inside an f-string), so the
+    # slider stays bound to downstream cells reading controls.value.
+    mo.vstack([
+        mo.md(
+            r"""
+            ## Make it your kitchen
+
+            Drag the sliders: $k$ is how fast it cools, $T_r$ is the room, and $T_0$ is
+            how hot it started. The field redraws and the **red curve** — the exact
+            solution from $T(0) = T_0$ — bends to follow it. Notice every curve, hot or
+            cold, slides onto the room-temperature line.
+            """
+        ),
+        controls,
+    ])
+    return
 
 
 @app.cell(hide_code=True)

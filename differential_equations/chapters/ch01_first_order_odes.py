@@ -258,7 +258,7 @@ def _(delib):
 
 
 @app.cell(hide_code=True)
-def _(delib, mo):
+def _(delib):
     controls = delib.param_panel(
         [
             {"name": "a", "label": "growth rate a", "start": -2.0, "stop": 2.0, "step": 0.1, "value": 1.0},
@@ -266,22 +266,30 @@ def _(delib, mo):
             {"name": "y0", "label": "initial condition y₀", "start": -1.0, "stop": 6.0, "step": 0.1, "value": 0.5},
         ]
     )
-    mo.md(
-        f"""
-        ## Now make it your campus
-
-        The picture so far used one set of numbers — grab the sliders and make the
-        rumor your own. Here $a$ is how **chatty** the campus is (how fast word
-        travels), $K$ is how many people are even reachable, and $y_0$ is how many
-        were in on it from day zero. As you drag them the field redraws, and the
-        **red curve** — the single rumor that starts at $y(0) = y_0$ — bends to follow
-        the new flow. Try pushing $a$ below zero, or starting $y_0$ *above* $K$, and
-        watch where the story ends up.
-
-        {mo.as_html(controls)}
-        """
-    )
     return (controls,)
+
+
+@app.cell(hide_code=True)
+def _(controls, mo):
+    # Render the controls directly (not via mo.as_html inside an f-string), so the
+    # slider stays bound to downstream cells reading controls.value.
+    mo.vstack([
+        mo.md(
+            r"""
+            ## Now make it your campus
+
+            The picture so far used one set of numbers — grab the sliders and make the
+            rumor your own. Here $a$ is how **chatty** the campus is (how fast word
+            travels), $K$ is how many people are even reachable, and $y_0$ is how many
+            were in on it from day zero. As you drag them the field redraws, and the
+            **red curve** — the single rumor that starts at $y(0) = y_0$ — bends to
+            follow the new flow. Try pushing $a$ below zero, or starting $y_0$ *above*
+            $K$, and watch where the story ends up.
+            """
+        ),
+        controls,
+    ])
+    return
 
 
 @app.cell(hide_code=True)
