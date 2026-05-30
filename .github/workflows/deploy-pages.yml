@@ -64,6 +64,8 @@ jobs:
           # Add a line per hero scene as chapters grow.
           manim render -qm -o newton_cooling manim/newton_cooling.py SceneNewtonCoolingFull || true
           find media -name 'newton_cooling.mp4' -exec cp {} assets-rendered/ \; || true
+          manim render -qm -o f_recovery manim/f_recovery.py SceneFRecovery || true
+          find media -name 'f_recovery.mp4' -exec cp {} assets-rendered/ \; || true
           ls -la assets-rendered || true
 
       - name: Upload rendered media

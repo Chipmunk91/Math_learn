@@ -221,117 +221,278 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    # Beat 3 — exactness condition.
-    mo.md(
-        r"""
-        ## A simple test for exactness
+def _(go, mo):
+    # Beat 3 — exactness test, with a graphic for the two paths and an
+    # explicit baby-step from the difference quotient to the partial-
+    # derivative form. dx and dy are drawn exaggerated for visibility;
+    # in the math they → 0.
+    _x0, _y0 = 1.0, 1.0
+    _dx, _dy = 1.8, 1.2
 
-        We've set up the question — given an equation
-        $M(x, y)\,dx + N(x, y)\,dy = 0$, is there a hidden landscape
-        $F(x, y)$ somewhere with $F_x = M$ and $F_y = N$? Looking for one
-        by guessing is hopeless. We'd like a test we can run directly on
-        $M$ and $N$ that *tells* us whether $F$ exists — before we go
-        searching for it.
+    _rect = go.Figure()
+    # Dashed rectangle outline to set the scene
+    _rect.add_trace(go.Scatter(
+        x=[_x0, _x0 + _dx, _x0 + _dx, _x0, _x0],
+        y=[_y0, _y0, _y0 + _dy, _y0 + _dy, _y0],
+        mode="lines",
+        line=dict(color="#cccccc", width=1, dash="dot"),
+        showlegend=False, hoverinfo="skip",
+    ))
+    # Blue path: right then up
+    _rect.add_annotation(x=_x0 + _dx, y=_y0, ax=_x0, ay=_y0,
+                         xref="x", yref="y", axref="x", ayref="y",
+                         arrowhead=2, arrowsize=1.4, arrowwidth=3,
+                         arrowcolor="#2f6fb0", showarrow=True)
+    _rect.add_annotation(x=_x0 + _dx, y=_y0 + _dy, ax=_x0 + _dx, ay=_y0,
+                         xref="x", yref="y", axref="x", ayref="y",
+                         arrowhead=2, arrowsize=1.4, arrowwidth=3,
+                         arrowcolor="#2f6fb0", showarrow=True)
+    # Red path: up then right
+    _rect.add_annotation(x=_x0, y=_y0 + _dy, ax=_x0, ay=_y0,
+                         xref="x", yref="y", axref="x", ayref="y",
+                         arrowhead=2, arrowsize=1.4, arrowwidth=3,
+                         arrowcolor="#d1495b", showarrow=True)
+    _rect.add_annotation(x=_x0 + _dx, y=_y0 + _dy, ax=_x0, ay=_y0 + _dy,
+                         xref="x", yref="y", axref="x", ayref="y",
+                         arrowhead=2, arrowsize=1.4, arrowwidth=3,
+                         arrowcolor="#d1495b", showarrow=True)
+    # Corner coordinate labels
+    _rect.add_annotation(x=_x0, y=_y0, text="(x, y)", showarrow=False,
+                         xshift=-28, yshift=-12, font=dict(size=13))
+    _rect.add_annotation(x=_x0 + _dx, y=_y0, text="(x+dx, y)", showarrow=False,
+                         xshift=34, yshift=-12, font=dict(size=13))
+    _rect.add_annotation(x=_x0 + _dx, y=_y0 + _dy, text="(x+dx, y+dy)",
+                         showarrow=False, xshift=44, yshift=12, font=dict(size=13))
+    _rect.add_annotation(x=_x0, y=_y0 + _dy, text="(x, y+dy)", showarrow=False,
+                         xshift=-34, yshift=12, font=dict(size=13))
+    # Rate labels — evaluated at the *start* of each leg, hence those arguments
+    _rect.add_annotation(x=_x0 + _dx / 2, y=_y0, text="rate <b>M(x, y)</b>",
+                         showarrow=False, yshift=-30,
+                         font=dict(color="#2f6fb0", size=13))
+    _rect.add_annotation(x=_x0 + _dx, y=_y0 + _dy / 2,
+                         text="rate <b>N(x+dx, y)</b>",
+                         showarrow=False, xshift=75,
+                         font=dict(color="#2f6fb0", size=13))
+    _rect.add_annotation(x=_x0, y=_y0 + _dy / 2, text="rate <b>N(x, y)</b>",
+                         showarrow=False, xshift=-65,
+                         font=dict(color="#d1495b", size=13))
+    _rect.add_annotation(x=_x0 + _dx / 2, y=_y0 + _dy,
+                         text="rate <b>M(x, y+dy)</b>",
+                         showarrow=False, yshift=30,
+                         font=dict(color="#d1495b", size=13))
+    _rect.update_layout(
+        template="plotly_white",
+        title=dict(text="Two paths from (x, y) to (x+dx, y+dy) — blue: right then up; red: up then right",
+                   x=0.5, xanchor="center", font=dict(size=13)),
+        xaxis=dict(range=[_x0 - 1.3, _x0 + _dx + 1.5], visible=False),
+        yaxis=dict(range=[_y0 - 0.9, _y0 + _dy + 0.9], visible=False,
+                   scaleanchor="x"),
+        height=380, showlegend=False,
+        margin=dict(l=30, r=30, t=50, b=30),
+        paper_bgcolor="white", plot_bgcolor="white",
+    )
 
-        That test comes from a small observation about hillsides.
+    mo.vstack([
+        mo.md(
+            r"""
+            ## A simple test for exactness
 
-        ### Order of stepping doesn't matter
+            We've set up the question — given an equation
+            $M(x, y)\,dx + N(x, y)\,dy = 0$, is there a hidden landscape
+            $F(x, y)$ somewhere with $F_x = M$ and $F_y = N$? Looking for
+            one by guessing is hopeless. We'd like a test we can run
+            directly on $M$ and $N$ that *tells* us whether $F$ exists —
+            before we go searching for it.
 
-        You're standing at $(x, y)$. Take one step **right** by $dx$, then
-        one step **up** by $dy$. You arrive at $(x + dx,\, y + dy)$, at
-        some new altitude.
+            That test comes from a small observation about hillsides.
 
-        Now repeat the trip from the same starting spot, in the **other**
-        order: up by $dy$ first, then right by $dx$. You arrive at the
-        *same point* — and at the *same altitude*, because altitude is a
-        function of position alone, not of the path you took to get there.
+            ### Order of stepping doesn't matter
 
-        Same start, same end, same altitude. So the two total altitude
-        changes have to be equal.
+            You're standing at $(x, y)$. Take one step **right** by $dx$,
+            then one step **up** by $dy$. You arrive at
+            $(x + dx,\, y + dy)$, at some new altitude.
 
-        Write each total down using the rates from the previous section.
-        Going **right then up**, the right-step happens at altitude row
-        $y$ (where the rate is $M(x, y)$), and the up-step happens at
-        column $x + dx$ (where the rate is $N(x + dx, y)$):
+            Now repeat the trip from the same starting spot, in the
+            **other** order: up by $dy$ first, then right by $dx$. You
+            arrive at the *same point* — and at the *same altitude*,
+            because altitude is a function of position alone, not of the
+            path you took to get there.
 
-        $$
-        \text{right then up:} \quad dF \;=\; M(x, y)\,dx \;+\; N(x + dx, y)\,dy.
-        $$
+            Same start, same end, same altitude. So the two total altitude
+            changes have to be equal.
 
-        Going **up then right**, the up-step happens at column $x$, and
-        the right-step happens at altitude row $y + dy$:
+            Here are the two paths drawn out. Notice the labels on each
+            leg — they record which rate function (M or N) applies, *and*
+            the point at which that rate is evaluated. Why those specific
+            arguments matters, and we'll unpack it just below the figure.
+            """
+        ),
+        _rect,
+        mo.md(
+            r"""
+            Each leg is a pure-direction step — the same kind of step we
+            broke a general step into back in Beat 2. So we already know
+            what the altitude change is on each leg: it's the rate times
+            the step length. The only new wrinkle is *where the rate is
+            evaluated*, and the answer is:
 
-        $$
-        \text{up then right:} \quad dF \;=\; N(x, y)\,dy \;+\; M(x, y + dy)\,dx.
-        $$
+            > **At the starting point of that leg.** The linear
+            > approximation "altitude grows at rate $F_x$ per unit of
+            > $x$" is taken at the point where the step *begins* — that's
+            > where the slope is being measured. As soon as you take a
+            > step you're at a new point and the rate there is (slightly)
+            > different.
 
-        Set the two expressions equal — both compute the same altitude
-        change between the same two points, just by different routes — and
-        gather the $M$ terms on one side, the $N$ terms on the other:
+            Walk through the **blue path** (right then up) with this in
+            mind:
 
-        $$
-        \bigl[N(x + dx, y) - N(x, y)\bigr]\,dy
-        \;=\;
-        \bigl[M(x, y + dy) - M(x, y)\bigr]\,dx.
-        $$
+            - **Right step.** Starts at $(x, y)$, ends at $(x + dx,\, y)$.
+              Pure-$x$ step. The rate-in-$x$ at the starting point is
+              $M(x, y)$. So altitude change ≈ $M(x, y) \cdot dx$.
+            - **Up step.** Starts at $(x + dx, y)$ — the new place — ends
+              at $(x + dx,\, y + dy)$. Pure-$y$ step. The rate-in-$y$ at
+              *this new* starting point is $N(x + dx, y)$. So altitude
+              change ≈ $N(x + dx, y) \cdot dy$.
 
-        Each bracket is asking *how much one of our functions changes when
-        we take a small step in one direction*. The left bracket is how
-        much $N$ changes when we step in $x$. The right bracket is how
-        much $M$ changes when we step in $y$. Divide through by
-        $dx \cdot dy$ and shrink the step:
+            Add the two:
 
-        $$
-        \boxed{\quad M_y \;=\; N_x \quad}
-        $$
+            $$
+            \text{right then up:}\quad
+            dF \;=\; M(x, y)\,dx \;+\; N(x + dx, y)\,dy.
+            $$
 
-        That's the exactness test. **If the equation
-        $M\,dx + N\,dy = 0$ comes from a hidden landscape, then $M$ and
-        $N$ have to satisfy this.**
+            Now the **red path** (up then right), exactly the same way —
+            up from $(x, y)$ first, so the rate is $N(x, y)$; then right
+            from $(x, y + dy)$, so the rate is $M(x, y + dy)$:
 
-        The other direction — *if* $M_y = N_x$ holds throughout the region
-        we care about, does a landscape always exist? — turns out to be
-        yes, on the kinds of regions we'll deal with (rectangles,
-        half-planes, anywhere without holes punched out). Proving that is
-        a slightly more technical story, but the practical upshot is what
-        matters: **the test is the whole question.**
+            $$
+            \text{up then right:}\quad
+            dF \;=\; N(x, y)\,dy \;+\; M(x, y + dy)\,dx.
+            $$
 
-        So the workflow becomes:
+            Set the two expressions equal — both compute the same altitude
+            change between the same two points, just by different routes:
 
-        > Compute $M_y$. Compute $N_x$. Compare.
-        > Equal? **Exact**, and a landscape is waiting to be found.
-        > Not equal? **Not exact** — we'll come back to it in the
-        > integrating-factor section.
+            $$
+            M(x, y)\,dx + N(x + dx, y)\,dy
+            \;=\; N(x, y)\,dy + M(x, y + dy)\,dx.
+            $$
 
-        ### Trying it on a real equation
+            Gather the $M$ terms on one side, the $N$ terms on the other:
 
-        Take the equation we'll work with through the rest of this
-        chapter:
+            $$
+            \bigl[N(x + dx, y) - N(x, y)\bigr]\,dy
+            \;=\;
+            \bigl[M(x, y + dy) - M(x, y)\bigr]\,dx.
+            $$
 
-        $$
-        (2x + y)\,dx + (x + 2y)\,dy = 0.
-        $$
+            Each bracket is asking *how much one of our functions changes
+            when we take a small step in one direction* — exactly what a
+            derivative measures. Let's extract the derivative form in
+            three small steps so nothing happens by sleight of hand.
 
-        So $M(x, y) = 2x + y$ and $N(x, y) = x + 2y$. Run the test.
+            **(1) Divide both sides by $dx \cdot dy$.** The $dx$ on the
+            right and the $dy$ on the left each cancel against a copy in
+            the denominator:
 
-        - $M = 2x + y$. Differentiating in $y$ means asking how $M$
-          changes when $y$ moves (with $x$ held fixed). The $2x$ doesn't
-          depend on $y$ — it doesn't move. The $y$ term contributes $1$
-          per unit of $y$. So $M_y = 1$.
-        - $N = x + 2y$. Differentiating in $x$, same logic: the $2y$
-          doesn't move, the $x$ contributes $1$. So $N_x = 1$.
+            $$
+            \frac{N(x + dx, y) - N(x, y)}{dx}
+            \;=\;
+            \frac{M(x, y + dy) - M(x, y)}{dy}.
+            $$
 
-        $M_y = N_x$. **The equation is exact.** There's a hidden landscape
-        $F$ behind it, and its contours are the equation's solutions.
+            **(2) Recognise each side.** Each fraction is a **difference
+            quotient** — change in the function divided by change in the
+            input — the same shape as the calculus-101 limit
+            $\bigl(f(x + h) - f(x)\bigr)/h$. The only twist is that one
+            of the two variables is held fixed while the other moves.
 
-        ### So what *is* $F$?
+            **(3) Shrink the step to zero.** As $dx \to 0$, the left side
+            becomes the **partial derivative** of $N$ with respect to
+            $x$, written $\partial N / \partial x$ or just $N_x$ for
+            short. Same on the right, with $M$ and $y$:
 
-        The test tells us a landscape exists, but it stays mum about
-        *what* it is. Finding $F$ given $M$ and $N$ is its own little
-        procedure — and it's easier to follow as an animation than as a
-        wall of symbols. We'll walk through it next.
-        """
+            $$
+            \lim_{dx \to 0}\frac{N(x + dx, y) - N(x, y)}{dx}
+            \;=\; N_x,
+            \quad\;
+            \lim_{dy \to 0}\frac{M(x, y + dy) - M(x, y)}{dy}
+            \;=\; M_y.
+            $$
+
+            Equating the two limits gives the test:
+
+            $$
+            \boxed{\quad M_y \;=\; N_x \quad}
+            $$
+
+            **If the equation $M\,dx + N\,dy = 0$ comes from a hidden
+            landscape, then $M$ and $N$ have to satisfy this.** (And the
+            $F_x$ notation from Beat 2 was the partial derivative all
+            along — we just hadn't named it yet.)
+
+            The other direction — *if* $M_y = N_x$ holds throughout the
+            region we care about, does a landscape always exist? — turns
+            out to be yes, on the kinds of regions we'll deal with
+            (rectangles, half-planes, anywhere without holes punched
+            out). Proving that is a slightly more technical story, but
+            the practical upshot is what matters: **the test is the whole
+            question.**
+
+            So the workflow becomes:
+
+            > Compute $M_y$. Compute $N_x$. Compare.
+            > Equal? **Exact**, and a landscape is waiting to be found.
+            > Not equal? **Not exact** — we'll come back to it in the
+            > integrating-factor section.
+
+            ### Trying it on a real equation
+
+            Take the equation we'll work with through the rest of this
+            chapter:
+
+            $$
+            (2x + y)\,dx + (x + 2y)\,dy = 0.
+            $$
+
+            So $M(x, y) = 2x + y$ and $N(x, y) = x + 2y$. Run the test.
+
+            - $M = 2x + y$. Differentiating in $y$ means asking how $M$
+              changes when $y$ moves (with $x$ held fixed). The $2x$
+              doesn't depend on $y$ — it doesn't move. The $y$ term
+              contributes $1$ per unit of $y$. So $M_y = 1$.
+            - $N = x + 2y$. Differentiating in $x$, same logic: the $2y$
+              doesn't move, the $x$ contributes $1$. So $N_x = 1$.
+
+            $M_y = N_x$. **The equation is exact.** There's a hidden
+            landscape $F$ behind it, and its contours are the equation's
+            solutions.
+
+            ### So what *is* $F$?
+
+            The test tells us a landscape exists, but it stays mum about
+            *what* it is. Finding $F$ given $M$ and $N$ is its own little
+            procedure — and it's easier to follow as an animation than as
+            a wall of symbols. The video below walks through it step by
+            step for our $M = 2x + y$, $N = x + 2y$ example. The result
+            — which you'll see drop out at the end — is
+            $F(x, y) = x^2 + xy + y^2$, and the next section uses it to
+            draw the contour map.
+            """
+        ),
+    ])
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    # Beat 3.5 — Manim hero: the F-recovery walkthrough. delib.video hides
+    # itself and shows the fallback note if the asset isn't rendered yet, so
+    # wiring this in before the mp4 exists won't break the page.
+    delib.video(
+        "f_recovery.mp4",
+        caption="Recovering F from M = 2x + y, N = x + 2y, one step at a time",
+        fallback="The animated F-recovery is being rendered (see manim/f_recovery.py).",
     )
     return
 
