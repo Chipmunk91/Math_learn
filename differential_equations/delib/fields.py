@@ -23,6 +23,8 @@ __all__ = [
     "vector_field",
     "phase_portrait",
     "overlay_solution",
+    "phase_line",
+    "potential_plot",
 ]
 
 # y' = f(x, y) for a first-order scalar ODE.
@@ -281,5 +283,211 @@ def vector_field_plotly(
         paper_bgcolor="white", plot_bgcolor="white",
         height=460, showlegend=False,
         margin=dict(l=55, r=20, t=50, b=45),
+    )
+    return fig
+
+
+# --- 1-D dynamics: phase line + potential ------------------------------------
+# Shared palette so the phase line and the potential plot mark the same fixed
+# point the same way (filled teal = stable, open red = unstable).
+_STABLE = "#2a9d8f"
+_UNSTABLE = "#d1495b"
+_MARBLE = "#d1495b"
+
+
+def _eval(f, xs):
+    """Evaluate f(xs), trying vectorised first; fall back to per-point."""
+    try:
+        return np.asarray(f(xs), dtype=float)
+    except Exception:
+        return np.asarray([float(f(xi)) for xi in xs])
+
+
+def _find_zeros(xs, fs):
+    """Linear-interp the zeros of f from samples (xs, fs)."""
+    sign = np.sign(fs)
+    idx = np.where(sign[:-1] * sign[1:] < 0)[0]  # strict crossings only
+    out = []
+    for i in idx:
+        denom = fs[i + 1] - fs[i]
+        out.append(float(xs[i] - fs[i] * (xs[i + 1] - xs[i]) / denom))
+    # Also pick up exact zeros that aren't crossings (rare; flat touches).
+    for i in np.where(fs == 0)[0]:
+        x0 = float(xs[i])
+        if all(abs(x0 - z) > 1e-9 for z in out):
+            out.append(x0)
+    out.sort()
+    return out
+
+
+def _fprime(f, x, h=1e-4):
+    """Central-difference derivative of f at x."""
+    return (float(f(x + h)) - float(f(x - h))) / (2.0 * h)
+
+
+def phase_line(
+    f,
+    xrange: tuple[float, float],
+    *,
+    density: int = 200,
+    marker_x: float | None = None,
+    title: str | None = None,
+):
+    """1-D phase line for ``dx/dt = f(x)`` — the chapter-3 hero visual.
+
+    Draws a horizontal axis from ``xrange[0]`` to ``xrange[1]`` with fixed
+    points marked: filled teal for **stable** (``f'(x*) < 0``, the flow pulls
+    back), open red for **unstable** (``f'(x*) > 0``, a nudge pushes away).
+    One arrow per interval points in the direction of the flow. An optional
+    ``marker_x`` puts a marble above the line for the chapter's slider.
+    """
+    import plotly.graph_objects as go
+
+    x0, x1 = xrange
+    xs = np.linspace(x0, x1, density)
+    fs = _eval(f, xs)
+    fps = _find_zeros(xs, fs)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=[x0, x1], y=[0, 0], mode="lines",
+        line=dict(color="#7c8aa0", width=1.4),
+        hoverinfo="skip", showlegend=False,
+    ))
+
+    # One arrow per interval between fixed points (and the endpoints), drawn
+    # via Plotly annotations so the arrowheads render crisply at any zoom.
+    boundaries = [x0] + list(fps) + [x1]
+    arrow_len = (x1 - x0) * 0.06
+    for j in range(len(boundaries) - 1):
+        mid = 0.5 * (boundaries[j] + boundaries[j + 1])
+        if boundaries[j + 1] - boundaries[j] < arrow_len * 0.6:
+            continue
+        sgn = float(np.sign(f(mid)))
+        if sgn == 0:
+            continue
+        ax_x = mid - sgn * arrow_len / 2
+        x_x = mid + sgn * arrow_len / 2
+        fig.add_annotation(
+            x=x_x, y=0, ax=ax_x, ay=0,
+            xref="x", yref="y", axref="x", ayref="y",
+            arrowhead=2, arrowsize=1.4, arrowwidth=1.6,
+            arrowcolor="#5b7db1", showarrow=True,
+        )
+
+    stable_x, unstable_x = [], []
+    for xp in fps:
+        slope = _fprime(f, xp)
+        (stable_x if slope < 0 else unstable_x).append(xp)
+    if stable_x:
+        fig.add_trace(go.Scatter(
+            x=stable_x, y=[0] * len(stable_x), mode="markers",
+            marker=dict(color=_STABLE, size=14, symbol="circle",
+                        line=dict(color=_STABLE, width=2)),
+            name="stable", hovertemplate="stable: x = %{x:.3f}<extra></extra>",
+        ))
+    if unstable_x:
+        fig.add_trace(go.Scatter(
+            x=unstable_x, y=[0] * len(unstable_x), mode="markers",
+            marker=dict(color="white", size=14, symbol="circle",
+                        line=dict(color=_UNSTABLE, width=2)),
+            name="unstable", hovertemplate="unstable: x = %{x:.3f}<extra></extra>",
+        ))
+    if marker_x is not None:
+        fig.add_trace(go.Scatter(
+            x=[marker_x], y=[0.18], mode="markers",
+            marker=dict(color=_MARBLE, size=18, symbol="circle",
+                        line=dict(color="#7a2a3a", width=1.4)),
+            hoverinfo="skip", showlegend=False,
+        ))
+
+    fig.update_layout(
+        template="plotly_white",
+        title=(dict(text=title, x=0.02) if title else None),
+        xaxis=dict(title="x", range=[x0, x1], zeroline=False),
+        yaxis=dict(visible=False, range=[-0.55, 0.55]),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=220, showlegend=True,
+        legend=dict(x=0, y=1.18, orientation="h"),
+        margin=dict(l=20, r=20, t=60, b=40),
+    )
+    return fig
+
+
+def potential_plot(
+    f,
+    xrange: tuple[float, float],
+    *,
+    n: int = 300,
+    marker_x: float | None = None,
+    title: str | None = None,
+):
+    """The potential landscape ``V(x) = -∫_{x0}^{x} f(s) ds`` (so ``f = -V'``).
+
+    Draws ``V`` over ``xrange`` (cumulative-trapezoid integration of ``-f``)
+    and marks every fixed point on the curve with the same colour code as
+    :func:`phase_line`: filled teal at the valleys (stable), open red at the
+    hills (unstable). An optional ``marker_x`` puts a marble on the landscape
+    at that position so the slider can show which valley it falls into.
+    """
+    import plotly.graph_objects as go
+
+    x0, x1 = xrange
+    xs = np.linspace(x0, x1, n)
+    fs = _eval(f, xs)
+    seg = 0.5 * (fs[:-1] + fs[1:]) * np.diff(xs)
+    V = np.concatenate([[0.0], -np.cumsum(seg)])  # V(x0) = 0
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=xs, y=V, mode="lines",
+        line=dict(color="#5b7db1", width=2.5),
+        name="V(x)", hovertemplate="V(%{x:.3f}) = %{y:.3f}<extra></extra>",
+    ))
+
+    def V_at(x):
+        return float(np.interp(x, xs, V))
+
+    fps = _find_zeros(xs, fs)
+    stable_x, stable_V, unstable_x, unstable_V = [], [], [], []
+    for xp in fps:
+        slope = _fprime(f, xp)
+        if slope < 0:
+            stable_x.append(xp); stable_V.append(V_at(xp))
+        else:
+            unstable_x.append(xp); unstable_V.append(V_at(xp))
+    if stable_x:
+        fig.add_trace(go.Scatter(
+            x=stable_x, y=stable_V, mode="markers",
+            marker=dict(color=_STABLE, size=14, symbol="circle",
+                        line=dict(color=_STABLE, width=2)),
+            name="stable (valley)",
+            hovertemplate="stable: x = %{x:.3f}, V = %{y:.3f}<extra></extra>",
+        ))
+    if unstable_x:
+        fig.add_trace(go.Scatter(
+            x=unstable_x, y=unstable_V, mode="markers",
+            marker=dict(color="white", size=14, symbol="circle",
+                        line=dict(color=_UNSTABLE, width=2)),
+            name="unstable (hill)",
+            hovertemplate="unstable: x = %{x:.3f}, V = %{y:.3f}<extra></extra>",
+        ))
+    if marker_x is not None:
+        fig.add_trace(go.Scatter(
+            x=[marker_x], y=[V_at(marker_x)], mode="markers",
+            marker=dict(color=_MARBLE, size=18, symbol="circle",
+                        line=dict(color="#7a2a3a", width=1.4)),
+            hoverinfo="skip", showlegend=False,
+        ))
+
+    fig.update_layout(
+        template="plotly_white",
+        title=(dict(text=title, x=0.02) if title else None),
+        xaxis=dict(title="x", range=[x0, x1], zeroline=False),
+        yaxis=dict(title="V(x)", zeroline=False),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=380, showlegend=True,
+        legend=dict(x=0, y=1.10, orientation="h"),
+        margin=dict(l=55, r=20, t=60, b=45),
     )
     return fig

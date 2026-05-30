@@ -15,6 +15,8 @@ from delib.fields import (
     vector_field,
     phase_portrait,
     overlay_solution,
+    phase_line,
+    potential_plot,
 )
 from delib.animate import (
     animate_time,
@@ -55,6 +57,8 @@ __all__ = [
     "vector_field",
     "phase_portrait",
     "overlay_solution",
+    "phase_line",
+    "potential_plot",
     "animate_time",
     "animate_plotly",
     "flow_field",
