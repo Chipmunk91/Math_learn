@@ -42,29 +42,43 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(delib, mo):
-    # Beat 1 — hook: a hiker on a contour map. Show contours of a smooth F
-    # over a patch of "terrain"; the walker stays on one contour the whole way.
-    _F_terrain = lambda x, y: (x**2 + y**2) / 4 - 0.6 * (x**2 - y**2 / 3)
+def _(delib, mo, np):
+    # Beat 1 — hook: a hiker on a contour map. Synthetic but topographically
+    # honest terrain: one Gaussian peak in the upper right, one Gaussian basin
+    # in the lower left. The contour ring around either feature is a solution
+    # to the chapter's ODE form.
+    _F_terrain = lambda x, y: (
+        np.exp(-((x - 1.2)**2 + (y - 0.6)**2) / 1.4)
+        - 0.65 * np.exp(-((x + 1.0)**2 + (y + 0.8)**2) / 1.8)
+    )
     _hike = delib.level_curves(
         _F_terrain, (-3.0, 3.0), (-3.0, 3.0),
-        n=120,
-        title="A walker's path on a contour map — altitude stays constant",
+        n=140,
+        title="A topographic map — altitude is a function of position, F(x, y)",
     )
     mo.vstack([
         mo.md(
             r"""
             ## A hiker reading a contour map
 
-            *(placeholder — hiker story: each contour line on a topographic map
-            connects points of equal altitude. Walking along a contour means
-            altitude never changes — and that single constraint, written as an
-            ODE, is the whole subject of this chapter.)*
+            If you've ever read a topographic map, you've already seen the
+            picture for this chapter.
 
-            Pick any contour. If you walk along it, your altitude $F(x, y)$
-            stays constant — so $dF = 0$ at every step. That equation,
-            $F_x\,dx + F_y\,dy = 0$, is the **general form** of an *exact*
-            differential equation. Every contour is a solution.
+            Every closed loop on the map is a **contour line** — every point
+            on the loop has the same altitude $F(x, y)$. Set out walking along
+            a contour and your altitude doesn't change. A small step
+            $(dx, dy)$ keeps you on the same line, so
+            $dF = F_x\,dx + F_y\,dy = 0$ at every step. Stare at that for a
+            second: it's an ordinary differential equation. The contour you're
+            walking is a **solution** of it. The whole map is a phase
+            portrait.
+
+            The figure below is synthetic — a Gaussian peak in the upper
+            right, a shallower basin in the lower left — but the principle is
+            the same as any USGS quad sheet. The nested rings around the peak
+            are level sets of "stay this high." The ones around the basin are
+            "stay this low." Pick any of them and you've drawn a solution
+            curve of an ODE.
             """
         ),
         _hike,
@@ -79,16 +93,35 @@ def _(mo):
         r"""
         ## From a conserved quantity to an ODE (and back)
 
-        *(placeholder — bridge: any smooth $F(x, y)$ defines a 1-parameter
-        family of curves $F = C$. Differentiating, $F_x + F_y \,dy/dx = 0$, so
-        $dy/dx = -F_x/F_y$. Run that backward: any equation of the form
-        $M\,dx + N\,dy = 0$ is *asking* whether some $F$ has $F_x = M, F_y = N$.)*
+        The hook hides two statements glued together, and they're worth
+        pulling apart.
 
-        Differentiate $F(x, y) = C$ implicitly: $F_x + F_y \dfrac{dy}{dx} = 0$,
-        so $\dfrac{dy}{dx} = -\dfrac{F_x}{F_y}$. Run that backward — given
-        $M\,dx + N\,dy = 0$, we're asking whether some $F$ exists with
-        $F_x = M$ and $F_y = N$. When it does, the chapter is done: solutions
-        are $F = C$. When it doesn't, we work to make one.
+        **One direction.** Pick any smooth $F(x, y)$. The equation
+        $F(x, y) = C$ traces out a curve for each $C$ — a 1-parameter family
+        of contours. Differentiate implicitly:
+
+        $$
+        F_x + F_y \,\frac{dy}{dx} = 0
+        \;\;\Longrightarrow\;\;
+        \frac{dy}{dx} = -\frac{F_x}{F_y}.
+        $$
+
+        Every conserved quantity comes with a slope field attached to it,
+        perpendicular to $\nabla F$. Going the other way along that field is
+        going *along* a contour.
+
+        **The other direction.** Run the question backward. Given an ODE in
+        the symmetric form
+
+        $$
+        M(x, y)\,dx + N(x, y)\,dy = 0,
+        $$
+
+        we're asking whether some $F$ exists with $F_x = M$ and $F_y = N$. If
+        yes, the chapter is essentially done — solutions are the level curves
+        $F = C$, and you're hiking on a contour map. If no, the next two
+        sections are about *making* one: multiply by a clever factor, or
+        change variables.
         """
     )
     return
@@ -101,17 +134,28 @@ def _(mo):
         r"""
         ## The exactness condition
 
-        *(placeholder — equality of mixed partials: a smooth $F$ exists with
-        $F_x = M$, $F_y = N$ iff $M_y = N_x$. Then recover $F$ by partial
-        integration: $F = \int M\,dx + g(y)$, then fix $g$ from $F_y = N$.)*
+        Here's the test. Suppose $F$ does exist with $F_x = M$ and $F_y = N$.
+        Differentiate $M$ with respect to $y$ — that's $F_{xy}$. Differentiate
+        $N$ with respect to $x$ — that's $F_{yx}$. For any smooth $F$, mixed
+        partials are equal, so
 
         $$
-        \boxed{\quad M_y = N_x \quad \Longleftrightarrow \quad \text{exact, with } dF = M\,dx + N\,dy.\quad}
+        \boxed{\quad M_y = N_x \quad}
         $$
 
-        The recipe for $F$: integrate $M$ in $x$ to get $\int M\,dx + g(y)$,
-        then differentiate the result in $y$ and match against $N$ to pin
-        down $g(y)$.
+        as a **necessary condition** for exactness. The converse holds on any
+        simply connected region (the Poincaré lemma): if $M_y = N_x$
+        throughout a rectangle, then an $F$ exists there. So on the
+        rectangles we'll work with, the boxed condition is also sufficient.
+
+        **The recipe for $F$.** Once exact, recover $F$ in two short steps:
+
+        1. **Integrate $M$ in $x$:** $\displaystyle F = \int M\,dx + g(y)$. The
+           "constant" of integration depends on $y$ — integration in $x$
+           ignored $y$, so anything that's a function of $y$ alone is fair.
+        2. **Differentiate that in $y$ and match against $N$:**
+           $\displaystyle F_y = \frac{\partial}{\partial y}\!\int M\,dx + g'(y) = N$.
+           Solve for $g'(y)$, integrate once more, and you have $F$.
         """
     )
     return
@@ -137,10 +181,18 @@ def _(delib):
 def _(mo):
     mo.md(
         r"""
-        *(placeholder — read the picture: the contours of $F$ are ellipses;
-        the slope field arrows are tangent to them everywhere. Pick any
-        starting point and a unique ellipse passes through it — that's the
-        solution to the IVP.)*
+        Read the picture in two passes.
+
+        **The contours.** They're ellipses tilted at 45°. The conic
+        $x^2 + xy + y^2 = C$ is positive-definite (discriminant
+        $1^2 - 4\cdot 1\cdot 1 = -3 < 0$), so the level sets are closed loops
+        at every positive $C$, nested around the origin.
+
+        **The arrows.** Each one points along $(1, dy/dx) = (1, -M/N) =
+        (1, -(2x+y)/(x+2y))$. Look at any arrow and the contour underneath
+        it: the arrow is tangent. The ellipse *is* the solution; the slope
+        field *is* the same picture, viewed twice. That equivalence is the
+        whole moral of the chapter in one figure.
         """
     )
     return
@@ -153,9 +205,19 @@ def _(mo):
         r"""
         ## Recover $F$ from $(M, N)$ — symbolically, live
 
-        *(placeholder — edit $M$ and $N$ below. The cell tests exactness, and
-        if exact, runs the partial-integration recipe to recover $F$ and
-        prints the implicit solution $F = C$.)*
+        Edit $M$ and $N$ below. The cell computes $M_y$ and $N_x$, compares
+        them, and — when they agree — walks the partial-integration recipe
+        from the previous section to give you $F$ and the implicit solution
+        $F = C$.
+
+        A few to try (each says something different):
+
+        - $M = y\cos x + 2xy$, $N = \sin x + x^2 - 2$. Exact? What does the
+          implicit solution look like — does it factor?
+        - $M = e^y$, $N = x\,e^y$. The implicit solution is the cleanest one
+          you'll see all chapter.
+        - $M = y$, $N = -x$. (Spoiler: not exact — and you can't fix it with
+          a $\mu$ that depends on $x$ or $y$ alone.)
         """
     )
     return
@@ -171,10 +233,12 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(M_input, N_input, mo, sp):
-    x, y = sp.symbols("x y", real=True)
+    x, y = sp.symbols("x y")
     try:
-        M_expr = sp.sympify(M_input.value)
-        N_expr = sp.sympify(N_input.value)
+        # Pass our (x, y) into sympify's namespace so it doesn't create fresh
+        # Symbols with mismatched assumptions, which would silently break diff.
+        M_expr = sp.sympify(M_input.value, locals={"x": x, "y": y})
+        N_expr = sp.sympify(N_input.value, locals={"x": x, "y": y})
     except (sp.SympifyError, SyntaxError) as e:
         _out = mo.md(f"*Could not parse:* `{e}`")
     else:
@@ -214,11 +278,23 @@ def _(delib, mo):
             r"""
             ## Slider: morph the contours
 
-            *(placeholder — vary $a$ in $F(x, y) = x^2 + a\,xy + y^2$. For
-            $|a| < 2$ the contours are ellipses (positive-definite). At
-            $|a| = 2$ they degenerate to parallel lines (the conic is a
-            double line). For $|a| > 2$ they're hyperbolas. The slope field
-            redraws in lockstep — same picture, two views.)*
+            Vary $a$ in $F(x, y) = x^2 + a\,xy + y^2$. The conic changes
+            character three different ways:
+
+            - **$|a| < 2$:** positive-definite, contours are **ellipses**
+              tilted around the origin. Same story as the previous figure.
+            - **$a = \pm 2$:** **degenerate.** The polynomial factors as
+              $(x \pm y)^2$, and the level sets collapse to *pairs of parallel
+              lines*. The gradient vanishes along $y = \mp x$, so the slope
+              field becomes singular there — the arrows go to zero length.
+            - **$|a| > 2$:** indefinite, contours are **hyperbolas.** Level
+              sets exist for both positive and negative $C$, and the negative
+              ones snake along the perpendicular axis.
+
+            Drag through $a = 2$ slowly and watch the closed loops snap open
+            into the unbounded branches. That's a one-parameter bifurcation
+            of the conic, and it's a foretaste of Ch 6 — where a parameter
+            sweep makes fixed points appear, vanish, or swap stability.
             """
         ),
         a_panel,
@@ -248,19 +324,41 @@ def _(mo):
         r"""
         ## When it isn't exact — multiply by $\mu$
 
-        *(placeholder — if $M_y \neq N_x$, look for $\mu(x, y)$ such that
-        $(\mu M)_y = (\mu N)_x$. Two clean cases:*
+        When $M_y \neq N_x$, look for a multiplier $\mu(x, y)$ such that
+        $\mu M\,dx + \mu N\,dy = 0$ *is* exact. The exactness condition
+        $(\mu M)_y = (\mu N)_x$ becomes a PDE for $\mu$ — solvable in general
+        only when $\mu$ is forced to be simple. Two clean cases that keep
+        things ODE-only:
 
-        - $(M_y - N_x)/N$ depends on $x$ only $\Rightarrow$
-          $\mu = \exp\!\left(\int (M_y - N_x)/N\,dx\right)$.
-        - $(N_x - M_y)/M$ depends on $y$ only $\Rightarrow$
-          $\mu = \exp\!\left(\int (N_x - M_y)/M\,dy\right)$.
+        - If $\dfrac{M_y - N_x}{N}$ depends on $x$ only, then $\mu = \mu(x)$
+          exists and
 
-        *Punch line: the Ch 2 first-order linear formula
-        $\mu(x) = e^{\int p\,dx}$ for $y' + p(x)\,y = q(x)$ is exactly this
-        — the special case where the equation, rewritten as
-        $(p\,y - q)\,dx + dy = 0$, already has $M_y - N_x = p$ depending on
-        $x$ only.)*
+          $$
+          \mu(x) = \exp\!\left(\int \frac{M_y - N_x}{N}\,dx\right).
+          $$
+
+        - If $\dfrac{N_x - M_y}{M}$ depends on $y$ only, then $\mu = \mu(y)$
+          exists with the symmetric formula in $y$.
+
+        ### The Ch 2 connection (punchline)
+
+        Take any first-order linear equation $y' + p(x)\,y = q(x)$ and rewrite
+        it as the symmetric form
+
+        $$
+        \bigl(p(x)\,y - q(x)\bigr)\,dx + dy = 0.
+        $$
+
+        Now $M = p(x)\,y - q(x)$ and $N = 1$, so $M_y - N_x = p(x)$ — already
+        depends on $x$ alone. Plug into the box above:
+
+        $$
+        \mu(x) = \exp\!\left(\int p(x)\,dx\right).
+        $$
+
+        That's exactly the integrating factor from Ch 2. The "trick" wasn't a
+        trick — it was the exactness condition all along, specialised to
+        $N = 1$. One mechanism, two appearances.
         """
     )
     return
@@ -304,17 +402,50 @@ def _(delib, go, mo, np):
             r"""
             ## Substitution: Bernoulli in action
 
-            *(placeholder — Bernoulli $y' + p(x)\,y = q(x)\,y^n$. The
-            substitution $v = y^{1-n}$ collapses the nonlinearity: a quick
-            chain rule gives $v' + (1-n)\,p(x)\,v = (1-n)\,q(x)$ — **linear**.
-            Worked example: logistic $\dot y = y(1 - y)$ rewrites as
-            $\dot y - y = -y^2$ (Bernoulli with $n = 2$), $v = 1/y$ turns it
-            into $\dot v + v = 1$, integrating-factor it, get
-            $v = 1 + Ce^{-t}$, invert: $y = 1/(1 + Ce^{-t})$. The numerical
-            solution agrees to plotting precision.)*
+            When the equation is nonlinear but in the **Bernoulli form**
 
-            *Sibling trick: homogeneous $y' = F(y/x)$ collapses under $v = y/x$
-            to a separable equation in $v, x$.*
+            $$
+            y' + p(x)\,y = q(x)\,y^n, \qquad n \neq 0, 1,
+            $$
+
+            the substitution $v = y^{1-n}$ collapses the nonlinearity.
+            Differentiating gives $v' = (1-n)\,y^{-n}\,y'$. Divide the
+            original equation by $y^n$ and multiply by $1-n$:
+
+            $$
+            v' + (1 - n)\,p(x)\,v = (1 - n)\,q(x).
+            $$
+
+            **Linear in $v$.** The previous section applies — integrating
+            factor, integrate, invert with $y = v^{1/(1-n)}$.
+
+            ### The logistic, from scratch
+
+            Take $\dot y = y(1 - y)$ — the **same equation** whose numerical
+            S-curve opened Ch 1. Rewrite as $\dot y - y = -y^2$. Bernoulli
+            with $p = -1$, $q = -1$, $n = 2$. Set $v = y^{1-2} = 1/y$; the
+            transformed equation is
+
+            $$
+            \dot v + v = 1.
+            $$
+
+            Solve: $v_h = Ce^{-t}$, $v_p = 1$, so $v = 1 + Ce^{-t}$, and
+            inverting,
+
+            $$
+            y(t) = \frac{1}{1 + Ce^{-t}}.
+            $$
+
+            With $y(0) = 0.1$, the constant $C = 9$. The plot below overlays
+            this closed form on `delib.solve_ode` running the same equation
+            — they agree to plotting precision, which is the only proof we
+            need that Ch 1's S-curve was always going to be a sigmoid.
+
+            *Sibling trick.* For a **homogeneous** equation $y' = F(y/x)$, the
+            substitution $v = y/x$ reduces it to a separable equation in
+            $(v, x)$. Different change of variable, same idea: rewrite until
+            a tool from earlier in the chapter applies.
             """
         ),
         _fig,
@@ -328,7 +459,15 @@ def _(mo):
         r"""
         ## Try it — in code
 
-        *(placeholder — short intro to the 3 challenges.)*
+        Three drills, each one minute of thinking and a few lines of code, in
+        order of cost:
+
+        1. **Read the test, recover $F$, plug in a number.** This is the whole
+           chapter in 3 SymPy calls.
+        2. **Find an integrating factor.** When the test fails, the diagnostic
+           ratio $(M_y - N_x)/N$ tells you whether $\mu(x)$ alone will do.
+        3. **Solve a Bernoulli equation.** The same $v = y^{1-n}$ trick on a
+           specific case, with a numeric answer at a specific point.
         """
     )
     return
@@ -568,13 +707,28 @@ def _(mo):
         r"""
         ## Recap & what's next
 
-        *(placeholder — recap: exact $\Leftrightarrow$ a conserved $F$ exists
-        $\Leftrightarrow$ solutions are its level curves. Integrating factors
-        and substitutions are tactics to re-express a non-exact equation until
-        it becomes exact (or linear). Next: Ch 04 — numerical methods, for
-        when no clever change of variables saves you and you walk the field
-        step by step. The slope-field picture from Ch 1 will turn into actual
-        simulator steps you can step too big and watch blow up.)*
+        **Recap.** *Exact* equations are the ones whose slope field comes
+        from a conserved $F$ — and the test for that is the boxed
+        $M_y = N_x$. When it holds, solutions are the level curves $F = C$,
+        and the chapter's hero figure (contours + arrows = one picture)
+        becomes a recipe you can hand-execute. When the test fails, two
+        tactics buy it back:
+
+        - **Integrating factor.** Multiply through by $\mu$ until the
+          rewritten equation passes the test. The Ch 2 formula
+          $\mu = e^{\int p\,dx}$ was this all along.
+        - **Substitution.** Change variables until the equation is linear
+          (Bernoulli) or separable (homogeneous). The Ch 1 logistic S-curve
+          came out of *this* — Bernoulli with $n = 2$, closed-form solved
+          two chapters later.
+
+        **What's next.** Sometimes no clever rewriting saves you — the
+        equation is exact in no coordinates and substitutes to nothing nice.
+        **Ch 4** is what you do then: walk the slope field one tiny step at
+        a time and *simulate*. The same field picture from Ch 1 returns as
+        actual simulator steps you can step too big and watch blow up —
+        which is exactly what happens to MuJoCo or PyBullet when you pick
+        the wrong $\Delta t$.
         """
     )
     return
