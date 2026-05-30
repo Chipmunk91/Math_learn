@@ -330,11 +330,11 @@ def _(go, mo):
         _rect,
         mo.md(
             r"""
-            Each leg is a pure-direction step — the same kind of step we
-            broke a general step into back in Beat 2. So we already know
-            what the altitude change is on each leg: it's the rate times
-            the step length. The only new wrinkle is *where the rate is
-            evaluated*, and the answer is:
+            Each leg is a pure-direction step — the same kind we handled
+            when we built up the formula $dF = F_x\,dx + F_y\,dy$. So we
+            already know what the altitude change is on each leg: it's
+            the rate times the step length. The only new wrinkle is
+            *where the rate is evaluated*, and the answer is:
 
             > **At the starting point of that leg.** The linear
             > approximation "altitude grows at rate $F_x$ per unit of
@@ -428,8 +428,9 @@ def _(go, mo):
 
             **If the equation $M\,dx + N\,dy = 0$ comes from a hidden
             landscape, then $M$ and $N$ have to satisfy this.** (And the
-            $F_x$ notation from Beat 2 was the partial derivative all
-            along — we just hadn't named it yet.)
+            $F_x$ we'd been describing as "the rate at which altitude
+            grows per unit step in $x$" was a partial derivative all
+            along — we just hadn't called it that yet.)
 
             The other direction — *if* $M_y = N_x$ holds throughout the
             region we care about, does a landscape always exist? — turns
@@ -519,16 +520,28 @@ def _(mo):
         r"""
         Read the picture in two passes.
 
-        **The contours.** They're ellipses tilted at 45°. The conic
-        $x^2 + xy + y^2 = C$ is positive-definite (discriminant
-        $1^2 - 4\cdot 1\cdot 1 = -3 < 0$), so the level sets are closed loops
-        at every positive $C$, nested around the origin.
+        **The contours.** The landscape $F(x, y) = x^2 + xy + y^2$ is a
+        **bowl** — zero at the origin, and growing as you walk away from
+        it in any direction. The cleanest way to see "never negative" is
+        to rewrite $F$ as a sum of squares:
 
-        **The arrows.** Each one points along $(1, dy/dx) = (1, -M/N) =
-        (1, -(2x+y)/(x+2y))$. Look at any arrow and the contour underneath
-        it: the arrow is tangent. The ellipse *is* the solution; the slope
-        field *is* the same picture, viewed twice. That equivalence is the
-        whole moral of the chapter in one figure.
+        $$
+        x^2 + xy + y^2 \;=\; \Bigl(x + \tfrac{y}{2}\Bigr)^{\!2} + \tfrac{3}{4}\,y^2.
+        $$
+
+        Two squared quantities added together can never be negative, and
+        they're both zero only when $x + y/2 = 0$ *and* $y = 0$ — i.e.
+        only at the origin. So slicing this bowl horizontally at any
+        positive height $C$ gives a closed curve. The slice happens to
+        be an ellipse, tilted around the origin, because the bowl is
+        quadratic.
+
+        **The arrows.** Each one points along
+        $(1, dy/dx) = (1, -M/N) = (1, -(2x+y)/(x+2y))$. Look at any
+        arrow and the contour underneath it: the arrow is tangent. The
+        ellipse *is* the solution; the slope field *is* the same picture,
+        viewed twice. That equivalence is the whole moral of the chapter
+        in one figure.
         """
     )
     return
@@ -614,23 +627,33 @@ def _(delib, mo):
             r"""
             ## Slider: morph the contours
 
-            Vary $a$ in $F(x, y) = x^2 + a\,xy + y^2$. The conic changes
-            character three different ways:
+            Vary $a$ in $F(x, y) = x^2 + a\,xy + y^2$. The shape of the
+            hidden landscape changes character three ways as $a$ moves:
 
-            - **$|a| < 2$:** positive-definite, contours are **ellipses**
-              tilted around the origin. Same story as the previous figure.
-            - **$a = \pm 2$:** **degenerate.** The polynomial factors as
-              $(x \pm y)^2$, and the level sets collapse to *pairs of parallel
-              lines*. The gradient vanishes along $y = \mp x$, so the slope
-              field becomes singular there — the arrows go to zero length.
-            - **$|a| > 2$:** indefinite, contours are **hyperbolas.** Level
-              sets exist for both positive and negative $C$, and the negative
-              ones snake along the perpendicular axis.
+            - **$|a| < 2$ — a bowl.** Complete the square again,
+              $F = (x + \tfrac{a}{2}y)^2 + (1 - \tfrac{a^2}{4})\,y^2$,
+              and the coefficient $(1 - a^2/4)$ is still positive. Two
+              squares with positive coefficients — still a bowl. Slice
+              it and you get a closed curve: an **ellipse**, tilted
+              around the origin.
+            - **$a = \pm 2$ — a trough.** Now $(1 - a^2/4) = 0$ and $F$
+              collapses to $(x \pm y)^2$. It's zero *all along* the line
+              $y = \mp x$, and grows only as you walk away from that
+              line. Slicing this trough at a positive height gives two
+              parallel lines, one on each side. And $F_x$ and $F_y$ both
+              vanish along the trough's bottom, so the slope field has
+              no direction to point — the arrows shrink to nothing there.
+            - **$|a| > 2$ — a saddle.** Now $(1 - a^2/4) < 0$: one
+              "squared" piece is positive, the other is negative, so $F$
+              *grows* in some directions and *shrinks* (goes negative) in
+              others. Slices are **hyperbolas**, branching off to infinity,
+              and there are level sets for both positive and negative $C$.
 
-            Drag through $a = 2$ slowly and watch the closed loops snap open
-            into the unbounded branches. That's a one-parameter bifurcation
-            of the conic, and it's a foretaste of Ch 6 — where a parameter
-            sweep makes fixed points appear, vanish, or swap stability.
+            Drag through $a = 2$ slowly and watch the closed loops snap
+            open into the unbounded branches. That qualitative change in
+            the whole picture — caused by one parameter crossing a
+            threshold — has a name. It's a **bifurcation**, and we'll
+            see it again in Ch 6 in the context of 1-D ODEs.
             """
         ),
         a_panel,
