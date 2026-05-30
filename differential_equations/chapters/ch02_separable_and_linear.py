@@ -115,6 +115,14 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(family_quiz, mo):
+    _key = {"a": "Separable only", "b": "Linear only", "c": "Both", "d": "Neither"}
+
+    def _mark(k):
+        v = family_quiz[k].value
+        if not v:
+            return ""
+        return " &nbsp;✅" if v == _key[k] else " &nbsp;❌"
+
     mo.md(
         f"""
         ### Quick check — which family?
@@ -123,13 +131,13 @@ def _(family_quiz, mo):
         **neither**. (Separable means it factors as $g(t)\\,h(y)$; linear means $y$ and
         $y'$ appear only to the first power, never multiplied together.)
 
-        **(a)** $\\dfrac{{dy}}{{dt}} = y\\,(1 - y)$ &nbsp; {mo.as_html(family_quiz['a'])}
+        **(a)** $\\dfrac{{dy}}{{dt}} = y\\,(1 - y)$ &nbsp; {mo.as_html(family_quiz['a'])}{_mark('a')}
 
-        **(b)** $\\dfrac{{dy}}{{dt}} + 2y = \\sin t$ &nbsp; {mo.as_html(family_quiz['b'])}
+        **(b)** $\\dfrac{{dy}}{{dt}} + 2y = \\sin t$ &nbsp; {mo.as_html(family_quiz['b'])}{_mark('b')}
 
-        **(c)** $\\dfrac{{dy}}{{dt}} = t\\,y$ &nbsp; {mo.as_html(family_quiz['c'])}
+        **(c)** $\\dfrac{{dy}}{{dt}} = t\\,y$ &nbsp; {mo.as_html(family_quiz['c'])}{_mark('c')}
 
-        **(d)** $\\dfrac{{dy}}{{dt}} = y^2 + t$ &nbsp; {mo.as_html(family_quiz['d'])}
+        **(d)** $\\dfrac{{dy}}{{dt}} = y^2 + t$ &nbsp; {mo.as_html(family_quiz['d'])}{_mark('d')}
         """
     )
     return
