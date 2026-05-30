@@ -583,11 +583,14 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(M_input, N_input, mo, sp):
     x, y = sp.symbols("x y")
+    # Map common math constants into sympify's namespace so an input like
+    # "e^y" parses as exp(y), not Symbol("e")**y. Without this, the derivative
+    # of e^y comes back as e^y * log(e) and the chapter's own bait example
+    # breaks. Also map E, pi, Pi so the page accepts either case.
+    _sym_locals = {"x": x, "y": y, "e": sp.E, "E": sp.E, "pi": sp.pi, "Pi": sp.pi}
     try:
-        # Pass our (x, y) into sympify's namespace so it doesn't create fresh
-        # Symbols with mismatched assumptions, which would silently break diff.
-        M_expr = sp.sympify(M_input.value, locals={"x": x, "y": y})
-        N_expr = sp.sympify(N_input.value, locals={"x": x, "y": y})
+        M_expr = sp.sympify(M_input.value, locals=_sym_locals)
+        N_expr = sp.sympify(N_input.value, locals=_sym_locals)
     except (sp.SympifyError, SyntaxError) as e:
         _out = mo.md(f"*Could not parse:* `{e}`")
     else:
