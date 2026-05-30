@@ -499,65 +499,18 @@ def _(delib):
 
 
 @app.cell(hide_code=True)
-def _(delib):
-    # Beat 4 — hero visual 1: level curves of F = x^2 + xy + y^2 with the
-    # slope field of (M, N) = (2x + y, x + 2y) overlaid. Field rides contours.
-    _F = lambda x, y: x**2 + x*y + y**2
-    _M = lambda x, y: 2*x + y
-    _N = lambda x, y: x + 2*y
-    delib.level_curves(
-        _F, (-3.0, 3.0), (-3.0, 3.0),
-        levels=[0.25, 1.0, 2.0, 4.0, 7.0],
-        field=(_M, _N),
-        title="Contours of  F = x² + xy + y²  with slope field of  (2x + y) dx + (x + 2y) dy = 0",
-    )
-    return
-
-
-@app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
-        Read the picture in two passes.
-
-        **The contours.** The landscape $F(x, y) = x^2 + xy + y^2$ is a
-        **bowl** — zero at the origin, and growing as you walk away from
-        it in any direction. The cleanest way to see "never negative" is
-        to rewrite $F$ as a sum of squares:
-
-        $$
-        x^2 + xy + y^2 \;=\; \Bigl(x + \tfrac{y}{2}\Bigr)^{\!2} + \tfrac{3}{4}\,y^2.
-        $$
-
-        Two squared quantities added together can never be negative, and
-        they're both zero only when $x + y/2 = 0$ *and* $y = 0$ — i.e.
-        only at the origin. So slicing this bowl horizontally at any
-        positive height $C$ gives a closed curve. The slice happens to
-        be an ellipse, tilted around the origin, because the bowl is
-        quadratic.
-
-        **The arrows.** Each one points along
-        $(1, dy/dx) = (1, -M/N) = (1, -(2x+y)/(x+2y))$. Look at any
-        arrow and the contour underneath it: the arrow is tangent. The
-        ellipse *is* the solution; the slope field *is* the same picture,
-        viewed twice. That equivalence is the whole moral of the chapter
-        in one figure.
-        """
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    # Beat 5 — live SymPy walk-through.
+    # Beat 4 — live SymPy walk-through (moved BEFORE the contour visual so
+    # the natural flow is: watch the recipe -> try it yourself -> see the
+    # result drawn as a contour map in the next section).
     mo.md(
         r"""
         ## Recover $F$ from $(M, N)$ — symbolically, live
 
         Edit $M$ and $N$ below. The cell computes $M_y$ and $N_x$, compares
-        them, and — when they agree — walks the partial-integration recipe
-        from the previous section to give you $F$ and the implicit solution
-        $F = C$.
+        them, and — when they agree — walks the same partial-integration
+        recipe we just watched in the video, to give you $F$ and the
+        implicit solution $F = C$.
 
         A few to try (each says something different):
 
@@ -618,6 +571,87 @@ def _(M_input, N_input, mo, sp):
 
 
 @app.cell(hide_code=True)
+def _(delib):
+    # Beat 5 — hero contour visual: level curves of F = x^2 + xy + y^2 with
+    # the slope field of (M, N) = (2x + y, x + 2y) overlaid. The natural
+    # payoff after the live cell: "here's the landscape you (or the video)
+    # just recovered, drawn as contours."
+    _F = lambda x, y: x**2 + x*y + y**2
+    _M = lambda x, y: 2*x + y
+    _N = lambda x, y: x + 2*y
+    delib.level_curves(
+        _F, (-3.0, 3.0), (-3.0, 3.0),
+        levels=[0.25, 1.0, 2.0, 4.0, 7.0],
+        field=(_M, _N),
+        title="Contours of  F = x² + xy + y²  with slope field of  (2x + y) dx + (x + 2y) dy = 0",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        Read the picture in two passes.
+
+        **The contours.** The landscape $F(x, y) = x^2 + xy + y^2$ is a
+        **bowl** — zero at the origin, and growing as you walk away from
+        it in any direction. The cleanest way to see "never negative" is
+        to rewrite $F$ as a sum of squares:
+
+        $$
+        x^2 + xy + y^2 \;=\; \Bigl(x + \tfrac{y}{2}\Bigr)^{\!2} + \tfrac{3}{4}\,y^2.
+        $$
+
+        Two squared quantities added together can never be negative, and
+        they're both zero only when $x + y/2 = 0$ *and* $y = 0$ — i.e.
+        only at the origin. So slicing this bowl horizontally at any
+        positive height $C$ gives a closed curve. The slice happens to
+        be an ellipse, tilted around the origin, because the bowl is
+        quadratic.
+
+        > **Side note — "positive definite," a name and a one-line test.**
+        >
+        > What we just verified about $F$ — *non-negative everywhere,
+        > zero only at the origin* — has a standard name: $F$ is
+        > **positive definite**. Quadratic forms with this property show
+        > up everywhere stability does (a spring's potential energy near
+        > rest, the second-derivative test in calculus, the energy
+        > function of a convex optimisation), so it's worth knowing the
+        > name and the calculation.
+        >
+        > For *any* two-variable quadratic
+        > $\;A\,x^2 + B\,xy + C\,y^2$, you can check positive-definiteness
+        > in one line without completing the square:
+        >
+        > $$
+        > B^2 - 4AC \;<\; 0
+        > \quad \text{(together with } A > 0\text{, so the bowl opens upward).}
+        > $$
+        >
+        > The quantity $B^2 - 4AC$ is the **discriminant** — yes, the same
+        > expression that decides whether $Ax^2 + Bx + C = 0$ has real
+        > roots, doing the analogous job here: it controls whether the
+        > level sets *close up* (no real roots → bowl → ellipses) or
+        > *open out* (real roots → saddle → hyperbolas).
+        >
+        > For our $F = x^2 + xy + y^2$: $A = 1$, $B = 1$, $C = 1$, so
+        > $B^2 - 4AC = 1 - 4 = -3 < 0$. Positive definite, confirming the
+        > bowl. The slider in the next section uses this one-line test
+        > once, and three regimes drop out instantly.
+
+        **The arrows.** Each one points along
+        $(1, dy/dx) = (1, -M/N) = (1, -(2x+y)/(x+2y))$. Look at any
+        arrow and the contour underneath it: the arrow is tangent. The
+        ellipse *is* the solution; the slope field *is* the same picture,
+        viewed twice. That equivalence is the whole moral of the chapter
+        in one figure.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
 def _(delib, mo):
     # Beat 6 — slider: morph F = x^2 + a*xy + y^2 from ellipses through
     # degenerate to hyperbolas.
@@ -630,27 +664,31 @@ def _(delib, mo):
             r"""
             ## Slider: morph the contours
 
-            Vary $a$ in $F(x, y) = x^2 + a\,xy + y^2$. The shape of the
-            hidden landscape changes character three ways as $a$ moves:
+            Vary $a$ in $F(x, y) = x^2 + a\,xy + y^2$. We can predict the
+            three regimes ahead of time using the discriminant test from
+            the side note: matching coefficients
+            $(A, B, C) = (1,\,a,\,1)$, we get
 
-            - **$|a| < 2$ — a bowl.** Complete the square again,
-              $F = (x + \tfrac{a}{2}y)^2 + (1 - \tfrac{a^2}{4})\,y^2$,
-              and the coefficient $(1 - a^2/4)$ is still positive. Two
-              squares with positive coefficients — still a bowl. Slice
-              it and you get a closed curve: an **ellipse**, tilted
+            $$
+            B^2 - 4AC \;=\; a^2 - 4.
+            $$
+
+            That single quantity controls everything:
+
+            - **$|a| < 2$ — discriminant negative. Positive definite, a
+              bowl.** Slices are closed curves — **ellipses**, tilted
               around the origin.
-            - **$a = \pm 2$ — a trough.** Now $(1 - a^2/4) = 0$ and $F$
-              collapses to $(x \pm y)^2$. It's zero *all along* the line
-              $y = \mp x$, and grows only as you walk away from that
-              line. Slicing this trough at a positive height gives two
-              parallel lines, one on each side. And $F_x$ and $F_y$ both
-              vanish along the trough's bottom, so the slope field has
-              no direction to point — the arrows shrink to nothing there.
-            - **$|a| > 2$ — a saddle.** Now $(1 - a^2/4) < 0$: one
-              "squared" piece is positive, the other is negative, so $F$
-              *grows* in some directions and *shrinks* (goes negative) in
-              others. Slices are **hyperbolas**, branching off to infinity,
-              and there are level sets for both positive and negative $C$.
+            - **$a = \pm 2$ — discriminant zero. The boundary case, a
+              trough.** $F$ collapses to $(x \pm y)^2$ — zero all along
+              the line $y = \mp x$, growing only as you walk away from
+              that line. Slices are pairs of parallel lines, and $F_x$
+              and $F_y$ both vanish along the trough's bottom — so the
+              slope field has no direction to point.
+            - **$|a| > 2$ — discriminant positive. No longer positive
+              definite, a saddle.** $F$ now *grows* in some directions
+              and *shrinks* (goes negative) in others. Slices are
+              **hyperbolas**, branching off to infinity, and there are
+              level sets at both positive and negative $C$.
 
             Drag through $a = 2$ slowly and watch the closed loops snap
             open into the unbounded branches. That qualitative change in
