@@ -225,30 +225,112 @@ def _(mo):
     # Beat 3 — exactness condition.
     mo.md(
         r"""
-        ## The exactness condition
+        ## A simple test for exactness
 
-        Here's the test. Suppose $F$ does exist with $F_x = M$ and $F_y = N$.
-        Differentiate $M$ with respect to $y$ — that's $F_{xy}$. Differentiate
-        $N$ with respect to $x$ — that's $F_{yx}$. For any smooth $F$, mixed
-        partials are equal, so
+        We've set up the question — given an equation
+        $M(x, y)\,dx + N(x, y)\,dy = 0$, is there a hidden landscape
+        $F(x, y)$ somewhere with $F_x = M$ and $F_y = N$? Looking for one
+        by guessing is hopeless. We'd like a test we can run directly on
+        $M$ and $N$ that *tells* us whether $F$ exists — before we go
+        searching for it.
+
+        That test comes from a small observation about hillsides.
+
+        ### Order of stepping doesn't matter
+
+        You're standing at $(x, y)$. Take one step **right** by $dx$, then
+        one step **up** by $dy$. You arrive at $(x + dx,\, y + dy)$, at
+        some new altitude.
+
+        Now repeat the trip from the same starting spot, in the **other**
+        order: up by $dy$ first, then right by $dx$. You arrive at the
+        *same point* — and at the *same altitude*, because altitude is a
+        function of position alone, not of the path you took to get there.
+
+        Same start, same end, same altitude. So the two total altitude
+        changes have to be equal.
+
+        Write each total down using the rates from the previous section.
+        Going **right then up**, the right-step happens at altitude row
+        $y$ (where the rate is $M(x, y)$), and the up-step happens at
+        column $x + dx$ (where the rate is $N(x + dx, y)$):
 
         $$
-        \boxed{\quad M_y = N_x \quad}
+        \text{right then up:} \quad dF \;=\; M(x, y)\,dx \;+\; N(x + dx, y)\,dy.
         $$
 
-        as a **necessary condition** for exactness. The converse holds on any
-        simply connected region (the Poincaré lemma): if $M_y = N_x$
-        throughout a rectangle, then an $F$ exists there. So on the
-        rectangles we'll work with, the boxed condition is also sufficient.
+        Going **up then right**, the up-step happens at column $x$, and
+        the right-step happens at altitude row $y + dy$:
 
-        **The recipe for $F$.** Once exact, recover $F$ in two short steps:
+        $$
+        \text{up then right:} \quad dF \;=\; N(x, y)\,dy \;+\; M(x, y + dy)\,dx.
+        $$
 
-        1. **Integrate $M$ in $x$:** $\displaystyle F = \int M\,dx + g(y)$. The
-           "constant" of integration depends on $y$ — integration in $x$
-           ignored $y$, so anything that's a function of $y$ alone is fair.
-        2. **Differentiate that in $y$ and match against $N$:**
-           $\displaystyle F_y = \frac{\partial}{\partial y}\!\int M\,dx + g'(y) = N$.
-           Solve for $g'(y)$, integrate once more, and you have $F$.
+        Set the two expressions equal — both compute the same altitude
+        change between the same two points, just by different routes — and
+        gather the $M$ terms on one side, the $N$ terms on the other:
+
+        $$
+        \bigl[N(x + dx, y) - N(x, y)\bigr]\,dy
+        \;=\;
+        \bigl[M(x, y + dy) - M(x, y)\bigr]\,dx.
+        $$
+
+        Each bracket is asking *how much one of our functions changes when
+        we take a small step in one direction*. The left bracket is how
+        much $N$ changes when we step in $x$. The right bracket is how
+        much $M$ changes when we step in $y$. Divide through by
+        $dx \cdot dy$ and shrink the step:
+
+        $$
+        \boxed{\quad M_y \;=\; N_x \quad}
+        $$
+
+        That's the exactness test. **If the equation
+        $M\,dx + N\,dy = 0$ comes from a hidden landscape, then $M$ and
+        $N$ have to satisfy this.**
+
+        The other direction — *if* $M_y = N_x$ holds throughout the region
+        we care about, does a landscape always exist? — turns out to be
+        yes, on the kinds of regions we'll deal with (rectangles,
+        half-planes, anywhere without holes punched out). Proving that is
+        a slightly more technical story, but the practical upshot is what
+        matters: **the test is the whole question.**
+
+        So the workflow becomes:
+
+        > Compute $M_y$. Compute $N_x$. Compare.
+        > Equal? **Exact**, and a landscape is waiting to be found.
+        > Not equal? **Not exact** — we'll come back to it in the
+        > integrating-factor section.
+
+        ### Trying it on a real equation
+
+        Take the equation we'll work with through the rest of this
+        chapter:
+
+        $$
+        (2x + y)\,dx + (x + 2y)\,dy = 0.
+        $$
+
+        So $M(x, y) = 2x + y$ and $N(x, y) = x + 2y$. Run the test.
+
+        - $M = 2x + y$. Differentiating in $y$ means asking how $M$
+          changes when $y$ moves (with $x$ held fixed). The $2x$ doesn't
+          depend on $y$ — it doesn't move. The $y$ term contributes $1$
+          per unit of $y$. So $M_y = 1$.
+        - $N = x + 2y$. Differentiating in $x$, same logic: the $2y$
+          doesn't move, the $x$ contributes $1$. So $N_x = 1$.
+
+        $M_y = N_x$. **The equation is exact.** There's a hidden landscape
+        $F$ behind it, and its contours are the equation's solutions.
+
+        ### So what *is* $F$?
+
+        The test tells us a landscape exists, but it stays mum about
+        *what* it is. Finding $F$ given $M$ and $N$ is its own little
+        procedure — and it's easier to follow as an animation than as a
+        wall of symbols. We'll walk through it next.
         """
     )
     return
