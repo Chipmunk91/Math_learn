@@ -476,7 +476,7 @@ def _(mo):
         ## Recap & what's next
 
         *(placeholder — recap fixed points / stability test / potential view /
-        basin of attraction. Next: Ch04 bifurcations — what happens if we
+        basin of attraction. Next: Ch 06 bifurcations — what happens if we
         morph the equation's parameters and a fixed point appears or vanishes?)*
         """
     )
