@@ -121,37 +121,100 @@ def _(mo):
     # Beat 2 — concept bridge.
     mo.md(
         r"""
-        ## From a conserved quantity to an ODE (and back)
+        ## From the hiker's rule to a differential equation
 
-        The hook hides two statements glued together, and they're worth
-        pulling apart.
+        The hook ended with a promise: write down the rule "walk so altitude
+        doesn't change" as a differential equation. Let's keep that promise.
 
-        **One direction.** Pick any smooth $F(x, y)$. The equation
-        $F(x, y) = C$ traces out a curve for each $C$ — a 1-parameter family
-        of contours. Differentiate implicitly:
+        You're standing somewhere on the hillside at a spot we'll label
+        $(x, y)$ — those are your coordinates on the map seen from above.
+        Your altitude at that spot is $F(x, y)$, some specific number. You
+        take a small step, going from $(x, y)$ to $(x + dx,\, y + dy)$. The
+        step is small enough that the hillside looks essentially flat in the
+        immediate neighbourhood of where you started.
+
+        How much does your altitude change over that step?
+
+        It depends on which way you stepped. Let's break the step into two
+        pieces and add them up.
+
+        - **Pure step in the $x$ direction** ($dy = 0$): your altitude changes
+          by an amount proportional to $dx$. Doubling the step doubles the
+          altitude change, because the ground is locally flat. Call the
+          proportionality factor $F_x$ — the **rate** at which altitude grows
+          per unit step in the $x$ direction. Then
+
+          $$
+          dF \;=\; F_x \cdot dx \qquad (\text{pure-}x\text{ step}).
+          $$
+
+        - **Pure step in the $y$ direction** ($dx = 0$): same idea, with its
+          own rate $F_y$:
+
+          $$
+          dF \;=\; F_y \cdot dy \qquad (\text{pure-}y\text{ step}).
+          $$
+
+        - **General step** (both $dx$ and $dy$ non-zero): because the hillside
+          is locally flat, the two contributions just add up:
+
+          $$
+          dF \;=\; F_x\,dx \;+\; F_y\,dy.
+          $$
+
+          (If you've met the **chain rule** before, you'll recognise this as
+          the chain rule for a function of two variables. If not, no harm —
+          we just derived it from the geometry.)
+
+        Now apply the hiker's rule. The rule says altitude doesn't change
+        along the step, so $dF = 0$. Plug that into the line above:
 
         $$
-        F_x + F_y \,\frac{dy}{dx} = 0
-        \;\;\Longrightarrow\;\;
-        \frac{dy}{dx} = -\frac{F_x}{F_y}.
+        \boxed{\quad F_x\,dx \;+\; F_y\,dy \;=\; 0 \quad}
         $$
 
-        Every conserved quantity comes with a slope field attached to it,
-        perpendicular to $\nabla F$. Going the other way along that field is
-        going *along* a contour.
+        There it is. That's the differential equation behind the hiker's
+        walk. Geometrically it says: *if a step in $x$ would take you
+        uphill, the step in $y$ had better take you downhill by exactly the
+        same amount, so that the two contributions cancel*. The equation
+        pins down the allowed ratio of $dy$ to $dx$ at every point on the
+        map.
 
-        **The other direction.** Run the question backward. Given an ODE in
-        the symmetric form
+        ### Now run the question backwards
+
+        We just *started* with a landscape $F$ and *built* a differential
+        equation from it. The interesting half of this chapter is the
+        reverse problem.
+
+        Suppose someone hands you a differential equation that already has
+        the right *shape*:
 
         $$
-        M(x, y)\,dx + N(x, y)\,dy = 0,
+        M(x, y)\,dx \;+\; N(x, y)\,dy \;=\; 0.
         $$
 
-        we're asking whether some $F$ exists with $F_x = M$ and $F_y = N$. If
-        yes, the chapter is essentially done — solutions are the level curves
-        $F = C$, and you're hiking on a contour map. If no, the next two
-        sections are about *making* one: multiply by a clever factor, or
-        change variables.
+        The letters $M$ and $N$ are just labels for the two functions
+        sitting in front of $dx$ and $dy$ — whatever they happen to be in
+        the equation you've been handed. The natural question to ask,
+        looking at it next to the boxed equation above, is:
+
+        > Is there a hidden landscape $F(x, y)$ — somewhere, behind the
+        > scenes — whose contour map is exactly the picture this equation
+        > describes? In other words, can we find an $F$ with $F_x = M$ and
+        > $F_y = N$?
+
+        Two possible answers, two different stories:
+
+        - **Yes** — and the equation is called **exact**. The chapter is
+          essentially done in this case: solutions are the contours
+          $F(x, y) = C$, and you're walking on a hidden hillside.
+        - **No** — and there's still work to do. The rest of the chapter is
+          about what to do then: either multiply the equation by a clever
+          factor that *makes* a landscape appear (an **integrating
+          factor**), or change variables until the equation becomes a kind
+          we already know how to solve (a **substitution**).
+
+        The next section gives a simple test for which case you're in.
         """
     )
     return
