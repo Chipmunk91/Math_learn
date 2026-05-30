@@ -25,6 +25,7 @@ __all__ = [
     "overlay_solution",
     "phase_line",
     "potential_plot",
+    "level_curves",
 ]
 
 # y' = f(x, y) for a first-order scalar ODE.
@@ -491,3 +492,111 @@ def potential_plot(
         margin=dict(l=55, r=20, t=60, b=45),
     )
     return fig
+
+
+# --- Exact equations: level curves ------------------------------------------
+
+def level_curves(
+    F,
+    xrange: tuple[float, float],
+    yrange: tuple[float, float],
+    *,
+    n: int = 80,
+    levels=None,
+    field=None,  # None | True | (M, N) callables
+    title: str | None = None,
+    height: int = 460,
+    aspect: float = 1.0,
+):
+    """Contour plot of ``F(x, y)`` — the chapter-3 hero visual.
+
+    For an exact ODE ``M dx + N dy = 0`` with conserved quantity ``F`` (so
+    ``F_x = M``, ``F_y = N``), the **solution curves are the level sets**
+    ``F(x, y) = C``. This helper draws those level sets over the rectangle
+    ``xrange x yrange``. Optionally overlays the slope field:
+    ``field=(M, N)`` uses your callables; ``field=True`` finite-differences
+    them from ``F``. In both cases the field arrows should ride the contours.
+    """
+    import plotly.graph_objects as go
+
+    xs = np.linspace(xrange[0], xrange[1], n)
+    ys = np.linspace(yrange[0], yrange[1], n)
+    X, Y = np.meshgrid(xs, ys)
+    try:
+        Z = np.asarray(F(X, Y), dtype=float)
+    except Exception:
+        Z = np.empty_like(X)
+        for i in range(n):
+            for j in range(n):
+                Z[i, j] = float(F(X[i, j], Y[i, j]))
+
+    contour_kwargs = dict(
+        x=xs, y=ys, z=Z,
+        colorscale=[[0.0, "#dceaf6"], [1.0, "#5b7db1"]],
+        showscale=False,
+        line=dict(width=1.6),
+        contours=dict(showlabels=False, coloring="lines"),
+        hovertemplate="F(%{x:.2f}, %{y:.2f}) = %{z:.3f}<extra></extra>",
+    )
+    if levels is not None:
+        levels = sorted(set(float(v) for v in levels))
+        if len(levels) >= 2:
+            step = (levels[-1] - levels[0]) / (len(levels) - 1)
+            contour_kwargs["contours"] = dict(
+                start=levels[0], end=levels[-1], size=step,
+                showlabels=False, coloring="lines",
+            )
+        else:
+            contour_kwargs["contours"] = dict(
+                start=levels[0], end=levels[0], size=1.0,
+                showlabels=False, coloring="lines",
+            )
+
+    fig = go.Figure()
+    fig.add_trace(go.Contour(**contour_kwargs))
+
+    if field is not None:
+        if field is True:
+            def _slope(x, y):
+                h = 1e-4
+                Fx = (float(F(x + h, y)) - float(F(x - h, y))) / (2 * h)
+                Fy = (float(F(x, y + h)) - float(F(x, y - h))) / (2 * h)
+                return -Fx / Fy if abs(Fy) > 1e-10 else float("nan")
+        elif isinstance(field, tuple) and len(field) == 2:
+            M_, N_ = field
+            def _slope(x, y):
+                m = float(M_(x, y)); nn = float(N_(x, y))
+                return -m / nn if abs(nn) > 1e-10 else float("nan")
+        else:
+            raise ValueError("field must be None, True, or (M, N) callables")
+
+        density = 18
+        xg = np.linspace(xrange[0], xrange[1], density)
+        yg = np.linspace(yrange[0], yrange[1], density)
+        Xg, Yg = np.meshgrid(xg, yg)
+        S = np.zeros_like(Xg)
+        for i in range(density):
+            for j in range(density):
+                S[i, j] = _slope(Xg[i, j], Yg[i, j])
+        ax_xs, ax_ys = _field_arrows(
+            Xg, Yg, S,
+            xrange[1] - xrange[0], yrange[1] - yrange[0],
+            density=density, aspect=aspect, scale=1.0,
+        )
+        fig.add_trace(go.Scatter(
+            x=ax_xs, y=ax_ys, mode="lines",
+            line=dict(color="#7c8aa0", width=1.0),
+            opacity=0.55, hoverinfo="skip", showlegend=False,
+        ))
+
+    fig.update_layout(
+        template="plotly_white",
+        title=(dict(text=title, x=0.02) if title else None),
+        xaxis=dict(title="x", range=list(xrange), zeroline=False),
+        yaxis=dict(title="y", range=list(yrange), zeroline=False),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=height, showlegend=False,
+        margin=dict(l=55, r=20, t=50, b=45),
+    )
+    return fig
+
