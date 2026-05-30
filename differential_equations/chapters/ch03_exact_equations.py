@@ -22,20 +22,24 @@ def _(mo):
         r"""
         # Chapter 3 — Exact equations & substitutions
 
-        **When the slope field hides a conserved quantity, the solutions are its level curves.**
+        **Read the equation as a contour map.**
 
         By the end of this chapter you should be able to:
 
-        - Recognise an **exact** ODE $M\,dx + N\,dy = 0$ from
-          $\partial M/\partial y = \partial N/\partial x$ and recover the
-          conserved $F$ with $F_x = M$, $F_y = N$.
-        - See solutions as the **level curves** of that $F$, and read off the
-          slope field as the gradient direction $-\nabla F$ rotated 90°.
-        - Use an **integrating factor** to rescue a not-quite-exact equation —
-          and recognise that the Ch 2 first-order-linear formula is just the
-          special case $\mu = e^{\int p\,dx}$.
-        - Tackle **Bernoulli** $y' + p(x)\,y = q(x)\,y^n$ with the substitution
-          $v = y^{1-n}$, and **homogeneous** $y' = F(y/x)$ with $v = y/x$.
+        - Understand what makes a differential equation **exact**, and see
+          why the solutions of an exact equation are the *contour lines* of a
+          hidden two-variable function $F(x, y)$.
+        - Run a simple test on $M(x, y)\,dx + N(x, y)\,dy = 0$ to check
+          whether it is exact — and, when it is, find the $F$ whose contours
+          give the solutions.
+        - Use an **integrating factor** — a multiplier $\mu$ that turns a
+          not-quite-exact equation into an exact one — and see that
+          Chapter 2's first-order-linear solution formula was an integrating
+          factor in disguise.
+        - Solve a **Bernoulli** equation $y' + p(x)\,y = q(x)\,y^n$ by a
+          **substitution** that turns the nonlinear equation into a linear
+          one, and use this trick to derive Chapter 1's logistic S-curve as
+          an explicit formula.
         """
     )
     return
@@ -54,34 +58,60 @@ def _(delib, mo, np):
     _hike = delib.level_curves(
         _F_terrain, (-3.0, 3.0), (-3.0, 3.0),
         n=140,
-        title="A topographic map — altitude is a function of position, F(x, y)",
+        title="The same hillside, viewed from above",
     )
     mo.vstack([
         mo.md(
             r"""
-            ## A hiker reading a contour map
+            ## A walk across a hillside
 
-            If you've ever read a topographic map, you've already seen the
-            picture for this chapter.
+            Imagine you're hiking on a hillside. The ground rises and falls
+            under your feet — some directions take you uphill, others
+            downhill, and others (somewhere in between) keep you at the
+            height you're already at.
 
-            Every closed loop on the map is a **contour line** — every point
-            on the loop has the same altitude $F(x, y)$. Set out walking along
-            a contour and your altitude doesn't change. A small step
-            $(dx, dy)$ keeps you on the same line, so
-            $dF = F_x\,dx + F_y\,dy = 0$ at every step. Stare at that for a
-            second: it's an ordinary differential equation. The contour you're
-            walking is a **solution** of it. The whole map is a phase
-            portrait.
+            Try this experiment in your head. You set out from a starting
+            spot and at every step you pick the direction that keeps you
+            **exactly at the altitude you started from** — never up, never
+            down, only sideways relative to gravity. You don't have a map.
+            You're feeling the slope under your feet and choosing the flat
+            direction each time.
 
-            The figure below is synthetic — a Gaussian peak in the upper
-            right, a shallower basin in the lower left — but the principle is
-            the same as any USGS quad sheet. The nested rings around the peak
-            are level sets of "stay this high." The ones around the basin are
-            "stay this low." Pick any of them and you've drawn a solution
-            curve of an ODE.
+            What path do you trace?
+
+            Not a straight line. The hill bends, so your path bends too —
+            sometimes curving gently, sometimes turning more sharply where
+            the ground steepens. After a long enough walk you might find
+            yourself looking back at your starting spot from far away, the
+            path snaking behind you like a ribbon laid across the hillside.
+
+            Now imagine a thousand hikers, each starting at a *different*
+            altitude, each obeying the same rule: walk so your height doesn't
+            change. Each one traces a different ribbon. Stack all those
+            ribbons onto one picture of the hillside, viewed from straight
+            above. What you'd see is below.
+
+            Cartographers actually draw these. They call each ribbon a
+            **contour line** — a curve along which the altitude has one
+            single value. The picture is called a **contour map**. The
+            specific hillside below is synthetic: a small peak in the upper
+            right, a shallower basin in the lower left. But every real
+            mountain map is drawn this way.
             """
         ),
         _hike,
+        mo.md(
+            r"""
+            **Pick any single contour and that's a hiker's path.**
+
+            That single observation is what this whole chapter unpacks. We're
+            going to write down the rule "walk so altitude doesn't change" as
+            a differential equation — the kind we've been studying since
+            Chapter 1 — and then we'll discover that whenever we encounter
+            *that* shape of equation, there's a hidden hillside behind it,
+            and the equation's solutions are its contours.
+            """
+        ),
     ])
     return
 
