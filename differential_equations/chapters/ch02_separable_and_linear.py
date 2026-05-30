@@ -152,18 +152,21 @@ def _(family_quiz, mo):
         "c": "**both**: $\\dfrac{dy}{y} = t\\,dt$ separates, and $y' - t\\,y = 0$ is linear.",
         "d": "**neither**: the $y^2$ rules out linear, and $y^2 + t$ won't factor for separable.",
     }
-    _answered = [k for k in _key if family_quiz[k].value]
+    # Underscore-prefixed loop variables stay cell-private; without the underscore,
+    # the for-loop leaks `k` as a marimo global, colliding with the chart cell's
+    # `k = controls.value["k"]` and silently breaking the slider chain.
+    _answered = [_k for _k in _key if family_quiz[_k].value]
     if not _answered:
         _out = mo.md("*Pick a family for each equation to check your answers.*")
     else:
         _rows = []
-        for k in ("a", "b", "c", "d"):
-            v = family_quiz[k].value
-            if not v:
+        for _k in ("a", "b", "c", "d"):
+            _v = family_quiz[_k].value
+            if not _v:
                 continue
-            ok = v == _key[k]
-            verdict = "Correct" if ok else "Not quite"
-            _rows.append(f"{'✅' if ok else '❌'} **({k})** {verdict} — it's {_why[k]}")
+            _ok = _v == _key[_k]
+            _verdict = "Correct" if _ok else "Not quite"
+            _rows.append(f"{'✅' if _ok else '❌'} **({_k})** {_verdict} — it's {_why[_k]}")
         _out = mo.md("\n\n".join(_rows))
     _out
     return
