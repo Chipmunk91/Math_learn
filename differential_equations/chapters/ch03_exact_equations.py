@@ -719,46 +719,120 @@ def _(a_panel, delib):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Beat 7 — integrating factors.
+    # Beat 7 — integrating factors: intro before the Manim derivation.
     mo.md(
         r"""
         ## When it isn't exact — multiply by $\mu$
 
-        When $M_y \neq N_x$, look for a multiplier $\mu(x, y)$ such that
-        $\mu M\,dx + \mu N\,dy = 0$ *is* exact. The exactness condition
-        $(\mu M)_y = (\mu N)_x$ becomes a PDE for $\mu$ — solvable in general
-        only when $\mu$ is forced to be simple. Two clean cases that keep
-        things ODE-only:
-
-        - If $\dfrac{M_y - N_x}{N}$ depends on $x$ only, then $\mu = \mu(x)$
-          exists and
-
-          $$
-          \mu(x) = \exp\!\left(\int \frac{M_y - N_x}{N}\,dx\right).
-          $$
-
-        - If $\dfrac{N_x - M_y}{M}$ depends on $y$ only, then $\mu = \mu(y)$
-          exists with the symmetric formula in $y$.
-
-        ### The Ch 2 connection (punchline)
-
-        Take any first-order linear equation $y' + p(x)\,y = q(x)$ and rewrite
-        it as the symmetric form
+        The exactness test gives a clear binary: equation passes, look for
+        $F$; equation fails, no $F$ to find. But "no $F$ to find" isn't a
+        permanent verdict. There's a way to **rescue** a non-exact
+        equation: multiply both sides by a cleverly-chosen function
+        $\mu(x, y)$ — called an **integrating factor** — picked so that
+        the rescaled equation
 
         $$
-        \bigl(p(x)\,y - q(x)\bigr)\,dx + dy = 0.
+        \mu(x, y)\,M\,dx \;+\; \mu(x, y)\,N\,dy \;=\; 0
         $$
 
-        Now $M = p(x)\,y - q(x)$ and $N = 1$, so $M_y - N_x = p(x)$ — already
-        depends on $x$ alone. Plug into the box above:
+        *does* pass the exactness test. The contour map we couldn't find
+        before is now hiding behind the rescaled equation, and we can
+        recover it with the recipe from earlier in the chapter.
+
+        How do we find such a $\mu$? The derivation is short but worth
+        following one move at a time — particularly the moment where what
+        looks like a hard equation in two variables collapses into an
+        easy one, because we make a single inspired guess about what
+        $\mu$ should look like. The video below walks through it.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    # Beat 7 (cont.) — Manim hero: derive μ(x) = exp(∫ (M_y - N_x)/N dx).
+    delib.video(
+        "integrating_factor.mp4",
+        caption="Deriving the integrating factor μ(x), one move at a time",
+        fallback="The integrating-factor derivation is being rendered "
+                 "(see manim/integrating_factor.py).",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 7 (cont.) — after the video: symmetric μ(y) case + the Ch 2
+    # connection as the prose punchline.
+    mo.md(
+        r"""
+        ### The other half — when $\mu$ depends on $y$ instead
+
+        The video walked through the case $\mu = \mu(x)$ — multiplier
+        that depends only on $x$. But we could just as well try the
+        guess $\mu = \mu(y)$. The recipe is exactly the same with the
+        roles of $x$ and $y$ swapped:
 
         $$
-        \mu(x) = \exp\!\left(\int p(x)\,dx\right).
+        \mu(y) \;=\; \exp\!\left(\int \frac{N_x - M_y}{M}\,dy\right),
         $$
 
-        That's exactly the integrating factor from Ch 2. The "trick" wasn't a
-        trick — it was the exactness condition all along, specialised to
-        $N = 1$. One mechanism, two appearances.
+        valid when $(N_x - M_y)/M$ turns out to depend on $y$ alone.
+
+        In practice, when you meet a non-exact equation, you compute
+        both diagnostic ratios — $(M_y - N_x)/N$ and $(N_x - M_y)/M$ —
+        and pick whichever simplifies to a function of just one
+        variable. If both fail, you're in the harder territory where
+        $\mu$ has to depend on *both* $x$ and $y$, and the recipe stops
+        working as a one-line formula. That happens; integrating factors
+        aren't a silver bullet. But often enough — especially in the
+        first-year-physics catalogue of equations — one of the two clean
+        cases works.
+
+        ### The Chapter 2 connection — one mechanism, two appearances
+
+        Here's the punchline of this section, and it's a satisfying one.
+
+        Take any first-order linear equation from Chapter 2:
+
+        $$
+        y' + p(x)\,y = q(x).
+        $$
+
+        Rewrite it in the symmetric $M\,dx + N\,dy = 0$ form. Moving
+        everything to one side:
+
+        $$
+        \bigl(p(x)\,y - q(x)\bigr)\,dx \;+\; dy \;=\; 0.
+        $$
+
+        So $M = p(x)\,y - q(x)$ and $N = 1$. Now run the diagnostic
+        ratio:
+
+        $$
+        \frac{M_y - N_x}{N} \;=\; \frac{p(x) - 0}{1} \;=\; p(x).
+        $$
+
+        It already depends on $x$ alone (since $p$ is a function of $x$
+        alone) — the side condition for $\mu(x)$ is satisfied
+        automatically. Plug into the formula the video just derived:
+
+        $$
+        \mu(x) \;=\; \exp\!\left(\int p(x)\,dx\right).
+        $$
+
+        That's *exactly* the integrating factor we used in Chapter 2 to
+        solve linear ODEs — derived there as a clever trick. Here it
+        falls out of the integrating-factor recipe with $N$ pinned at
+        $1$.
+
+        The Chapter 2 method wasn't a trick at all. It was the
+        integrating-factor recipe, specialised to one particular shape
+        of equation. **One mechanism, two appearances.** Later chapters
+        will keep pulling that thread: most of the methods that look like
+        one-off tricks turn out to be special cases of more general
+        ideas.
         """
     )
     return
