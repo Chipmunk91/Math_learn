@@ -767,28 +767,60 @@ def _(mo):
     # connection as the prose punchline.
     mo.md(
         r"""
+        ### A name for the key quantity
+
+        The whole recipe boils down to a single expression — the thing
+        we integrated:
+
+        $$
+        \frac{M_y - N_x}{N}.
+        $$
+
+        It's useful enough to give a name. Call it the **diagnostic
+        ratio** for the equation, because computing it tells you two
+        things at once:
+
+        - **Diagnosis.** Plug your specific $M$ and $N$ in and simplify.
+          If the result is a function of $x$ alone — no $y$ left
+          anywhere — then a $\mu$ depending only on $x$ does exist, and
+          the recipe applies. If $y$ doesn't cancel out, this particular
+          recipe won't save the equation, and we'd need a different
+          tactic.
+        - **The formula.** When the diagnosis comes back clean, the
+          same ratio is exactly what you integrate to recover $\mu$:
+
+          $$
+          \mu(x) = \exp\!\left(\int \frac{M_y - N_x}{N}\,dx\right).
+          $$
+
+        One computation, two answers — *whether* the rescue works and
+        *what the rescue function looks like* — read off the same line.
+
         ### The other half — when $\mu$ depends on $y$ instead
 
-        The video walked through the case $\mu = \mu(x)$ — multiplier
-        that depends only on $x$. But we could just as well try the
-        guess $\mu = \mu(y)$. The recipe is exactly the same with the
-        roles of $x$ and $y$ swapped:
+        The video walked through the case $\mu = \mu(x)$. There's a
+        mirror version where we guess $\mu = \mu(y)$ instead, and the
+        same derivation runs through with the roles of $x$ and $y$
+        swapped — *including* the diagnostic ratio, which becomes
 
         $$
-        \mu(y) \;=\; \exp\!\left(\int \frac{N_x - M_y}{M}\,dy\right),
+        \frac{N_x - M_y}{M}
         $$
 
-        valid when $(N_x - M_y)/M$ turns out to depend on $y$ alone.
+        (sign flip on top, $M$ in the denominator now instead of $N$).
+        When *this* ratio depends on $y$ alone, then
 
-        In practice, when you meet a non-exact equation, you compute
-        both diagnostic ratios — $(M_y - N_x)/N$ and $(N_x - M_y)/M$ —
-        and pick whichever simplifies to a function of just one
-        variable. If both fail, you're in the harder territory where
-        $\mu$ has to depend on *both* $x$ and $y$, and the recipe stops
-        working as a one-line formula. That happens; integrating factors
-        aren't a silver bullet. But often enough — especially in the
-        first-year-physics catalogue of equations — one of the two clean
-        cases works.
+        $$
+        \mu(y) \;=\; \exp\!\left(\int \frac{N_x - M_y}{M}\,dy\right).
+        $$
+
+        **In practice**, when you meet a non-exact equation, you
+        compute both diagnostic ratios and pick whichever simplifies
+        to a function of just one variable. If neither does, you're in
+        harder territory: $\mu$ has to depend on both $x$ and $y$, and
+        the recipe stops working as a one-line formula. That happens;
+        integrating factors aren't a silver bullet. But the catalogue
+        of equations they *do* rescue is large.
 
         ### The Chapter 2 connection — one mechanism, two appearances
 
@@ -808,15 +840,15 @@ def _(mo):
         $$
 
         So $M = p(x)\,y - q(x)$ and $N = 1$. Now run the diagnostic
-        ratio:
+        ratio for this equation:
 
         $$
         \frac{M_y - N_x}{N} \;=\; \frac{p(x) - 0}{1} \;=\; p(x).
         $$
 
-        It already depends on $x$ alone (since $p$ is a function of $x$
-        alone) — the side condition for $\mu(x)$ is satisfied
-        automatically. Plug into the formula the video just derived:
+        It depends on $x$ alone (since $p$ is a function of $x$ alone)
+        — the side condition for $\mu(x)$ is met automatically. Plug
+        the ratio into the formula the video just derived:
 
         $$
         \mu(x) \;=\; \exp\!\left(\int p(x)\,dx\right).
@@ -830,8 +862,8 @@ def _(mo):
         The Chapter 2 method wasn't a trick at all. It was the
         integrating-factor recipe, specialised to one particular shape
         of equation. **One mechanism, two appearances.** Later chapters
-        will keep pulling that thread: most of the methods that look like
-        one-off tricks turn out to be special cases of more general
+        will keep pulling that thread: most of the methods that look
+        like one-off tricks turn out to be special cases of more general
         ideas.
         """
     )
@@ -874,55 +906,197 @@ def _(delib, go, mo, np):
     mo.vstack([
         mo.md(
             r"""
-            ## Substitution: Bernoulli in action
+            ## Substitution: when nonlinearity has a useful shape
 
-            When the equation is nonlinear but in the **Bernoulli form**
+            The integrating-factor recipe handles every *linear*
+            first-order ODE — a lot of equations, but not all of them.
+            Many real rate laws are nonlinear: populations limited by
+            carrying capacity, autocatalytic reactions, the rumor on
+            the 1,000-person campus from Chapter 1. None of those rate
+            laws are linear in $y$.
 
-            $$
-            y' + p(x)\,y = q(x)\,y^n, \qquad n \neq 0, 1,
-            $$
+            So when we meet a nonlinear equation, is there hope, or do
+            we hand off to numerical methods?
 
-            the substitution $v = y^{1-n}$ collapses the nonlinearity.
-            Differentiating gives $v' = (1-n)\,y^{-n}\,y'$. Divide the
-            original equation by $y^n$ and multiply by $1-n$:
+            Sometimes there's still hope — when the nonlinearity
+            happens to have a particular *shape*, a clever
+            **substitution** can flatten it back into one of the
+            equations we already know how to solve. We'll look at one
+            shape in detail (it covers a surprising fraction of the
+            first-order equations you'll meet in physics and biology),
+            then briefly mention a sibling.
 
-            $$
-            v' + (1 - n)\,p(x)\,v = (1 - n)\,q(x).
-            $$
+            ### The Bernoulli shape
 
-            **Linear in $v$.** The previous section applies — integrating
-            factor, integrate, invert with $y = v^{1/(1-n)}$.
-
-            ### The logistic, from scratch
-
-            Take $\dot y = y(1 - y)$ — the **same equation** whose numerical
-            S-curve opened Ch 1. Rewrite as $\dot y - y = -y^2$. Bernoulli
-            with $p = -1$, $q = -1$, $n = 2$. Set $v = y^{1-2} = 1/y$; the
-            transformed equation is
+            An equation of the form
 
             $$
-            \dot v + v = 1.
+            y' + p(x)\,y \;=\; q(x)\,y^n
             $$
 
-            Solve: $v_h = Ce^{-t}$, $v_p = 1$, so $v = 1 + Ce^{-t}$, and
-            inverting,
+            is called a **Bernoulli equation** when $n$ is anything
+            other than $0$ or $1$. (If $n = 0$, the right side is just
+            $q(x)$ and we're already linear; if $n = 1$, we can move
+            the $y$ term to the left and we're *still* linear.) It's
+            the cases like $n = 2, 3, \tfrac{1}{2}, -1$ — where the
+            right-hand side is *genuinely* nonlinear in $y$ — that we
+            want a new tool for.
+
+            **The idea.** We want the equation to be linear in some new
+            variable, because then the integrating-factor recipe from
+            the last section applies directly. So we look for a
+            substitution $v = (\text{some function of } y)$ that
+            *swallows* the awkward $y^n$.
+
+            Let's not guess — let's compute. Divide the original
+            equation through by $y^n$ to isolate the nonlinear piece:
 
             $$
-            y(t) = \frac{1}{1 + Ce^{-t}}.
+            \frac{y'}{y^n} \;+\; p(x)\,y^{1-n} \;=\; q(x).
             $$
 
-            With $y(0) = 0.1$, the constant $C = 9$. The plot below overlays
-            this closed form on `delib.solve_ode` running the same equation
-            — they agree to plotting precision, which is the only proof we
-            need that Ch 1's S-curve was always going to be a sigmoid.
+            The middle term has $y^{1-n}$ sitting in it. If we
+            **defined** $v$ to be that exact thing —
 
-            *Sibling trick.* For a **homogeneous** equation $y' = F(y/x)$, the
-            substitution $v = y/x$ reduces it to a separable equation in
-            $(v, x)$. Different change of variable, same idea: rewrite until
-            a tool from earlier in the chapter applies.
+            $$
+            v \;=\; y^{1-n},
+            $$
+
+            — then the middle term becomes $p(x)\,v$, which is linear
+            in $v$. So we now know what the substitution should be.
+
+            Does it also work for the first term, $y'/y^n$? Let's
+            check by computing $v'$ from our definition:
+
+            $$
+            \frac{dv}{dx} \;=\; (1 - n)\,y^{-n}\,\frac{dy}{dx}
+            \;=\; (1 - n)\,\frac{y'}{y^n}.
+            $$
+
+            Almost — the first term in our equation is $y'/y^n$, but
+            $v'$ has an extra factor of $(1 - n)$ that needs absorbing.
+            Easy fix: multiply our rearranged equation through by
+            $(1 - n)$:
+
+            $$
+            (1 - n)\,\frac{y'}{y^n} + (1 - n)\,p(x)\,y^{1-n}
+            \;=\; (1 - n)\,q(x).
+            $$
+
+            Now substitute $v = y^{1-n}$ and
+            $v' = (1 - n)\,y'/y^n$:
+
+            $$
+            \boxed{\quad v' \;+\; (1 - n)\,p(x)\,v
+            \;=\; (1 - n)\,q(x).\quad}
+            $$
+
+            **That's linear in $v$.** The integrating-factor recipe
+            from the last section solves it. Once we have $v(x)$, we
+            get $y$ back by inverting the substitution:
+            $y = v^{1/(1-n)}$.
+
+            The same recipe — *try $v = y^{1-n}$, the equation goes
+            linear, solve, invert* — works for every Bernoulli equation
+            regardless of the specific $p$, $q$, or $n$.
+
+            ### The logistic — Chapter 1's rumor, solved
+
+            Let's apply this to the equation that opened Chapter 1:
+            the rumor spreading across a campus, the S-curve in time.
+            Normalised to a population of $1$, the rate law is
+
+            $$
+            \dot y \;=\; y\,(1 - y).
+            $$
+
+            Multiply out and move the $y$ term to the left:
+
+            $$
+            \dot y - y \;=\; -y^2.
+            $$
+
+            Now match against the Bernoulli template
+            $y' + p\,y = q\,y^n$:
+
+            - The coefficient of $y$ on the left is $-1$, so $p = -1$.
+            - The coefficient of $y^n$ on the right is $-1$, so
+              $q = -1$.
+            - The exponent on the right is $2$, so $n = 2$.
+
+            The substitution is therefore $v = y^{1-2} = 1/y$. Plug
+            into the boxed formula:
+
+            $$
+            v' + (1 - 2)(-1)\,v \;=\; (1 - 2)(-1),
+            $$
+
+            which simplifies (since $(-1)(-1) = +1$ on both sides) to
+
+            $$
+            \dot v + v \;=\; 1.
+            $$
+
+            That's a linear first-order ODE in $v$ — exactly the kind
+            we just learned how to solve. The integrating factor is
+            $\mu(t) = \exp\bigl(\int 1\,dt\bigr) = e^t$. Multiplying
+            through: $(e^t v)' = e^t$. Integrating: $e^t v = e^t + C$.
+            Dividing:
+
+            $$
+            v(t) \;=\; 1 + C\,e^{-t}.
+            $$
+
+            And the final move — invert the substitution to recover
+            $y$:
+
+            $$
+            y(t) \;=\; \frac{1}{v(t)} \;=\; \frac{1}{1 + C\,e^{-t}}.
+            $$
+
+            There's the S-curve, in closed form.
+
+            To make it concrete: starting from $y(0) = 0.1$ (the
+            rumor's initial reach in Chapter 1), the condition
+            $1/(1 + C) = 0.1$ pins $C = 9$, so
+            $y(t) = 1/(1 + 9\,e^{-t})$. Below, this formula is plotted
+            against the numerical solution `delib.solve_ode` would
+            produce from the same equation and initial condition:
             """
         ),
         _fig,
+        mo.md(
+            r"""
+            The two are indistinguishable to plotting precision —
+            proof that the S-curve we read off Chapter 1's slope field
+            was always going to be this exact sigmoid. Bernoulli
+            substitution turned the nonlinear equation linear, and the
+            integrating-factor recipe finished the job.
+
+            ### A sibling — the homogeneous shape
+
+            The Bernoulli substitution worked by choosing $v$ to
+            swallow the awkward $y^n$. The same kind of trick — pick a
+            substitution that gets you to an equation you already know
+            how to solve — works for other shapes too. The most common
+            sibling is the **homogeneous** equation,
+
+            $$
+            y' \;=\; F\!\left(\frac{y}{x}\right),
+            $$
+
+            where the right-hand side depends on $y$ and $x$ only
+            through their ratio. The natural guess here is $v = y/x$.
+            A short chain-rule calculation turns the equation into a
+            **separable** one in $(v, x)$ — the simplest shape from
+            Chapter 2 — and two integrations finish the job.
+
+            *Different shape, different substitution, same idea.* When
+            a method has a clear target in mind — "get to linear",
+            "get to separable" — the substitution to try is often just
+            whatever is standing in the way.
+            """
+        ),
     ])
     return
 
