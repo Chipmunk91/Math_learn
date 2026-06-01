@@ -197,6 +197,104 @@ def _(mo):
         and *what the rescue function is* — read off the same line.
         Hence "diagnostic."
 
+        ### Now solve the equation — the full recipe
+
+        We now have everything we need to take a *non-exact* equation
+        all the way to an implicit solution. The full assembly is just
+        five steps, with steps 4 and 5 handing off to the recipe from
+        Part 1.
+
+        1. **Diagnose.** Compute the diagnostic ratio
+           $(M_y - N_x)/N$. If it simplifies to a function of $x$ alone
+           — call it $r(x)$ — proceed to step 2. If $y$ refuses to
+           cancel, try the mirror version (next subsection) instead.
+        2. **Build $\mu$.** Integrate the ratio and exponentiate:
+           $$
+           \mu(x) \;=\; \exp\!\left(\int r(x)\,dx\right).
+           $$
+        3. **Multiply the original equation through by $\mu$**:
+           $$
+           \mu(x)\,M\,dx \;+\; \mu(x)\,N\,dy \;=\; 0.
+           $$
+           The rescaled equation passes the exactness test by
+           construction — that's what we built $\mu$ for.
+        4. **Apply the Part 1 recipe** to the rescaled pair
+           $(\mu M,\,\mu N)$: partial-integrate $\mu M$ in $x$, then
+           match $F_y$ against $\mu N$ to pin down the $y$-only piece
+           $g(y)$. The result is $F(x, y)$.
+        5. **Read off the solution.** Solutions are the contours of
+           the landscape the integrating factor revealed:
+           $$
+           F(x, y) \;=\; C.
+           $$
+
+        Five steps for the non-exact case; Part 1's recipe was just
+        steps 4 and 5. The new work is purely in steps 1–3.
+
+        ### The hook equation, solved
+
+        Let's run the recipe on the equation that opened this part —
+        the one whose exactness test failed in the hook:
+
+        $$
+        (3xy + y^2)\,dx + (x^2 + xy)\,dy = 0.
+        $$
+
+        **Step 1 — diagnose.** With $M_y = 3x + 2y$ and $N_x = 2x + y$,
+        the diagnostic ratio is
+
+        $$
+        \frac{M_y - N_x}{N} \;=\; \frac{x + y}{x^2 + xy}
+        \;=\; \frac{x + y}{x\,(x + y)} \;=\; \frac{1}{x}.
+        $$
+
+        Depends on $x$ alone, ✓. The $\mu(x)$ recipe applies.
+
+        **Step 2 — build $\mu$.**
+
+        $$
+        \mu(x) \;=\; \exp\!\left(\int \frac{1}{x}\,dx\right)
+        \;=\; \exp(\ln x) \;=\; x.
+        $$
+
+        **Step 3 — multiply through by $\mu = x$.**
+
+        $$
+        x\,(3xy + y^2)\,dx + x\,(x^2 + xy)\,dy
+        \;=\; (3x^2 y + x y^2)\,dx + (x^3 + x^2 y)\,dy
+        \;=\; 0.
+        $$
+
+        Quick exactness check on the rescaled equation:
+        $(3x^2 y + xy^2)_y = 3x^2 + 2xy$ and
+        $(x^3 + x^2 y)_x = 3x^2 + 2xy$. They match — exact, as
+        promised.
+
+        **Step 4 — recover $F$.** Partial-integrate $\mu M$ in $x$:
+
+        $$
+        F \;=\; \int (3x^2 y + xy^2)\,dx + g(y)
+        \;=\; x^3 y + \tfrac{1}{2}\,x^2 y^2 + g(y).
+        $$
+
+        Differentiate in $y$ and match against $\mu N$:
+        $F_y = x^3 + x^2 y + g'(y)$ must equal $x^3 + x^2 y$, so
+        $g'(y) = 0$ and $g(y)$ is just a constant (which we absorb
+        into $C$).
+
+        **Step 5 — the implicit solution.**
+
+        $$
+        \boxed{\quad
+        x^3 y + \tfrac{1}{2}\,x^2 y^2 \;=\; C.
+        \quad}
+        $$
+
+        Or, multiplying by $2$, $x^2 y \,(2x + y) = K$. The equation
+        whose test failed in the hook is now fully solved — there
+        *was* a contour map behind it after all; we just had to
+        multiply through by $\mu(x) = x$ to see it.
+
         ### The other half — when $\mu$ depends on $y$ instead
 
         The video walked through the case $\mu = \mu(x)$. There's a
