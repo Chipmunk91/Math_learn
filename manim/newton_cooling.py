@@ -6,8 +6,12 @@ Every operation is per-atom (no TransformMatchingShapes): each glyph that
 survives a step keeps the same mobject reference, so its path is deterministic
 and the motion is one continuous, transparent transform — not a fade. Teal marks
 the symbols being actively manipulated. A caption beneath the equation names
-what each operation is doing, and the equation is re-centred after every step
-so it never drifts to one side.
+what each operation is doing.
+
+Re-centring happens *inside* each operation's main play (the targets and the
+surviving live elements are shifted by the same recentre offset, so the
+equation morphs into its new shape *and* lands centred in one continuous
+animation), rather than as a separate snap-to-centre play after each step.
 
 Render (Manim Community v0.18+, needs LaTeX + ffmpeg):
 
@@ -71,6 +75,12 @@ class SceneNewtonCoolingFull(Scene):
         VGroup(Tv_t, mns_t, Tr_t).arrange(RIGHT, buff=0.15).next_to(new_bar, DOWN, buff=0.1)
         dT_t = dT.copy().next_to(new_bar, UP, buff=0.1)
         dt_t = dt.copy().next_to(negk, RIGHT, buff=0.22)
+        # Pre-compute the recentre offset for the post-op layout, and shift
+        # each target by it so the operation animation lands centred.
+        post1 = VGroup(dT_t, new_bar, Tv_t, mns_t, Tr_t, eq, negk, dt_t)
+        re1 = ORIGIN - post1.get_center()
+        for _t in (new_bar, Tv_t, mns_t, Tr_t, dT_t, dt_t):
+            _t.shift(re1)
         new_cap = _caption("1 · Separate: gather T's on the left, t's on the right.")
         self.play(
             Transform(bar, new_bar),
@@ -79,13 +89,13 @@ class SceneNewtonCoolingFull(Scene):
             Transform(Tv, Tv_t, path_arc=PI / 2),
             Transform(mns, mns_t, path_arc=PI / 2),
             Transform(Tr, Tr_t, path_arc=PI / 2),
+            eq.animate.shift(re1),
+            negk.animate.shift(re1),
             FadeOut(lp), FadeOut(rp),
             FadeOut(cap), FadeIn(new_cap),
             run_time=1.8,
         )
         cap = new_cap
-        step1 = VGroup(dT, bar, Tv, mns, Tr, eq, negk, dt)
-        self.play(step1.animate.move_to(ORIGIN), run_time=0.4)
         self.wait(0.7)
 
         # 2a. INTEGRATE: integral signs emerge on both sides
@@ -93,17 +103,29 @@ class SceneNewtonCoolingFull(Scene):
         intR = MathTex(r"\int").scale(1.7).set_color(GREY_B)
         intL.next_to(VGroup(dT, bar, Tv, mns, Tr), LEFT, buff=0.15)
         intR.next_to(eq, RIGHT, buff=0.3)
+        # Predict the post-op layout: negk and dt will move right by 0.75.
+        ghost_negk = negk.copy().shift(RIGHT * 0.75)
+        ghost_dt = dt.copy().shift(RIGHT * 0.75)
+        post2a = VGroup(intL, dT, bar, Tv, mns, Tr, eq, intR, ghost_negk, ghost_dt)
+        re2a = ORIGIN - post2a.get_center()
+        intL.shift(re2a)
+        intR.shift(re2a)
         new_cap = _caption("2 · Integrate: the left side over T, the right side over t.")
         self.play(
-            VGroup(negk, dt).animate.shift(RIGHT * 0.75),
+            dT.animate.shift(re2a),
+            bar.animate.shift(re2a),
+            Tv.animate.shift(re2a),
+            mns.animate.shift(re2a),
+            Tr.animate.shift(re2a),
+            eq.animate.shift(re2a),
+            negk.animate.shift(RIGHT * 0.75 + re2a),
+            dt.animate.shift(RIGHT * 0.75 + re2a),
             FadeIn(intL, shift=RIGHT * 0.2),
             FadeIn(intR, shift=RIGHT * 0.2),
             FadeOut(cap), FadeIn(new_cap),
             run_time=1.0,
         )
         cap = new_cap
-        step2a = VGroup(intL, dT, bar, Tv, mns, Tr, eq, intR, negk, dt)
-        self.play(step2a.animate.move_to(ORIGIN), run_time=0.4)
         self.wait(0.5)
 
         # 2b. evaluate: dT, bar, dt vanish; ln|..| on LHS; t and +C on RHS
@@ -116,6 +138,10 @@ class SceneNewtonCoolingFull(Scene):
         t_e = MathTex("t").scale(1.3).set_color(HIGHLIGHT).next_to(negk_e, RIGHT, buff=0.2)
         plus_e = MathTex("+").scale(1.3).next_to(t_e, RIGHT, buff=0.2)
         C_e = MathTex("C").scale(1.3).next_to(plus_e, RIGHT, buff=0.2)
+        post2b = VGroup(ln_t, absL, Tv_e, mns_e, Tr_e, absR, eq, negk_e, t_e, plus_e, C_e)
+        re2b = ORIGIN - post2b.get_center()
+        for _t in (ln_t, absL, absR, Tv_e, mns_e, Tr_e, negk_e, t_e, plus_e, C_e):
+            _t.shift(re2b)
         new_cap = _caption("Evaluate: + C absorbs the two integration constants into one.")
         self.play(
             Transform(intL, ln_t),
@@ -128,14 +154,13 @@ class SceneNewtonCoolingFull(Scene):
             Transform(negk, negk_e),
             Transform(dt, t_e),
             FadeIn(plus_e), FadeIn(C_e),
+            eq.animate.shift(re2b),
             FadeOut(cap), FadeIn(new_cap),
             run_time=1.8,
         )
         cap = new_cap
         ln_ref = intL
         t_sym = dt
-        step2b = VGroup(ln_ref, absL, Tv, mns, Tr, absR, eq, negk, t_sym, plus_e, C_e)
-        self.play(step2b.animate.move_to(ORIGIN), run_time=0.4)
         self.wait(0.8)
 
         # 3. EXPONENTIATE: ln|T - T_r| = -kt + C  ->  T - T_r = A e^{-kt}
@@ -148,6 +173,10 @@ class SceneNewtonCoolingFull(Scene):
         exp_anchor = e_sym.get_corner(UR) + UP * 0.18 + RIGHT * 0.02
         negk_exp.move_to(exp_anchor)
         t_exp.next_to(negk_exp, RIGHT, buff=0.04)
+        post3 = VGroup(Tv_x, mns_x, Tr_x, eq, A_sym, e_sym, negk_exp, t_exp)
+        re3 = ORIGIN - post3.get_center()
+        for _t in (Tv_x, mns_x, Tr_x, A_sym, e_sym, negk_exp, t_exp):
+            _t.shift(re3)
         new_cap = _caption("3 · Exponentiate: e^C is just another constant — rename it A.")
         self.play(
             FadeOut(ln_ref), FadeOut(absL), FadeOut(absR),
@@ -159,12 +188,11 @@ class SceneNewtonCoolingFull(Scene):
             FadeIn(e_sym, shift=LEFT * 0.15),
             Transform(negk, negk_exp),
             Transform(t_sym, t_exp, path_arc=-PI / 3),
+            eq.animate.shift(re3),
             FadeOut(cap), FadeIn(new_cap),
             run_time=1.8,
         )
         cap = new_cap
-        step3 = VGroup(Tv, mns, Tr, eq, A_sym, e_sym, negk, t_sym)
-        self.play(step3.animate.move_to(ORIGIN), run_time=0.4)
         self.wait(0.8)
 
         # 4. ISOLATE T: T - T_r = A e^{-kt}  ->  T = T_r + A e^{-kt}
@@ -175,6 +203,10 @@ class SceneNewtonCoolingFull(Scene):
         exp_anchor2 = e_iso.get_corner(UR) + UP * 0.18 + RIGHT * 0.02
         negk_iso = negk.copy().move_to(exp_anchor2)
         t_iso = t_sym.copy().next_to(negk_iso, RIGHT, buff=0.04)
+        post4 = VGroup(Tv, eq, Tr_iso, plus_iso, A_iso, e_iso, negk_iso, t_iso)
+        re4 = ORIGIN - post4.get_center()
+        for _t in (Tr_iso, plus_iso, A_iso, e_iso, negk_iso, t_iso):
+            _t.shift(re4)
         new_cap = _caption("4 · Solve for T: move T_r across — the cup decays toward T_r.")
         self.play(
             Transform(mns, plus_iso, path_arc=-PI / 2),
@@ -183,11 +215,11 @@ class SceneNewtonCoolingFull(Scene):
             Transform(e_sym, e_iso),
             Transform(negk, negk_iso),
             Transform(t_sym, t_iso),
+            Tv.animate.shift(re4),
+            eq.animate.shift(re4),
             FadeOut(cap), FadeIn(new_cap),
             run_time=1.8,
         )
         cap = new_cap
-        final = VGroup(Tv, eq, Tr, mns, A_sym, e_sym, negk, t_sym)
-        self.play(final.animate.move_to(ORIGIN), run_time=0.4)
         self.wait(1.6)
         # Final:  T = T_r + A e^{-k t}
