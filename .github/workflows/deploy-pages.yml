@@ -70,6 +70,8 @@ jobs:
           find media -name 'f_recovery.mp4' -exec cp {} assets-rendered/ \; || true
           manim render -qm -o integrating_factor manim/integrating_factor.py SceneIntegratingFactor || true
           find media -name 'integrating_factor.mp4' -exec cp {} assets-rendered/ \; || true
+          manim render -qm -o bernoulli_substitution manim/bernoulli_substitution.py SceneBernoulliSubstitution || true
+          find media -name 'bernoulli_substitution.mp4' -exec cp {} assets-rendered/ \; || true
           ls -la assets-rendered || true
 
       - name: Upload rendered media

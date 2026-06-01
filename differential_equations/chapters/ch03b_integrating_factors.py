@@ -144,327 +144,588 @@ def _(delib):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Beat 7 (cont.) — after the video: diagnostic ratio + full-recipe
-    # checklist + step-by-step interactive worked example + mu(y) mirror +
-    # the precise Ch 2 connection (one-way, not symmetric).
-    mo.vstack([
-        mo.md(
-            r"""
-            ### Was our guess right? — checking the assumption
+    # Beat 7 (cont.) — after the video, before the step exercises: diagnostic
+    # ratio + full-recipe checklist + Your-turn intro.
+    mo.md(
+        r"""
+        ### Was our guess right? — checking the assumption
 
-            Notice that the whole derivation pivoted on **one
-            assumption**, the move in Step 4 of the video: we *guessed*
-            that $\mu$ depends only on $x$. That guess collapsed a hard
-            equation into a tractable one, but we never proved $\mu$
-            *could* be a function of $x$ alone for this particular $M$
-            and $N$. Before we trust the formula, we should check
-            whether the guess actually holds.
+        Notice that the whole derivation pivoted on **one assumption**,
+        the move in Step 4 of the video: we *guessed* that $\mu$
+        depends only on $x$. That guess collapsed a hard equation into
+        a tractable one, but we never proved $\mu$ *could* be a
+        function of $x$ alone for this particular $M$ and $N$. Before
+        we trust the formula, we should check whether the guess
+        actually holds.
 
-            The check is hiding inside the derivation itself. After we
-            made the guess, the equation collapsed to
+        The check is hiding inside the derivation itself. After we
+        made the guess, the equation collapsed to
 
-            $$
-            \frac{\mu_x}{\mu} \;=\; \frac{M_y - N_x}{N}.
-            $$
+        $$
+        \frac{\mu_x}{\mu} \;=\; \frac{M_y - N_x}{N}.
+        $$
 
-            Look at this equation. The **left side** depends only on
-            $x$ — because we assumed $\mu$ does, so its derivative does
-            too. For the equation to be consistent, the **right side**
-            has to depend only on $x$ as well. There should be no
-            leftover $y$ anywhere on the right after simplification.
+        Look at this equation. The **left side** depends only on $x$
+        — because we assumed $\mu$ does, so its derivative does too.
+        For the equation to be consistent, the **right side** has to
+        depend only on $x$ as well. There should be no leftover $y$
+        anywhere on the right after simplification.
 
-            So the consistency check is concrete: **compute
-            $(M_y - N_x)/N$ for your specific $M$ and $N$**. If it
-            simplifies to a function of $x$ alone, the guess holds and
-            the formula gives you $\mu$. If a $y$ refuses to cancel
-            out, the guess fails — no $\mu$ depending only on $x$ can
-            rescue this equation, and we'll need to try a different
-            guess (like $\mu$ depending only on $y$; see further
-            below).
+        So the consistency check is concrete: **compute
+        $(M_y - N_x)/N$ for your specific $M$ and $N$**. If it
+        simplifies to a function of $x$ alone, the guess holds and
+        the formula gives you $\mu$. If a $y$ refuses to cancel
+        out, the guess fails — no $\mu$ depending only on $x$ can
+        rescue this equation, and we'll need to try a different
+        guess (like $\mu$ depending only on $y$; see further below).
 
-            That ratio earns a name. Call it the **diagnostic ratio**
-            for the equation, because computing it does double duty:
+        That ratio earns a name. Call it the **diagnostic ratio** for
+        the equation, because computing it does double duty:
 
-            1. **Diagnose the guess.** If the result is a function of
-               $x$ alone, the $\mu(x)$ guess is consistent with the
-               equation. If $y$ doesn't cancel, the guess was wrong.
-            2. **Build the formula.** When the diagnosis comes back
-               clean, the same ratio is exactly what you integrate to
-               recover $\mu$:
+        1. **Diagnose the guess.** If the result is a function of $x$
+           alone, the $\mu(x)$ guess is consistent with the equation.
+           If $y$ doesn't cancel, the guess was wrong.
+        2. **Build the formula.** When the diagnosis comes back
+           clean, the same ratio is exactly what you integrate to
+           recover $\mu$:
 
-               $$
-               \mu(x) \;=\; \exp\!\left(\int \frac{M_y - N_x}{N}\,dx\right).
-               $$
+           $$
+           \mu(x) \;=\; \exp\!\left(\int \frac{M_y - N_x}{N}\,dx\right).
+           $$
 
-            One computation, two answers — *whether* the rescue works
-            and *what the rescue function is* — read off the same line.
-            Hence "diagnostic."
+        One computation, two answers — *whether* the rescue works
+        and *what the rescue function is* — read off the same line.
+        Hence "diagnostic."
 
-            ### Now solve the equation — the full recipe
+        ### Now solve the equation — the full recipe
 
-            We now have everything we need to take a *non-exact*
-            equation all the way to an implicit solution. The full
-            assembly is just five steps, with steps 4 and 5 handing
-            off to the recipe from Part 1.
+        We now have everything we need to take a *non-exact* equation
+        all the way to an implicit solution. The full assembly is just
+        five steps, with steps 4 and 5 handing off to the recipe from
+        Part 1.
 
-            1. **Diagnose.** Compute the diagnostic ratio
-               $(M_y - N_x)/N$. If it simplifies to a function of $x$
-               alone — call it $r(x)$ — proceed to step 2. If $y$
-               refuses to cancel, try the mirror version (further
-               below) instead.
-            2. **Build $\mu$.** Integrate the ratio and exponentiate:
+        1. **Diagnose.** Compute the diagnostic ratio
+           $(M_y - N_x)/N$. If it simplifies to a function of $x$
+           alone — call it $r(x)$ — proceed to step 2. If $y$
+           refuses to cancel, try the mirror version (further below)
+           instead.
+        2. **Build $\mu$.** Integrate the ratio and exponentiate:
 
-               $$
-               \mu(x) \;=\; \exp\!\left(\int r(x)\,dx\right).
-               $$
-            3. **Multiply the original equation through by $\mu$**:
+           $$
+           \mu(x) \;=\; \exp\!\left(\int r(x)\,dx\right).
+           $$
+        3. **Multiply the original equation through by $\mu$**:
 
-               $$
-               \mu(x)\,M\,dx \;+\; \mu(x)\,N\,dy \;=\; 0.
-               $$
+           $$
+           \mu(x)\,M\,dx \;+\; \mu(x)\,N\,dy \;=\; 0.
+           $$
 
-               The rescaled equation passes the exactness test by
-               construction — that's what we built $\mu$ for.
-            4. **Apply the Part 1 recipe** to the rescaled pair
-               $(\mu M,\,\mu N)$: partial-integrate $\mu M$ in $x$,
-               then match $F_y$ against $\mu N$ to pin down the
-               $y$-only piece $g(y)$. The result is $F(x, y)$.
-            5. **Read off the solution.** Solutions are the contours
-               of the landscape the integrating factor revealed:
+           The rescaled equation passes the exactness test by
+           construction — that's what we built $\mu$ for.
+        4. **Apply the Part 1 recipe** to the rescaled pair
+           $(\mu M,\,\mu N)$: partial-integrate $\mu M$ in $x$,
+           then match $F_y$ against $\mu N$ to pin down the
+           $y$-only piece $g(y)$. The result is $F(x, y)$.
+        5. **Read off the solution.** Solutions are the contours
+           of the landscape the integrating factor revealed:
 
-               $$
-               F(x, y) \;=\; C.
-               $$
+           $$
+           F(x, y) \;=\; C.
+           $$
 
-            Five steps for the non-exact case; Part 1's recipe was
-            just steps 4 and 5. The new work is purely in steps 1–3.
+        Five steps for the non-exact case; Part 1's recipe was just
+        steps 4 and 5. The new work is purely in steps 1–3.
 
-            ### Your turn — solve the hook equation, step by step
+        ### Your turn — solve the hook equation, step by step
 
-            Apply the recipe to the equation that opened this part —
-            the one whose exactness test failed in the hook:
+        Apply the recipe to the equation that opened this part — the
+        one whose exactness test failed in the hook:
 
-            $$
-            (3xy + y^2)\,dx + (x^2 + xy)\,dy = 0.
-            $$
+        $$
+        (3xy + y^2)\,dx + (x^2 + xy)\,dy = 0.
+        $$
 
-            For each step below, work it out on paper (or in your
-            head) first, then click the panel to check.
-            """
-        ),
-        mo.md(
-            r"""
-            **Step 1 — diagnose.** Compute $M_y$, then $N_x$, then the
-            diagnostic ratio $(M_y - N_x)/N$. Does it simplify to a
-            function of $x$ alone?
-            """
-        ),
-        mo.accordion({
-            "Step 1 — click to reveal the answer":
-            mo.md(
-                r"""
-                $M = 3xy + y^2$, so $M_y = 3x + 2y$.
-                $N = x^2 + xy$, so $N_x = 2x + y$.
-                Therefore $M_y - N_x = (3x + 2y) - (2x + y) = x + y$, and
+        Each of the five steps below asks for a numeric value at a
+        specific point. Work the symbolic step on paper (or in SymPy)
+        first; then plug a number into `answer` and press **Run &
+        check** to verify before moving on.
+        """
+    )
+    return
 
-                $$
-                \frac{M_y - N_x}{N} \;=\; \frac{x + y}{x^2 + xy}
-                \;=\; \frac{x + y}{x\,(x + y)} \;=\; \frac{1}{x}.
-                $$
 
-                Function of $x$ alone, ✓. The $\mu(x)$ recipe applies.
-                """
-            )
-        }),
-        mo.md(
-            r"""
-            **Step 2 — build $\mu$.** Integrate the diagnostic ratio
-            and exponentiate. What's $\mu(x)$?
-            """
-        ),
-        mo.accordion({
-            "Step 2 — click to reveal the answer":
-            mo.md(
-                r"""
-                $$
-                \mu(x) \;=\; \exp\!\left(\int \frac{1}{x}\,dx\right)
-                \;=\; \exp(\ln x) \;=\; x.
-                $$
-                """
-            )
-        }),
-        mo.md(
-            r"""
-            **Step 3 — multiply through by $\mu = x$.** Write out the
-            rescaled equation, then double-check it passes the
-            exactness test.
-            """
-        ),
-        mo.accordion({
-            "Step 3 — click to reveal the answer":
-            mo.md(
-                r"""
-                $$
-                x\,(3xy + y^2)\,dx + x\,(x^2 + xy)\,dy
-                \;=\; (3x^2 y + x y^2)\,dx + (x^3 + x^2 y)\,dy
-                \;=\; 0.
-                $$
+# --- Step 1: diagnose -----------------------------------------------------------
+@app.cell
+def _(mo):
+    s1_get, s1_set = mo.state(
+        "# Step 1 — Diagnose.\n"
+        "# For the equation (3*x*y + y**2) dx + (x**2 + x*y) dy = 0,\n"
+        "# compute the diagnostic ratio (M_y - N_x) / N and simplify.\n"
+        "# Evaluate the simplified result at x = 2 and put the number\n"
+        "# in `answer`. (It simplifies to a function of x alone.)\n"
+        "import sympy as sp\n"
+        "x, y = sp.symbols('x y')\n"
+        "M = 3*x*y + y**2\n"
+        "N = x**2 + x*y\n"
+        "# ratio = ...\n"
+        "answer = ...\n"
+    )
+    return s1_get, s1_set
 
-                Exactness check: $(3x^2 y + xy^2)_y = 3x^2 + 2xy$ and
-                $(x^3 + x^2 y)_x = 3x^2 + 2xy$. They match — exact, as
-                promised.
-                """
-            )
-        }),
-        mo.md(
-            r"""
-            **Step 4 — recover $F$.** Apply Part 1's recipe to the
-            rescaled pair $(\mu M, \mu N) = (3x^2 y + xy^2,\,x^3 + x^2 y)$:
-            partial-integrate $\mu M$ in $x$, then fix the $y$-only
-            piece $g(y)$ by matching $F_y$ against $\mu N$.
-            """
-        ),
-        mo.accordion({
-            "Step 4 — click to reveal the answer":
-            mo.md(
-                r"""
-                Partial-integrate $\mu M = 3x^2 y + xy^2$ in $x$:
 
-                $$
-                F \;=\; \int (3x^2 y + xy^2)\,dx + g(y)
-                \;=\; x^3 y + \tfrac{1}{2}\,x^2 y^2 + g(y).
-                $$
+@app.cell
+def _(delib, s1_get):
+    s1_ai, s1_gen, s1_code, s1_run = delib.exercise_inputs(s1_get())
+    return s1_ai, s1_code, s1_gen, s1_run
 
-                Now differentiate this $F$ in $y$:
-                $F_y = x^3 + x^2 y + g'(y)$. Match against
-                $\mu N = x^3 + x^2 y$: the $x^3$ and $x^2 y$ terms
-                already agree on both sides, so $g'(y) = 0$ and
-                $g(y)$ is just a constant (absorbed into $C$).
-                Therefore
 
-                $$
-                F(x, y) \;=\; x^3 y + \tfrac{1}{2}\,x^2 y^2.
-                $$
-                """
-            )
-        }),
-        mo.md(
-            r"""
-            **Step 5 — state the implicit solution.** Write the
-            solution as $F(x, y) = C$.
-            """
-        ),
-        mo.accordion({
-            "Step 5 — click to reveal the answer":
-            mo.md(
-                r"""
-                $$
-                \boxed{\quad x^3 y + \tfrac{1}{2}\,x^2 y^2 \;=\; C.\quad}
-                $$
+@app.cell(hide_code=True)
+def _(delib, s1_ai, s1_code, s1_gen, s1_run):
+    delib.exercise_view(
+        "**Step 1 — diagnose.** Compute $M_y$, then $N_x$, then the "
+        "diagnostic ratio $(M_y - N_x)/N$ and simplify. Evaluate the "
+        "simplified result at $x = 2$. Put the number in `answer`.",
+        s1_ai, s1_gen, s1_code, s1_run,
+        with_ai=False,
+    )
+    return
 
-                Or, multiplying both sides by $2$, equivalently
-                $x^2 y \,(2x + y) = K$. The equation whose exactness
-                test failed in the hook is now fully solved — there
-                *was* a contour map behind it after all; we just had
-                to multiply through by $\mu(x) = x$ to see it.
-                """
-            )
-        }),
-        mo.md(
-            r"""
-            ### The other half — when $\mu$ depends on $y$ instead
 
-            The video walked through the case $\mu = \mu(x)$. There's
-            a mirror version where we guess $\mu = \mu(y)$ instead,
-            and the same derivation runs through with the roles of
-            $x$ and $y$ swapped — *including* the diagnostic ratio,
-            which becomes
+@app.cell(hide_code=True)
+def _(delib, s1_code, s1_run):
+    delib.run_exercise(s1_code.value, s1_run.value, check=lambda ns: delib.check_number(
+        ns, target=0.5, tol=1e-4,
+        ok="Right — $M_y - N_x = (3x + 2y) - (2x + y) = x + y$, so "
+           "$(M_y - N_x)/N = (x + y)/(x(x + y)) = 1/x$. At $x = 2$, that's $0.5$.",
+        hint="Compute $M_y = 3x + 2y$ and $N_x = 2x + y$ first; their "
+             "difference is $x + y$. The denominator $x^2 + xy$ factors as "
+             "$x(x + y)$, and the $x + y$ cancels.",
+    ))
+    return
 
-            $$
-            \frac{N_x - M_y}{M}
-            $$
 
-            (sign flip on top, $M$ in the denominator now instead of
-            $N$). When *this* ratio depends on $y$ alone, then
+# --- Step 2: build μ ------------------------------------------------------------
+@app.cell
+def _(mo):
+    s2_get, s2_set = mo.state(
+        "# Step 2 — Build μ.\n"
+        "# Integrate the diagnostic ratio from Step 1 (which simplified to 1/x)\n"
+        "# and exponentiate: μ(x) = exp(∫ (1/x) dx).\n"
+        "# Evaluate μ at x = 5 and put the number in `answer`.\n"
+        "import sympy as sp\n"
+        "x = sp.symbols('x')\n"
+        "# mu = ...\n"
+        "answer = ...\n"
+    )
+    return s2_get, s2_set
 
-            $$
-            \mu(y) \;=\; \exp\!\left(\int \frac{N_x - M_y}{M}\,dy\right).
-            $$
 
-            **In practice**, when you meet a non-exact equation, you
-            compute both diagnostic ratios and pick whichever
-            simplifies to a function of just one variable. If neither
-            does, you're in harder territory: $\mu$ has to depend on
-            both $x$ and $y$, and the recipe stops working as a
-            one-line formula. That happens; integrating factors
-            aren't a silver bullet. But the catalogue of equations
-            they *do* rescue is large.
+@app.cell
+def _(delib, s2_get):
+    s2_ai, s2_gen, s2_code, s2_run = delib.exercise_inputs(s2_get())
+    return s2_ai, s2_code, s2_gen, s2_run
 
-            ### How Chapter 2's linear method fits inside this one
 
-            One last connection worth drawing precisely. Take any
-            first-order linear equation from Chapter 2:
+@app.cell(hide_code=True)
+def _(delib, s2_ai, s2_code, s2_gen, s2_run):
+    delib.exercise_view(
+        "**Step 2 — build $\\mu$.** Integrate the diagnostic ratio from "
+        "Step 1 and exponentiate. Evaluate $\\mu$ at $x = 5$ and put "
+        "the number in `answer`.",
+        s2_ai, s2_gen, s2_code, s2_run,
+        with_ai=False,
+    )
+    return
 
-            $$
-            y' + p(x)\,y = q(x).
-            $$
 
-            Rewrite it in the symmetric $M\,dx + N\,dy = 0$ form by
-            moving everything to one side:
+@app.cell(hide_code=True)
+def _(delib, s2_code, s2_run):
+    delib.run_exercise(s2_code.value, s2_run.value, check=lambda ns: delib.check_number(
+        ns, target=5.0, tol=1e-4,
+        ok="Right — $\\mu(x) = \\exp(\\int (1/x)\\,dx) = \\exp(\\ln x) = x$. "
+           "So $\\mu(5) = 5$.",
+        hint="$\\int (1/x)\\,dx = \\ln x$, then $\\exp(\\ln x) = x$. "
+             "So $\\mu(x) = x$ and $\\mu(5) = 5$.",
+    ))
+    return
 
-            $$
-            \bigl(p(x)\,y - q(x)\bigr)\,dx \;+\; dy \;=\; 0,
-            $$
 
-            so $M = p(x)\,y - q(x)$ and $N = 1$. Now run the
-            diagnostic ratio:
+# --- Step 3: multiply through ---------------------------------------------------
+@app.cell
+def _(mo):
+    s3_get, s3_set = mo.state(
+        "# Step 3 — Multiply through by μ(x) = x.\n"
+        "# Compute μM = x · (3xy + y²) and μN = x · (x² + xy).\n"
+        "# Verify the rescaled equation is exact by computing (μM)_y\n"
+        "# and evaluating at (x, y) = (1, 1). Put the number in `answer`.\n"
+        "import sympy as sp\n"
+        "x, y = sp.symbols('x y')\n"
+        "mu = x\n"
+        "M = 3*x*y + y**2\n"
+        "N = x**2 + x*y\n"
+        "muM = sp.expand(mu * M)\n"
+        "muN = sp.expand(mu * N)\n"
+        "# (mu*M)_y evaluated at (1, 1) = ?\n"
+        "answer = ...\n"
+    )
+    return s3_get, s3_set
 
-            $$
-            \frac{M_y - N_x}{N} \;=\; \frac{p(x) - 0}{1} \;=\; p(x).
-            $$
 
-            That depends on $x$ alone (since $p$ does) — the side
-            condition is met automatically — and the formula the
-            video derived gives
+@app.cell
+def _(delib, s3_get):
+    s3_ai, s3_gen, s3_code, s3_run = delib.exercise_inputs(s3_get())
+    return s3_ai, s3_code, s3_gen, s3_run
 
-            $$
-            \mu(x) \;=\; \exp\!\left(\int p(x)\,dx\right),
-            $$
 
-            *exactly* the integrating factor from Chapter 2's linear
-            method.
+@app.cell(hide_code=True)
+def _(delib, s3_ai, s3_code, s3_gen, s3_run):
+    delib.exercise_view(
+        "**Step 3 — multiply through.** Compute $\\mu M$ and $\\mu N$ "
+        "with $\\mu(x) = x$, then verify exactness by evaluating "
+        "$(\\mu M)_y$ at $(x, y) = (1, 1)$. Put the number in `answer`.",
+        s3_ai, s3_gen, s3_code, s3_run,
+        with_ai=False,
+    )
+    return
 
-            **But the implication only runs one way.** Every linear
-            first-order equation slots into the integrating-factor
-            recipe of this chapter as the $N = 1$ corner — but most
-            exact equations are *not* linear. The rescaled hook
-            equation we just solved has $y^2$ in $\mu M$ and $y$ in
-            $\mu N$, and there's no way to peel either into the
-            $dy/dx + P(x)\,y = Q(x)$ shape that Chapter 2 needs. So
-            Chapter 2's linear recipe (recognise the LHS as
-            $(\mu y)'$, integrate) doesn't apply once $N$ depends on
-            $y$.
 
-            That's why we used **Part 1's recipe** — partial-integrate
-            $\mu M$ in $x$, match $F_y$ against $\mu N$ — and not
-            Chapter 2's linear formula. Part 1's recipe handles the
-            whole family of exact equations; Chapter 2's only handles
-            the linear corner of it. **Linear is a *special case* of
-            exact, not a separate-but-equivalent route.** Chapter 2's
-            $\mu = e^{\int p\,dx}$ is what the general integrating-
-            factor recipe gives when $N = 1$ — a satisfying tie-back,
-            but a one-way one.
-            """
-        ),
-    ])
+@app.cell(hide_code=True)
+def _(delib, s3_code, s3_run):
+    delib.run_exercise(s3_code.value, s3_run.value, check=lambda ns: delib.check_number(
+        ns, target=5.0, tol=1e-4,
+        ok="Right — $\\mu M = 3x^2 y + xy^2$, so $(\\mu M)_y = 3x^2 + 2xy$. "
+           "At $(1, 1)$: $3 + 2 = 5$. (Also $(\\mu N)_x = 3x^2 + 2xy$ — they "
+           "match, so the rescaled equation is exact, as the recipe promised.)",
+        hint="Multiply: $\\mu M = x \\cdot (3xy + y^2) = 3x^2 y + xy^2$. "
+             "Then $(\\mu M)_y = 3x^2 + 2xy$. Evaluate at $x = 1, y = 1$.",
+    ))
+    return
+
+
+# --- Step 4: recover F ----------------------------------------------------------
+@app.cell
+def _(mo):
+    s4_get, s4_set = mo.state(
+        "# Step 4 — Recover F.\n"
+        "# We have μM = 3x²y + xy² and μN = x³ + x²y.\n"
+        "# Partial-integrate μM in x (treating y as constant) to get F\n"
+        "# up to a function g(y). Match F_y against μN to pin down g.\n"
+        "# Evaluate the resulting F at (x, y) = (1, 2). Put the number in `answer`.\n"
+        "import sympy as sp\n"
+        "x, y = sp.symbols('x y')\n"
+        "muM = 3*x**2*y + x*y**2\n"
+        "muN = x**3 + x**2*y\n"
+        "# F = sp.integrate(muM, x) + g(y); pin g by matching F_y to muN.\n"
+        "answer = ...\n"
+    )
+    return s4_get, s4_set
+
+
+@app.cell
+def _(delib, s4_get):
+    s4_ai, s4_gen, s4_code, s4_run = delib.exercise_inputs(s4_get())
+    return s4_ai, s4_code, s4_gen, s4_run
+
+
+@app.cell(hide_code=True)
+def _(delib, s4_ai, s4_code, s4_gen, s4_run):
+    delib.exercise_view(
+        "**Step 4 — recover $F$.** Partial-integrate $\\mu M$ in $x$ "
+        "(treating $y$ as constant), then match $F_y$ against $\\mu N$ "
+        "to pin down $g(y)$. Evaluate the resulting $F$ at "
+        "$(x, y) = (1, 2)$ and put the number in `answer`.",
+        s4_ai, s4_gen, s4_code, s4_run,
+        with_ai=False,
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, s4_code, s4_run):
+    delib.run_exercise(s4_code.value, s4_run.value, check=lambda ns: delib.check_number(
+        ns, target=4.0, tol=1e-4,
+        ok="Right — $F = x^3 y + \\tfrac{1}{2}x^2 y^2$, and $F(1, 2) = "
+           "1 \\cdot 2 + \\tfrac{1}{2} \\cdot 1 \\cdot 4 = 2 + 2 = 4$.",
+        hint="Integrate $\\mu M = 3x^2 y + xy^2$ in $x$: result is "
+             "$x^3 y + \\tfrac{1}{2}x^2 y^2 + g(y)$. Then $F_y = "
+             "x^3 + x^2 y + g'(y)$ must equal $\\mu N = x^3 + x^2 y$, "
+             "so $g'(y) = 0$ and $g(y)$ is a constant (absorbed into $C$).",
+    ))
+    return
+
+
+# --- Step 5: C for the curve through (1, 1) -------------------------------------
+@app.cell
+def _(mo):
+    s5_get, s5_set = mo.state(
+        "# Step 5 — State the implicit solution.\n"
+        "# The general implicit solution is F(x, y) = C, with\n"
+        "# F = x³y + (1/2) x² y². Find the specific value of C for the\n"
+        "# solution curve passing through (x, y) = (1, 1).\n"
+        "# Put it in `answer`.\n"
+        "F = lambda x, y: x**3*y + x**2*y**2 / 2\n"
+        "answer = ...\n"
+    )
+    return s5_get, s5_set
+
+
+@app.cell
+def _(delib, s5_get):
+    s5_ai, s5_gen, s5_code, s5_run = delib.exercise_inputs(s5_get())
+    return s5_ai, s5_code, s5_gen, s5_run
+
+
+@app.cell(hide_code=True)
+def _(delib, s5_ai, s5_code, s5_gen, s5_run):
+    delib.exercise_view(
+        "**Step 5 — find $C$ for a specific curve.** The implicit "
+        "solution is $F(x, y) = C$ with "
+        "$F = x^3 y + \\tfrac{1}{2}x^2 y^2$. What value of $C$ "
+        "corresponds to the solution curve passing through "
+        "$(x, y) = (1, 1)$? Put it in `answer`.",
+        s5_ai, s5_gen, s5_code, s5_run,
+        with_ai=False,
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, s5_code, s5_run):
+    delib.run_exercise(s5_code.value, s5_run.value, check=lambda ns: delib.check_number(
+        ns, target=1.5, tol=1e-4,
+        ok="Right — $C = F(1, 1) = 1 + \\tfrac{1}{2} = 1.5$. The "
+           "solution curve through $(1, 1)$ is the contour "
+           "$x^3 y + \\tfrac{1}{2}x^2 y^2 = 1.5$. The equation whose "
+           "test failed in the hook is now fully solved — there *was* "
+           "a contour map behind it after all; we just had to multiply "
+           "by $\\mu(x) = x$ to see it.",
+        hint="Plug $x = 1, y = 1$ into $F$: "
+             "$1^3 \\cdot 1 + \\tfrac{1}{2} \\cdot 1^2 \\cdot 1^2 "
+             "= 1 + 0.5 = 1.5$.",
+    ))
+    return
+
+
+# --- Closing prose: mu(y) mirror + Ch 2 connection ------------------------------
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 7 (cont.) — after the step exercises: mu(y) mirror case + the
+    # precise Ch 2 connection (one-way, linear ⊂ exact).
+    mo.md(
+        r"""
+        ### The other half — when $\mu$ depends on $y$ instead
+
+        The video walked through the case $\mu = \mu(x)$. There's
+        a mirror version where we guess $\mu = \mu(y)$ instead,
+        and the same derivation runs through with the roles of
+        $x$ and $y$ swapped — *including* the diagnostic ratio,
+        which becomes
+
+        $$
+        \frac{N_x - M_y}{M}
+        $$
+
+        (sign flip on top, $M$ in the denominator now instead of
+        $N$). When *this* ratio depends on $y$ alone, then
+
+        $$
+        \mu(y) \;=\; \exp\!\left(\int \frac{N_x - M_y}{M}\,dy\right).
+        $$
+
+        **In practice**, when you meet a non-exact equation, you
+        compute both diagnostic ratios and pick whichever
+        simplifies to a function of just one variable. If neither
+        does, you're in harder territory: $\mu$ has to depend on
+        both $x$ and $y$, and the recipe stops working as a
+        one-line formula. That happens; integrating factors
+        aren't a silver bullet. But the catalogue of equations
+        they *do* rescue is large.
+
+        ### How Chapter 2's linear method fits inside this one
+
+        One last connection worth drawing precisely. Take any
+        first-order linear equation from Chapter 2:
+
+        $$
+        y' + p(x)\,y = q(x).
+        $$
+
+        Rewrite it in the symmetric $M\,dx + N\,dy = 0$ form by
+        moving everything to one side:
+
+        $$
+        \bigl(p(x)\,y - q(x)\bigr)\,dx \;+\; dy \;=\; 0,
+        $$
+
+        so $M = p(x)\,y - q(x)$ and $N = 1$. Now run the
+        diagnostic ratio:
+
+        $$
+        \frac{M_y - N_x}{N} \;=\; \frac{p(x) - 0}{1} \;=\; p(x).
+        $$
+
+        That depends on $x$ alone (since $p$ does) — the side
+        condition is met automatically — and the formula the
+        video derived gives
+
+        $$
+        \mu(x) \;=\; \exp\!\left(\int p(x)\,dx\right),
+        $$
+
+        *exactly* the integrating factor from Chapter 2's linear
+        method.
+
+        **But the implication only runs one way.** Every linear
+        first-order equation slots into the integrating-factor
+        recipe of this chapter as the $N = 1$ corner — but most
+        exact equations are *not* linear. The rescaled hook
+        equation we just solved has $y^2$ in $\mu M$ and $y$ in
+        $\mu N$, and there's no way to peel either into the
+        $dy/dx + P(x)\,y = Q(x)$ shape that Chapter 2 needs. So
+        Chapter 2's linear recipe (recognise the LHS as
+        $(\mu y)'$, integrate) doesn't apply once $N$ depends on
+        $y$.
+
+        That's why we used **Part 1's recipe** — partial-integrate
+        $\mu M$ in $x$, match $F_y$ against $\mu N$ — and not
+        Chapter 2's linear formula. Part 1's recipe handles the
+        whole family of exact equations; Chapter 2's only handles
+        the linear corner of it. **Linear is a *special case* of
+        exact, not a separate-but-equivalent route.** Chapter 2's
+        $\mu = e^{\int p\,dx}$ is what the general integrating-
+        factor recipe gives when $N = 1$ — a satisfying tie-back,
+        but a one-way one.
+        """
+    )
+    return
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 8 (intro) — frame the Bernoulli shape and point at the video.
+    # The symbol-pushing derivation that used to be inline now lives in
+    # manim/bernoulli_substitution.py and runs as a Manim clip; prose
+    # below sets up "why this shape, why this substitution."
+    mo.md(
+        r"""
+        ## Substitution: when nonlinearity has a useful shape
+
+        The integrating-factor recipe handles every *linear*
+        first-order ODE — a lot of equations, but not all of them.
+        Many real rate laws are nonlinear: populations limited by
+        carrying capacity, autocatalytic reactions, the rumor on the
+        1,000-person campus from Chapter 1. None of those rate laws
+        are linear in $y$.
+
+        So when we meet a nonlinear equation, is there hope, or do we
+        hand off to numerical methods?
+
+        Sometimes there's still hope — when the nonlinearity happens
+        to have a particular *shape*, a clever **substitution** can
+        flatten it back into one of the equations we already know
+        how to solve. We'll look at one shape in detail (it covers a
+        surprising fraction of the first-order equations you'll meet
+        in physics and biology), then briefly mention a sibling.
+
+        ### The Bernoulli shape
+
+        An equation of the form
+
+        $$
+        y' + p(x)\,y \;=\; q(x)\,y^n
+        $$
+
+        is called a **Bernoulli equation** when $n$ is anything other
+        than $0$ or $1$. (If $n = 0$, the right side is just $q(x)$
+        and we're already linear; if $n = 1$, we can move the $y$
+        term to the left and we're *still* linear.) It's the cases
+        like $n = 2, 3, \tfrac{1}{2}, -1$ — where the right-hand side
+        is *genuinely* nonlinear in $y$ — that we want a new tool for.
+
+        **The idea.** We want the equation to be linear in some new
+        variable, because then the integrating-factor recipe from the
+        last section applies directly. So we look for a substitution
+        $v = (\text{some function of } y)$ that *swallows* the
+        awkward $y^n$. The video below walks the derivation through
+        one move at a time — divide by $y^n$, identify $y^{1-n}$
+        sitting in the middle term, define $v$ to be that, and the
+        equation collapses to a linear one in $v$.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    # Beat 8 (cont.) — Manim hero: derive v = y^(1-n) and linearise.
+    delib.video(
+        "bernoulli_substitution.mp4",
+        caption="Deriving the Bernoulli substitution v = y^(1-n), one move at a time",
+        fallback="The Bernoulli derivation is being rendered "
+                 "(see manim/bernoulli_substitution.py).",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 8 (cont.) — after the video: how to solve the linearised v-equation.
+    # Mirrors the "Now solve" recipe in Beat 7 for the integrating-factor case.
+    mo.md(
+        r"""
+        ### Now solve the linearised equation
+
+        The video ended with the linear form in $v$:
+
+        $$
+        \boxed{\quad v' \;+\; (1 - n)\,p(x)\,v \;=\; (1 - n)\,q(x). \quad}
+        $$
+
+        That's a linear first-order ODE — exactly Chapter 2's shape,
+        with new "$p$" and "$q$" given by $(1-n)\,p(x)$ and
+        $(1-n)\,q(x)$. So the integrating-factor recipe takes over,
+        in four steps:
+
+        1. **Build the integrating factor.** With "$p_v(x) = (1-n)\,p(x)$",
+           compute
+
+           $$
+           \mu_v(x) \;=\; \exp\!\left(\int (1 - n)\,p(x)\,dx\right).
+           $$
+        2. **Multiply through** by $\mu_v(x)$. The left side collapses
+           into a single derivative by construction:
+
+           $$
+           \bigl(\mu_v\,v\bigr)' \;=\; \mu_v\,(1 - n)\,q(x).
+           $$
+        3. **Integrate both sides** in $x$:
+
+           $$
+           \mu_v(x)\,v \;=\; \int \mu_v(x)\,(1-n)\,q(x)\,dx \;+\; C.
+           $$
+
+           Solve for $v(x)$ by dividing through by $\mu_v(x)$.
+        4. **Invert the substitution** to recover $y$. Since
+           $v = y^{1-n}$,
+
+           $$
+           y \;=\; v^{1/(1-n)}.
+           $$
+
+        Four steps. Steps 1–3 are Chapter 2 verbatim (with $p$ and
+        $q$ scaled by $1 - n$); step 4 is just the substitution
+        running in reverse. That's the whole assembly.
+
+        Below, we run this recipe on a specific Bernoulli equation —
+        the logistic equation that opened Chapter 1.
+        """
+    )
     return
 
 
 @app.cell(hide_code=True)
 def _(delib, go, mo, np):
-    # Beat 8 — Bernoulli payoff: derive the closed-form logistic via v = 1/y,
-    # then overlay against a numerical solve_ode of the same equation to show
-    # the formula is right.
+    # Beat 8 (cont.) — the logistic worked example, with the closed-form vs
+    # numerical figure as the proof.
     _t = np.linspace(0, 8, 200)
     _y0 = 0.1
     _C = 1.0 / _y0 - 1.0
@@ -496,104 +757,10 @@ def _(delib, go, mo, np):
     mo.vstack([
         mo.md(
             r"""
-            ## Substitution: when nonlinearity has a useful shape
-
-            The integrating-factor recipe handles every *linear*
-            first-order ODE — a lot of equations, but not all of them.
-            Many real rate laws are nonlinear: populations limited by
-            carrying capacity, autocatalytic reactions, the rumor on
-            the 1,000-person campus from Chapter 1. None of those rate
-            laws are linear in $y$.
-
-            So when we meet a nonlinear equation, is there hope, or do
-            we hand off to numerical methods?
-
-            Sometimes there's still hope — when the nonlinearity
-            happens to have a particular *shape*, a clever
-            **substitution** can flatten it back into one of the
-            equations we already know how to solve. We'll look at one
-            shape in detail (it covers a surprising fraction of the
-            first-order equations you'll meet in physics and biology),
-            then briefly mention a sibling.
-
-            ### The Bernoulli shape
-
-            An equation of the form
-
-            $$
-            y' + p(x)\,y \;=\; q(x)\,y^n
-            $$
-
-            is called a **Bernoulli equation** when $n$ is anything
-            other than $0$ or $1$. (If $n = 0$, the right side is just
-            $q(x)$ and we're already linear; if $n = 1$, we can move
-            the $y$ term to the left and we're *still* linear.) It's
-            the cases like $n = 2, 3, \tfrac{1}{2}, -1$ — where the
-            right-hand side is *genuinely* nonlinear in $y$ — that we
-            want a new tool for.
-
-            **The idea.** We want the equation to be linear in some new
-            variable, because then the integrating-factor recipe from
-            the last section applies directly. So we look for a
-            substitution $v = (\text{some function of } y)$ that
-            *swallows* the awkward $y^n$.
-
-            Let's not guess — let's compute. Divide the original
-            equation through by $y^n$ to isolate the nonlinear piece:
-
-            $$
-            \frac{y'}{y^n} \;+\; p(x)\,y^{1-n} \;=\; q(x).
-            $$
-
-            The middle term has $y^{1-n}$ sitting in it. If we
-            **defined** $v$ to be that exact thing —
-
-            $$
-            v \;=\; y^{1-n},
-            $$
-
-            — then the middle term becomes $p(x)\,v$, which is linear
-            in $v$. So we now know what the substitution should be.
-
-            Does it also work for the first term, $y'/y^n$? Let's
-            check by computing $v'$ from our definition:
-
-            $$
-            \frac{dv}{dx} \;=\; (1 - n)\,y^{-n}\,\frac{dy}{dx}
-            \;=\; (1 - n)\,\frac{y'}{y^n}.
-            $$
-
-            Almost — the first term in our equation is $y'/y^n$, but
-            $v'$ has an extra factor of $(1 - n)$ that needs absorbing.
-            Easy fix: multiply our rearranged equation through by
-            $(1 - n)$:
-
-            $$
-            (1 - n)\,\frac{y'}{y^n} + (1 - n)\,p(x)\,y^{1-n}
-            \;=\; (1 - n)\,q(x).
-            $$
-
-            Now substitute $v = y^{1-n}$ and
-            $v' = (1 - n)\,y'/y^n$:
-
-            $$
-            \boxed{\quad v' \;+\; (1 - n)\,p(x)\,v
-            \;=\; (1 - n)\,q(x).\quad}
-            $$
-
-            **That's linear in $v$.** The integrating-factor recipe
-            from the last section solves it. Once we have $v(x)$, we
-            get $y$ back by inverting the substitution:
-            $y = v^{1/(1-n)}$.
-
-            The same recipe — *try $v = y^{1-n}$, the equation goes
-            linear, solve, invert* — works for every Bernoulli equation
-            regardless of the specific $p$, $q$, or $n$.
-
             ### The logistic — Chapter 1's rumor, solved
 
-            Let's apply this to the equation that opened Chapter 1:
-            the rumor spreading across a campus, the S-curve in time.
+            Take the equation that opened Chapter 1: the rumor
+            spreading across a campus, the S-curve in time.
             Normalised to a population of $1$, the rate law is
 
             $$
@@ -606,39 +773,20 @@ def _(delib, go, mo, np):
             \dot y - y \;=\; -y^2.
             $$
 
-            Now match against the Bernoulli template
-            $y' + p\,y = q\,y^n$:
-
-            - The coefficient of $y$ on the left is $-1$, so $p = -1$.
-            - The coefficient of $y^n$ on the right is $-1$, so
-              $q = -1$.
-            - The exponent on the right is $2$, so $n = 2$.
-
-            The substitution is therefore $v = y^{1-2} = 1/y$. Plug
-            into the boxed formula:
+            Match against the Bernoulli template
+            $y' + p\,y = q\,y^n$: $p = -1$, $q = -1$, $n = 2$. The
+            substitution is $v = y^{1-2} = 1/y$. Plug into the boxed
+            linear form above with $(1 - n) = -1$:
 
             $$
-            v' + (1 - 2)(-1)\,v \;=\; (1 - 2)(-1),
-            $$
-
-            which simplifies (since $(-1)(-1) = +1$ on both sides) to
-
-            $$
+            v' + (-1)(-1)\,v \;=\; (-1)(-1)
+            \quad\Longrightarrow\quad
             \dot v + v \;=\; 1.
             $$
 
-            That's a linear first-order ODE in $v$ — exactly the kind
-            we just learned how to solve. The integrating factor is
-            $\mu(t) = \exp\bigl(\int 1\,dt\bigr) = e^t$. Multiplying
-            through: $(e^t v)' = e^t$. Integrating: $e^t v = e^t + C$.
-            Dividing:
-
-            $$
-            v(t) \;=\; 1 + C\,e^{-t}.
-            $$
-
-            And the final move — invert the substitution to recover
-            $y$:
+            Apply the four-step recipe. $\mu_v(t) = \exp(\int 1\,dt) = e^t$,
+            so $(e^t v)' = e^t$. Integrate: $e^t v = e^t + C$. Divide:
+            $v(t) = 1 + Ce^{-t}$. Invert the substitution:
 
             $$
             y(t) \;=\; \frac{1}{v(t)} \;=\; \frac{1}{1 + C\,e^{-t}}.
@@ -646,48 +794,135 @@ def _(delib, go, mo, np):
 
             There's the S-curve, in closed form.
 
-            To make it concrete: starting from $y(0) = 0.1$ (the
-            rumor's initial reach in Chapter 1), the condition
-            $1/(1 + C) = 0.1$ pins $C = 9$, so
-            $y(t) = 1/(1 + 9\,e^{-t})$. Below, this formula is plotted
-            against the numerical solution `delib.solve_ode` would
-            produce from the same equation and initial condition:
+            With $y(0) = 0.1$, the condition $1/(1 + C) = 0.1$ pins
+            $C = 9$, so $y(t) = 1/(1 + 9\,e^{-t})$. Below, this
+            formula is plotted against the numerical solution
+            `delib.solve_ode` produces from the same equation:
             """
         ),
         _fig,
         mo.md(
             r"""
             The two are indistinguishable to plotting precision —
-            proof that the S-curve we read off Chapter 1's slope field
-            was always going to be this exact sigmoid. Bernoulli
-            substitution turned the nonlinear equation linear, and the
-            integrating-factor recipe finished the job.
-
-            ### A sibling — the homogeneous shape
-
-            The Bernoulli substitution worked by choosing $v$ to
-            swallow the awkward $y^n$. The same kind of trick — pick a
-            substitution that gets you to an equation you already know
-            how to solve — works for other shapes too. The most common
-            sibling is the **homogeneous** equation,
-
-            $$
-            y' \;=\; F\!\left(\frac{y}{x}\right),
-            $$
-
-            where the right-hand side depends on $y$ and $x$ only
-            through their ratio. The natural guess here is $v = y/x$.
-            A short chain-rule calculation turns the equation into a
-            **separable** one in $(v, x)$ — the simplest shape from
-            Chapter 2 — and two integrations finish the job.
-
-            *Different shape, different substitution, same idea.* When
-            a method has a clear target in mind — "get to linear",
-            "get to separable" — the substitution to try is often just
-            whatever is standing in the way.
+            proof that the S-curve we read off Chapter 1's slope
+            field was always going to be this exact sigmoid.
+            Bernoulli substitution turned the nonlinear equation
+            linear, and the integrating-factor recipe finished the
+            job.
             """
         ),
     ])
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 8 (cont.) — homogeneous sibling, collapsed by default. Same
+    # accordion pattern as the positive-definite side note in Ch 3a.
+    mo.accordion(
+        {
+            "Optional dive: a sibling shape — homogeneous equations":
+            mo.md(
+                r"""
+                The Bernoulli substitution worked by choosing $v$ to
+                swallow the awkward $y^n$. The same kind of trick —
+                pick a substitution that gets you to an equation you
+                already know how to solve — works for other shapes
+                too. The most common sibling is the **homogeneous**
+                equation:
+
+                $$
+                y' \;=\; F\!\left(\tfrac{y}{x}\right),
+                $$
+
+                where the right-hand side depends on $x$ and $y$ only
+                through their ratio. (Watch for it in the wild: any
+                $y'$ that simplifies to a function of $y/x$ alone —
+                things like $y' = (x + y)/(x - y)$ qualify.)
+
+                **The substitution.** The natural guess here is
+
+                $$
+                v \;=\; \frac{y}{x}, \qquad \text{so} \quad y \;=\; x\,v.
+                $$
+
+                Differentiate using the product rule (and chain rule):
+
+                $$
+                y' \;=\; v + x\,v'.
+                $$
+
+                Substitute that into the original equation
+                $y' = F(y/x) = F(v)$:
+
+                $$
+                v + x\,v' \;=\; F(v).
+                $$
+
+                Move the $v$ across:
+
+                $$
+                x\,v' \;=\; F(v) - v.
+                $$
+
+                Now divide both sides by $x\,(F(v) - v)$ — and look
+                at what happens. The left side has only $v$ and
+                $dv/dx$; the right side has only $x$ and $dx$:
+
+                $$
+                \frac{dv}{F(v) - v} \;=\; \frac{dx}{x}.
+                $$
+
+                **That's separable.** Two integrations finish the
+                job, and the substitution $v = y/x$ runs in reverse
+                to recover $y$.
+
+                ### A small worked example
+
+                Take $y' = \dfrac{x + y}{x}$. Rewriting:
+
+                $$
+                y' \;=\; 1 + \frac{y}{x},
+                $$
+
+                so $F(v) = 1 + v$, and $F(v) - v = 1$. The separable
+                equation becomes
+
+                $$
+                \frac{dv}{1} \;=\; \frac{dx}{x},
+                \quad\text{i.e.}\quad
+                dv \;=\; \frac{dx}{x}.
+                $$
+
+                Integrate: $v = \ln|x| + C$. Invert:
+
+                $$
+                \frac{y}{x} \;=\; \ln|x| + C
+                \quad\Longrightarrow\quad
+                y \;=\; x\,\ln|x| + C\,x.
+                $$
+
+                ### Different shape, different substitution, same idea
+
+                When a method has a clear target in mind — "get to
+                linear", "get to separable" — the substitution to
+                try is often just whatever is standing in the way:
+
+                - **Bernoulli** ($y' + p y = q y^n$): $v = y^{1-n}$
+                  → linear in $v$.
+                - **Homogeneous** ($y' = F(y/x)$): $v = y/x$ →
+                  separable in $(v, x)$.
+
+                Both are special cases of a broader theme — there's
+                a family of equations whose nonlinearity has a
+                pattern, and the right substitution finds the
+                pattern. The chapter beyond Bernoulli and
+                homogeneous is mostly about recognising more of
+                these patterns as they come up.
+                """
+            )
+        }
+    )
     return
 
 

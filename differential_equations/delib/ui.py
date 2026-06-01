@@ -298,12 +298,23 @@ async def exercise_ai(gen, ai, code, set_code, key, *, context="", coach=True):
     set_code(await ai_code(ai.value, code.value, key, context=context, coach=coach))
 
 
-def exercise_view(prompt, ai, gen, code, run):
-    """Lay out a challenge: prompt (optional), then AI box + button, editor, run."""
+def exercise_view(prompt, ai, gen, code, run, *, with_ai=True):
+    """Lay out a challenge: prompt (optional), then AI box + button, editor, run.
+
+    Pass ``with_ai=False`` to drop the "ask the tutor" input and the ✨
+    button — useful for lightweight step-by-step exercises (e.g. the
+    Your-turn walkthrough in Ch 3b) where each step is a simple
+    insert-and-check, not a tutor-assisted authoring task. The ``ai`` and
+    ``gen`` widgets still need to be passed in (the calling cell just
+    invokes :func:`exercise_inputs` as usual) so the signature stays
+    uniform across both modes; they're created but not rendered.
+    """
     items = []
     if prompt is not None:
         items.append(mo.md(prompt) if isinstance(prompt, str) else prompt)
-    items += [mo.vstack([ai, gen]), code, run]
+    if with_ai:
+        items.append(mo.vstack([ai, gen]))
+    items += [code, run]
     return mo.vstack(items)
 
 
