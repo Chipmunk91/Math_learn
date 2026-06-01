@@ -590,64 +590,83 @@ def _(delib):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
-        Read the picture in two passes.
+    # Beat 5 (cont.) — bowl explanation. The "positive definite" piece is
+    # a side track from the main flow (contours → arrows), so it sits in
+    # an mo.accordion that's collapsed by default and only expands for
+    # readers who want to dive in.
+    mo.vstack([
+        mo.md(
+            r"""
+            Read the picture in two passes.
 
-        **The contours.** The landscape $F(x, y) = x^2 + xy + y^2$ is a
-        **bowl** — zero at the origin, and growing as you walk away from
-        it in any direction. The cleanest way to see "never negative" is
-        to rewrite $F$ as a sum of squares:
+            **The contours.** The landscape $F(x, y) = x^2 + xy + y^2$ is a
+            **bowl** — zero at the origin, and growing as you walk away
+            from it in any direction. The cleanest way to see "never
+            negative" is to rewrite $F$ as a sum of squares:
 
-        $$
-        x^2 + xy + y^2 \;=\; \Bigl(x + \tfrac{y}{2}\Bigr)^{\!2} + \tfrac{3}{4}\,y^2.
-        $$
+            $$
+            x^2 + xy + y^2 \;=\; \Bigl(x + \tfrac{y}{2}\Bigr)^{\!2} + \tfrac{3}{4}\,y^2.
+            $$
 
-        Two squared quantities added together can never be negative, and
-        they're both zero only when $x + y/2 = 0$ *and* $y = 0$ — i.e.
-        only at the origin. So slicing this bowl horizontally at any
-        positive height $C$ gives a closed curve. The slice happens to
-        be an ellipse, tilted around the origin, because the bowl is
-        quadratic.
+            Two squared quantities added together can never be negative,
+            and they're both zero only when $x + y/2 = 0$ *and* $y = 0$ —
+            i.e. only at the origin. So slicing this bowl horizontally at
+            any positive height $C$ gives a closed curve. The slice
+            happens to be an ellipse, tilted around the origin, because
+            the bowl is quadratic.
+            """
+        ),
+        mo.accordion(
+            {
+                "Side note: 'positive definite' — a name and a one-line test (optional, click to expand)":
+                mo.md(
+                    r"""
+                    What we just verified about $F$ — *non-negative
+                    everywhere, zero only at the origin* — has a standard
+                    name: $F$ is **positive definite**. Quadratic forms with
+                    this property show up everywhere stability does (a
+                    spring's potential energy near rest, the
+                    second-derivative test in calculus, the energy function
+                    of a convex optimisation), so it's worth knowing the
+                    name and the calculation.
 
-        > **Side note — "positive definite," a name and a one-line test.**
-        >
-        > What we just verified about $F$ — *non-negative everywhere,
-        > zero only at the origin* — has a standard name: $F$ is
-        > **positive definite**. Quadratic forms with this property show
-        > up everywhere stability does (a spring's potential energy near
-        > rest, the second-derivative test in calculus, the energy
-        > function of a convex optimisation), so it's worth knowing the
-        > name and the calculation.
-        >
-        > For *any* two-variable quadratic
-        > $\;A\,x^2 + B\,xy + C\,y^2$, you can check positive-definiteness
-        > in one line without completing the square:
-        >
-        > $$
-        > B^2 - 4AC \;<\; 0
-        > \quad \text{(together with } A > 0\text{, so the bowl opens upward).}
-        > $$
-        >
-        > The quantity $B^2 - 4AC$ is the **discriminant** — yes, the same
-        > expression that decides whether $Ax^2 + Bx + C = 0$ has real
-        > roots, doing the analogous job here: it controls whether the
-        > level sets *close up* (no real roots → bowl → ellipses) or
-        > *open out* (real roots → saddle → hyperbolas).
-        >
-        > For our $F = x^2 + xy + y^2$: $A = 1$, $B = 1$, $C = 1$, so
-        > $B^2 - 4AC = 1 - 4 = -3 < 0$. Positive definite, confirming the
-        > bowl. The slider in the next section uses this one-line test
-        > once, and three regimes drop out instantly.
+                    For *any* two-variable quadratic
+                    $\;A\,x^2 + B\,xy + C\,y^2$, you can check
+                    positive-definiteness in one line without completing
+                    the square:
 
-        **The arrows.** Each one points along
-        $(1, dy/dx) = (1, -M/N) = (1, -(2x+y)/(x+2y))$. Look at any
-        arrow and the contour underneath it: the arrow is tangent. The
-        ellipse *is* the solution; the slope field *is* the same picture,
-        viewed twice. That equivalence is the whole moral of the chapter
-        in one figure.
-        """
-    )
+                    $$
+                    B^2 - 4AC \;<\; 0
+                    \quad \text{(together with } A > 0\text{, so the bowl opens upward).}
+                    $$
+
+                    The quantity $B^2 - 4AC$ is the **discriminant** — yes,
+                    the same expression that decides whether
+                    $Ax^2 + Bx + C = 0$ has real roots, doing the analogous
+                    job here: it controls whether the level sets *close up*
+                    (no real roots → bowl → ellipses) or *open out* (real
+                    roots → saddle → hyperbolas).
+
+                    For our $F = x^2 + xy + y^2$: $A = 1$, $B = 1$, $C = 1$,
+                    so $B^2 - 4AC = 1 - 4 = -3 < 0$. Positive definite,
+                    confirming the bowl. The slider in the next section
+                    uses this one-line test once, and three regimes drop
+                    out instantly.
+                    """
+                )
+            }
+        ),
+        mo.md(
+            r"""
+            **The arrows.** Each one points along
+            $(1, dy/dx) = (1, -M/N) = (1, -(2x+y)/(x+2y))$. Look at any
+            arrow and the contour underneath it: the arrow is tangent.
+            The ellipse *is* the solution; the slope field *is* the same
+            picture, viewed twice. That equivalence is the whole moral
+            of the chapter in one figure.
+            """
+        ),
+    ])
     return
 
 
