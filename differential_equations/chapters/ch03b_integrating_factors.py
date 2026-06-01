@@ -84,9 +84,10 @@ def _(mo):
         fails the test, but a slightly *rewritten* version of it passes.
         The rewriting trick is reliable enough to deserve a name: the
         **integrating factor**. We'll derive it, name the key quantity
-        (the *diagnostic ratio*), and discover a satisfying twist — the
-        trick we'll use here is the same trick Chapter 2 used to solve
-        linear equations. One mechanism, two appearances.
+        (the *diagnostic ratio*), and discover a satisfying connection —
+        the linear method from Chapter 2 turns out to be a *special
+        case* of this chapter's recipe, with the role of $N$ pinned at
+        $1$.
 
         For nonlinear equations the integrating factor doesn't reach,
         there's a second tactic — **substitution** — that we'll meet in
@@ -143,229 +144,319 @@ def _(delib):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Beat 7 (cont.) — after the video: diagnostic ratio name + symmetric μ(y) case
-    # + the Ch 2 connection as the prose punchline.
-    mo.md(
-        r"""
-        ### Was our guess right? — checking the assumption
+    # Beat 7 (cont.) — after the video: diagnostic ratio + full-recipe
+    # checklist + step-by-step interactive worked example + mu(y) mirror +
+    # the precise Ch 2 connection (one-way, not symmetric).
+    mo.vstack([
+        mo.md(
+            r"""
+            ### Was our guess right? — checking the assumption
 
-        Notice that the whole derivation pivoted on **one assumption**,
-        the move in Step 4 of the video: we *guessed* that $\mu$
-        depends only on $x$. That guess collapsed a hard equation into
-        a tractable one, but we never proved $\mu$ *could* be a
-        function of $x$ alone for this particular $M$ and $N$. Before
-        we trust the formula, we should check whether the guess
-        actually holds.
+            Notice that the whole derivation pivoted on **one
+            assumption**, the move in Step 4 of the video: we *guessed*
+            that $\mu$ depends only on $x$. That guess collapsed a hard
+            equation into a tractable one, but we never proved $\mu$
+            *could* be a function of $x$ alone for this particular $M$
+            and $N$. Before we trust the formula, we should check
+            whether the guess actually holds.
 
-        The check is hiding inside the derivation itself. After we
-        made the guess, the equation collapsed to
+            The check is hiding inside the derivation itself. After we
+            made the guess, the equation collapsed to
 
-        $$
-        \frac{\mu_x}{\mu} \;=\; \frac{M_y - N_x}{N}.
-        $$
+            $$
+            \frac{\mu_x}{\mu} \;=\; \frac{M_y - N_x}{N}.
+            $$
 
-        Look at this equation. The **left side** depends only on $x$
-        — because we assumed $\mu$ does, so its derivative does too.
-        For the equation to be consistent, the **right side** has to
-        depend only on $x$ as well. There should be no leftover $y$
-        anywhere on the right after simplification.
+            Look at this equation. The **left side** depends only on
+            $x$ — because we assumed $\mu$ does, so its derivative does
+            too. For the equation to be consistent, the **right side**
+            has to depend only on $x$ as well. There should be no
+            leftover $y$ anywhere on the right after simplification.
 
-        So the consistency check is concrete: **compute
-        $(M_y - N_x)/N$ for your specific $M$ and $N$**. If it
-        simplifies to a function of $x$ alone, the guess holds and
-        the formula gives you $\mu$. If a $y$ refuses to cancel
-        out, the guess fails — no $\mu$ depending only on $x$ can
-        rescue this equation, and we'll need to try a different
-        guess (like $\mu$ depending only on $y$; see the next
-        subsection).
+            So the consistency check is concrete: **compute
+            $(M_y - N_x)/N$ for your specific $M$ and $N$**. If it
+            simplifies to a function of $x$ alone, the guess holds and
+            the formula gives you $\mu$. If a $y$ refuses to cancel
+            out, the guess fails — no $\mu$ depending only on $x$ can
+            rescue this equation, and we'll need to try a different
+            guess (like $\mu$ depending only on $y$; see further
+            below).
 
-        That ratio earns a name. Call it the **diagnostic ratio** for
-        the equation, because computing it does double duty:
+            That ratio earns a name. Call it the **diagnostic ratio**
+            for the equation, because computing it does double duty:
 
-        1. **Diagnose the guess.** If the result is a function of $x$
-           alone, the $\mu(x)$ guess is consistent with the equation.
-           If $y$ doesn't cancel, the guess was wrong.
-        2. **Build the formula.** When the diagnosis comes back
-           clean, the same ratio is exactly what you integrate to
-           recover $\mu$:
+            1. **Diagnose the guess.** If the result is a function of
+               $x$ alone, the $\mu(x)$ guess is consistent with the
+               equation. If $y$ doesn't cancel, the guess was wrong.
+            2. **Build the formula.** When the diagnosis comes back
+               clean, the same ratio is exactly what you integrate to
+               recover $\mu$:
 
-           $$
-           \mu(x) \;=\; \exp\!\left(\int \frac{M_y - N_x}{N}\,dx\right).
-           $$
+               $$
+               \mu(x) \;=\; \exp\!\left(\int \frac{M_y - N_x}{N}\,dx\right).
+               $$
 
-        One computation, two answers — *whether* the rescue works
-        and *what the rescue function is* — read off the same line.
-        Hence "diagnostic."
+            One computation, two answers — *whether* the rescue works
+            and *what the rescue function is* — read off the same line.
+            Hence "diagnostic."
 
-        ### Now solve the equation — the full recipe
+            ### Now solve the equation — the full recipe
 
-        We now have everything we need to take a *non-exact* equation
-        all the way to an implicit solution. The full assembly is just
-        five steps, with steps 4 and 5 handing off to the recipe from
-        Part 1.
+            We now have everything we need to take a *non-exact*
+            equation all the way to an implicit solution. The full
+            assembly is just five steps, with steps 4 and 5 handing
+            off to the recipe from Part 1.
 
-        1. **Diagnose.** Compute the diagnostic ratio
-           $(M_y - N_x)/N$. If it simplifies to a function of $x$ alone
-           — call it $r(x)$ — proceed to step 2. If $y$ refuses to
-           cancel, try the mirror version (next subsection) instead.
-        2. **Build $\mu$.** Integrate the ratio and exponentiate:
-           $$
-           \mu(x) \;=\; \exp\!\left(\int r(x)\,dx\right).
-           $$
-        3. **Multiply the original equation through by $\mu$**:
-           $$
-           \mu(x)\,M\,dx \;+\; \mu(x)\,N\,dy \;=\; 0.
-           $$
-           The rescaled equation passes the exactness test by
-           construction — that's what we built $\mu$ for.
-        4. **Apply the Part 1 recipe** to the rescaled pair
-           $(\mu M,\,\mu N)$: partial-integrate $\mu M$ in $x$, then
-           match $F_y$ against $\mu N$ to pin down the $y$-only piece
-           $g(y)$. The result is $F(x, y)$.
-        5. **Read off the solution.** Solutions are the contours of
-           the landscape the integrating factor revealed:
-           $$
-           F(x, y) \;=\; C.
-           $$
+            1. **Diagnose.** Compute the diagnostic ratio
+               $(M_y - N_x)/N$. If it simplifies to a function of $x$
+               alone — call it $r(x)$ — proceed to step 2. If $y$
+               refuses to cancel, try the mirror version (further
+               below) instead.
+            2. **Build $\mu$.** Integrate the ratio and exponentiate:
 
-        Five steps for the non-exact case; Part 1's recipe was just
-        steps 4 and 5. The new work is purely in steps 1–3.
+               $$
+               \mu(x) \;=\; \exp\!\left(\int r(x)\,dx\right).
+               $$
+            3. **Multiply the original equation through by $\mu$**:
 
-        ### The hook equation, solved
+               $$
+               \mu(x)\,M\,dx \;+\; \mu(x)\,N\,dy \;=\; 0.
+               $$
 
-        Let's run the recipe on the equation that opened this part —
-        the one whose exactness test failed in the hook:
+               The rescaled equation passes the exactness test by
+               construction — that's what we built $\mu$ for.
+            4. **Apply the Part 1 recipe** to the rescaled pair
+               $(\mu M,\,\mu N)$: partial-integrate $\mu M$ in $x$,
+               then match $F_y$ against $\mu N$ to pin down the
+               $y$-only piece $g(y)$. The result is $F(x, y)$.
+            5. **Read off the solution.** Solutions are the contours
+               of the landscape the integrating factor revealed:
 
-        $$
-        (3xy + y^2)\,dx + (x^2 + xy)\,dy = 0.
-        $$
+               $$
+               F(x, y) \;=\; C.
+               $$
 
-        **Step 1 — diagnose.** With $M_y = 3x + 2y$ and $N_x = 2x + y$,
-        the diagnostic ratio is
+            Five steps for the non-exact case; Part 1's recipe was
+            just steps 4 and 5. The new work is purely in steps 1–3.
 
-        $$
-        \frac{M_y - N_x}{N} \;=\; \frac{x + y}{x^2 + xy}
-        \;=\; \frac{x + y}{x\,(x + y)} \;=\; \frac{1}{x}.
-        $$
+            ### Your turn — solve the hook equation, step by step
 
-        Depends on $x$ alone, ✓. The $\mu(x)$ recipe applies.
+            Apply the recipe to the equation that opened this part —
+            the one whose exactness test failed in the hook:
 
-        **Step 2 — build $\mu$.**
+            $$
+            (3xy + y^2)\,dx + (x^2 + xy)\,dy = 0.
+            $$
 
-        $$
-        \mu(x) \;=\; \exp\!\left(\int \frac{1}{x}\,dx\right)
-        \;=\; \exp(\ln x) \;=\; x.
-        $$
+            For each step below, work it out on paper (or in your
+            head) first, then click the panel to check.
+            """
+        ),
+        mo.md(
+            r"""
+            **Step 1 — diagnose.** Compute $M_y$, then $N_x$, then the
+            diagnostic ratio $(M_y - N_x)/N$. Does it simplify to a
+            function of $x$ alone?
+            """
+        ),
+        mo.accordion({
+            "Step 1 — click to reveal the answer":
+            mo.md(
+                r"""
+                $M = 3xy + y^2$, so $M_y = 3x + 2y$.
+                $N = x^2 + xy$, so $N_x = 2x + y$.
+                Therefore $M_y - N_x = (3x + 2y) - (2x + y) = x + y$, and
 
-        **Step 3 — multiply through by $\mu = x$.**
+                $$
+                \frac{M_y - N_x}{N} \;=\; \frac{x + y}{x^2 + xy}
+                \;=\; \frac{x + y}{x\,(x + y)} \;=\; \frac{1}{x}.
+                $$
 
-        $$
-        x\,(3xy + y^2)\,dx + x\,(x^2 + xy)\,dy
-        \;=\; (3x^2 y + x y^2)\,dx + (x^3 + x^2 y)\,dy
-        \;=\; 0.
-        $$
+                Function of $x$ alone, ✓. The $\mu(x)$ recipe applies.
+                """
+            )
+        }),
+        mo.md(
+            r"""
+            **Step 2 — build $\mu$.** Integrate the diagnostic ratio
+            and exponentiate. What's $\mu(x)$?
+            """
+        ),
+        mo.accordion({
+            "Step 2 — click to reveal the answer":
+            mo.md(
+                r"""
+                $$
+                \mu(x) \;=\; \exp\!\left(\int \frac{1}{x}\,dx\right)
+                \;=\; \exp(\ln x) \;=\; x.
+                $$
+                """
+            )
+        }),
+        mo.md(
+            r"""
+            **Step 3 — multiply through by $\mu = x$.** Write out the
+            rescaled equation, then double-check it passes the
+            exactness test.
+            """
+        ),
+        mo.accordion({
+            "Step 3 — click to reveal the answer":
+            mo.md(
+                r"""
+                $$
+                x\,(3xy + y^2)\,dx + x\,(x^2 + xy)\,dy
+                \;=\; (3x^2 y + x y^2)\,dx + (x^3 + x^2 y)\,dy
+                \;=\; 0.
+                $$
 
-        Quick exactness check on the rescaled equation:
-        $(3x^2 y + xy^2)_y = 3x^2 + 2xy$ and
-        $(x^3 + x^2 y)_x = 3x^2 + 2xy$. They match — exact, as
-        promised.
+                Exactness check: $(3x^2 y + xy^2)_y = 3x^2 + 2xy$ and
+                $(x^3 + x^2 y)_x = 3x^2 + 2xy$. They match — exact, as
+                promised.
+                """
+            )
+        }),
+        mo.md(
+            r"""
+            **Step 4 — recover $F$.** Apply Part 1's recipe to the
+            rescaled pair $(\mu M, \mu N) = (3x^2 y + xy^2,\,x^3 + x^2 y)$:
+            partial-integrate $\mu M$ in $x$, then fix the $y$-only
+            piece $g(y)$ by matching $F_y$ against $\mu N$.
+            """
+        ),
+        mo.accordion({
+            "Step 4 — click to reveal the answer":
+            mo.md(
+                r"""
+                Partial-integrate $\mu M = 3x^2 y + xy^2$ in $x$:
 
-        **Step 4 — recover $F$.** Partial-integrate $\mu M$ in $x$:
+                $$
+                F \;=\; \int (3x^2 y + xy^2)\,dx + g(y)
+                \;=\; x^3 y + \tfrac{1}{2}\,x^2 y^2 + g(y).
+                $$
 
-        $$
-        F \;=\; \int (3x^2 y + xy^2)\,dx + g(y)
-        \;=\; x^3 y + \tfrac{1}{2}\,x^2 y^2 + g(y).
-        $$
+                Now differentiate this $F$ in $y$:
+                $F_y = x^3 + x^2 y + g'(y)$. Match against
+                $\mu N = x^3 + x^2 y$: the $x^3$ and $x^2 y$ terms
+                already agree on both sides, so $g'(y) = 0$ and
+                $g(y)$ is just a constant (absorbed into $C$).
+                Therefore
 
-        Differentiate in $y$ and match against $\mu N$:
-        $F_y = x^3 + x^2 y + g'(y)$ must equal $x^3 + x^2 y$, so
-        $g'(y) = 0$ and $g(y)$ is just a constant (which we absorb
-        into $C$).
+                $$
+                F(x, y) \;=\; x^3 y + \tfrac{1}{2}\,x^2 y^2.
+                $$
+                """
+            )
+        }),
+        mo.md(
+            r"""
+            **Step 5 — state the implicit solution.** Write the
+            solution as $F(x, y) = C$.
+            """
+        ),
+        mo.accordion({
+            "Step 5 — click to reveal the answer":
+            mo.md(
+                r"""
+                $$
+                \boxed{\quad x^3 y + \tfrac{1}{2}\,x^2 y^2 \;=\; C.\quad}
+                $$
 
-        **Step 5 — the implicit solution.**
+                Or, multiplying both sides by $2$, equivalently
+                $x^2 y \,(2x + y) = K$. The equation whose exactness
+                test failed in the hook is now fully solved — there
+                *was* a contour map behind it after all; we just had
+                to multiply through by $\mu(x) = x$ to see it.
+                """
+            )
+        }),
+        mo.md(
+            r"""
+            ### The other half — when $\mu$ depends on $y$ instead
 
-        $$
-        \boxed{\quad
-        x^3 y + \tfrac{1}{2}\,x^2 y^2 \;=\; C.
-        \quad}
-        $$
+            The video walked through the case $\mu = \mu(x)$. There's
+            a mirror version where we guess $\mu = \mu(y)$ instead,
+            and the same derivation runs through with the roles of
+            $x$ and $y$ swapped — *including* the diagnostic ratio,
+            which becomes
 
-        Or, multiplying by $2$, $x^2 y \,(2x + y) = K$. The equation
-        whose test failed in the hook is now fully solved — there
-        *was* a contour map behind it after all; we just had to
-        multiply through by $\mu(x) = x$ to see it.
+            $$
+            \frac{N_x - M_y}{M}
+            $$
 
-        ### The other half — when $\mu$ depends on $y$ instead
+            (sign flip on top, $M$ in the denominator now instead of
+            $N$). When *this* ratio depends on $y$ alone, then
 
-        The video walked through the case $\mu = \mu(x)$. There's a
-        mirror version where we guess $\mu = \mu(y)$ instead, and the
-        same derivation runs through with the roles of $x$ and $y$
-        swapped — *including* the diagnostic ratio, which becomes
+            $$
+            \mu(y) \;=\; \exp\!\left(\int \frac{N_x - M_y}{M}\,dy\right).
+            $$
 
-        $$
-        \frac{N_x - M_y}{M}
-        $$
+            **In practice**, when you meet a non-exact equation, you
+            compute both diagnostic ratios and pick whichever
+            simplifies to a function of just one variable. If neither
+            does, you're in harder territory: $\mu$ has to depend on
+            both $x$ and $y$, and the recipe stops working as a
+            one-line formula. That happens; integrating factors
+            aren't a silver bullet. But the catalogue of equations
+            they *do* rescue is large.
 
-        (sign flip on top, $M$ in the denominator now instead of $N$).
-        When *this* ratio depends on $y$ alone, then
+            ### How Chapter 2's linear method fits inside this one
 
-        $$
-        \mu(y) \;=\; \exp\!\left(\int \frac{N_x - M_y}{M}\,dy\right).
-        $$
+            One last connection worth drawing precisely. Take any
+            first-order linear equation from Chapter 2:
 
-        **In practice**, when you meet a non-exact equation, you
-        compute both diagnostic ratios and pick whichever simplifies
-        to a function of just one variable. If neither does, you're in
-        harder territory: $\mu$ has to depend on both $x$ and $y$, and
-        the recipe stops working as a one-line formula. That happens;
-        integrating factors aren't a silver bullet. But the catalogue
-        of equations they *do* rescue is large.
+            $$
+            y' + p(x)\,y = q(x).
+            $$
 
-        ### The Chapter 2 connection — one mechanism, two appearances
+            Rewrite it in the symmetric $M\,dx + N\,dy = 0$ form by
+            moving everything to one side:
 
-        Here's the punchline of this section, and it's a satisfying one.
+            $$
+            \bigl(p(x)\,y - q(x)\bigr)\,dx \;+\; dy \;=\; 0,
+            $$
 
-        Take any first-order linear equation from Chapter 2:
+            so $M = p(x)\,y - q(x)$ and $N = 1$. Now run the
+            diagnostic ratio:
 
-        $$
-        y' + p(x)\,y = q(x).
-        $$
+            $$
+            \frac{M_y - N_x}{N} \;=\; \frac{p(x) - 0}{1} \;=\; p(x).
+            $$
 
-        Rewrite it in the symmetric $M\,dx + N\,dy = 0$ form. Moving
-        everything to one side:
+            That depends on $x$ alone (since $p$ does) — the side
+            condition is met automatically — and the formula the
+            video derived gives
 
-        $$
-        \bigl(p(x)\,y - q(x)\bigr)\,dx \;+\; dy \;=\; 0.
-        $$
+            $$
+            \mu(x) \;=\; \exp\!\left(\int p(x)\,dx\right),
+            $$
 
-        So $M = p(x)\,y - q(x)$ and $N = 1$. Now run the diagnostic
-        ratio for this equation:
+            *exactly* the integrating factor from Chapter 2's linear
+            method.
 
-        $$
-        \frac{M_y - N_x}{N} \;=\; \frac{p(x) - 0}{1} \;=\; p(x).
-        $$
+            **But the implication only runs one way.** Every linear
+            first-order equation slots into the integrating-factor
+            recipe of this chapter as the $N = 1$ corner — but most
+            exact equations are *not* linear. The rescaled hook
+            equation we just solved has $y^2$ in $\mu M$ and $y$ in
+            $\mu N$, and there's no way to peel either into the
+            $dy/dx + P(x)\,y = Q(x)$ shape that Chapter 2 needs. So
+            Chapter 2's linear recipe (recognise the LHS as
+            $(\mu y)'$, integrate) doesn't apply once $N$ depends on
+            $y$.
 
-        It depends on $x$ alone (since $p$ is a function of $x$ alone)
-        — the side condition for $\mu(x)$ is met automatically. Plug
-        the ratio into the formula the video just derived:
-
-        $$
-        \mu(x) \;=\; \exp\!\left(\int p(x)\,dx\right).
-        $$
-
-        That's *exactly* the integrating factor we derived in Chapter 2
-        for linear equations — there, by requiring the left-hand side of
-        $y' + p(t)\,y = q(t)$ to collapse into $(\mu y)'$. Here, the
-        same formula falls out of a totally different starting point:
-        requiring the *rescaled* equation $\mu M\,dx + \mu N\,dy = 0$
-        to pass the exactness test, then specialising to $N = 1$.
-
-        Two completely different roads, one formula at the end. **One
-        mechanism, two appearances.** Later chapters will keep pulling
-        that thread: most of the methods that look like one-off tricks
-        turn out to be special cases of more general ideas.
-        """
-    )
+            That's why we used **Part 1's recipe** — partial-integrate
+            $\mu M$ in $x$, match $F_y$ against $\mu N$ — and not
+            Chapter 2's linear formula. Part 1's recipe handles the
+            whole family of exact equations; Chapter 2's only handles
+            the linear corner of it. **Linear is a *special case* of
+            exact, not a separate-but-equivalent route.** Chapter 2's
+            $\mu = e^{\int p\,dx}$ is what the general integrating-
+            factor recipe gives when $N = 1$ — a satisfying tie-back,
+            but a one-way one.
+            """
+        ),
+    ])
     return
 
 
