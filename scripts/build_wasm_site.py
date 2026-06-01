@@ -237,9 +237,14 @@ def inject_nav(page: Path, names: list[str], idx: int) -> None:
 
 
 def chapters() -> list[Path]:
-    # Only real chapters (chNN_<topic>.py) are published. This skips _template.py
-    # and the zz_spike_*.py experiments that share the chapters/ directory.
-    return sorted(CHAPTERS_DIR.glob("ch[0-9][0-9]_*.py"))
+    # Real chapters: chNN_<topic>.py *or* chNN<letter>_<topic>.py for chapters
+    # that ship in multiple parts (e.g. ch03a_..., ch03b_...). Lexical sort
+    # puts ch03a_ before ch03b_ before ch04_ before ch05_, which matches the
+    # intended reading order. Skips _template.py and zz_spike_*.py experiments.
+    return sorted(
+        list(CHAPTERS_DIR.glob("ch[0-9][0-9]_*.py"))
+        + list(CHAPTERS_DIR.glob("ch[0-9][0-9][a-z]_*.py"))
+    )
 
 
 def delib_bootstrap() -> str:
