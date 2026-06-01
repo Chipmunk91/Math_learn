@@ -101,13 +101,18 @@ class SceneIntegratingFactor(Scene):
         self.wait(4.0)
 
         # ----------------------- Step 4 -----------------------------------
-        new_lbl = _step_label("Step 4 — try the simplest guess: μ depends only on x")
+        # Step 4 is a GUESS, not a derivation -- the user is right that this
+        # has to be flagged. The Side-condition card at the end of the scene
+        # is the check; the prose after the video derives WHY (M_y - N_x)/N
+        # being a function of x alone is exactly that check.
+        new_lbl = _step_label("Step 4 — guess μ depends only on x (we'll verify the guess)")
         eq4 = MathTex(
             r"\mu M_y \;=\; ", r"\mu_x N", r"\;+\; \mu N_x"
         ).scale(1.2)
         eq4[1].set_color(HIGHLIGHT)  # μ_x N stays highlighted
         new_cap = _caption(
-            "If μ has no y, then μ_y = 0. The first term vanishes — three terms left."
+            "Just a guess: maybe μ has no y in it, so μ_y = 0 — the first term vanishes. "
+            "We'll need to check this guess at the end."
         )
         self.play(Transform(step_lbl, new_lbl), Transform(eq, eq4),
                   Transform(cap, new_cap))
@@ -159,12 +164,16 @@ class SceneIntegratingFactor(Scene):
         self.wait(4.0)
 
         # ----------------------- Side condition ---------------------------
-        new_lbl = _step_label("The side condition")
+        # Tie the side condition back to Step 4 explicitly: this *is* the
+        # consistency check on the guess. The post-video prose develops the
+        # WHY (LHS depends only on x by the guess, so the RHS must too).
+        new_lbl = _step_label("Checking the Step 4 guess")
         side_text = Text(
-            "This μ(x) only works if (M_y − N_x)/N depends on x alone.\n"
-            "If not, try μ(y) — same recipe, with x and y swapped.",
-            font_size=20, color=GREY_B,
-        ).next_to(eq8, DOWN, buff=0.8)
+            "Our formula assumed μ depends only on x.\n"
+            "It holds only if (M_y − N_x)/N is itself a function of x alone.\n"
+            "If a y refuses to cancel, the guess fails — try μ(y) instead, with x and y swapped.",
+            font_size=19, color=GREY_B,
+        ).next_to(eq8, DOWN, buff=0.7)
         self.play(Transform(step_lbl, new_lbl), FadeIn(side_text),
                   FadeOut(cap))
-        self.wait(4.5)
+        self.wait(5.0)

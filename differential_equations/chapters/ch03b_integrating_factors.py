@@ -147,34 +147,55 @@ def _(mo):
     # + the Ch 2 connection as the prose punchline.
     mo.md(
         r"""
-        ### A name for the key quantity
+        ### Was our guess right? — checking the assumption
 
-        The whole recipe boils down to a single expression — the thing
-        we integrated:
+        Notice that the whole derivation pivoted on **one assumption**,
+        the move in Step 4 of the video: we *guessed* that $\mu$
+        depends only on $x$. That guess collapsed a hard equation into
+        a tractable one, but we never proved $\mu$ *could* be a
+        function of $x$ alone for this particular $M$ and $N$. Before
+        we trust the formula, we should check whether the guess
+        actually holds.
+
+        The check is hiding inside the derivation itself. After we
+        made the guess, the equation collapsed to
 
         $$
-        \frac{M_y - N_x}{N}.
+        \frac{\mu_x}{\mu} \;=\; \frac{M_y - N_x}{N}.
         $$
 
-        It's useful enough to give a name. Call it the **diagnostic
-        ratio** for the equation, because computing it tells you two
-        things at once:
+        Look at this equation. The **left side** depends only on $x$
+        — because we assumed $\mu$ does, so its derivative does too.
+        For the equation to be consistent, the **right side** has to
+        depend only on $x$ as well. There should be no leftover $y$
+        anywhere on the right after simplification.
 
-        - **Diagnosis.** Plug your specific $M$ and $N$ in and simplify.
-          If the result is a function of $x$ alone — no $y$ left
-          anywhere — then a $\mu$ depending only on $x$ does exist, and
-          the recipe applies. If $y$ doesn't cancel out, this particular
-          recipe won't save the equation, and we'd need a different
-          tactic.
-        - **The formula.** When the diagnosis comes back clean, the
-          same ratio is exactly what you integrate to recover $\mu$:
+        So the consistency check is concrete: **compute
+        $(M_y - N_x)/N$ for your specific $M$ and $N$**. If it
+        simplifies to a function of $x$ alone, the guess holds and
+        the formula gives you $\mu$. If a $y$ refuses to cancel
+        out, the guess fails — no $\mu$ depending only on $x$ can
+        rescue this equation, and we'll need to try a different
+        guess (like $\mu$ depending only on $y$; see the next
+        subsection).
 
-          $$
-          \mu(x) = \exp\!\left(\int \frac{M_y - N_x}{N}\,dx\right).
-          $$
+        That ratio earns a name. Call it the **diagnostic ratio** for
+        the equation, because computing it does double duty:
 
-        One computation, two answers — *whether* the rescue works and
-        *what the rescue function looks like* — read off the same line.
+        1. **Diagnose the guess.** If the result is a function of $x$
+           alone, the $\mu(x)$ guess is consistent with the equation.
+           If $y$ doesn't cancel, the guess was wrong.
+        2. **Build the formula.** When the diagnosis comes back
+           clean, the same ratio is exactly what you integrate to
+           recover $\mu$:
+
+           $$
+           \mu(x) \;=\; \exp\!\left(\int \frac{M_y - N_x}{N}\,dx\right).
+           $$
+
+        One computation, two answers — *whether* the rescue works
+        and *what the rescue function is* — read off the same line.
+        Hence "diagnostic."
 
         ### The other half — when $\mu$ depends on $y$ instead
 

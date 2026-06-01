@@ -592,148 +592,177 @@ def _(delib):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Beat 5 (cont.) — bowl explanation. The "positive definite" piece is
-    # a side track from the main flow (contours → arrows), so it sits in
-    # an mo.accordion that's collapsed by default and only expands for
-    # readers who want to dive in.
-    mo.vstack([
-        mo.md(
-            r"""
-            Read the picture in two passes.
+    # Beat 5 (cont.) — the chapter's moral. Just the contours/arrows
+    # equivalence, the heart of the figure above. Detailed shape analysis
+    # (bowl/saddle, sum-of-squares, positive definite, slider regimes) is
+    # off the main differential-equation track, so it lives inside an
+    # accordion below.
+    mo.md(
+        r"""
+        Read the picture in two passes.
 
-            **The contours.** The landscape $F(x, y) = x^2 + xy + y^2$ is a
-            **bowl** — zero at the origin, and growing as you walk away
-            from it in any direction. The cleanest way to see "never
-            negative" is to rewrite $F$ as a sum of squares:
+        **The contours.** The landscape $F(x, y) = x^2 + xy + y^2$ that
+        you (or the video) recovered shows up here as nested closed
+        loops — ellipses tilted around the origin. Pick any of them
+        and you've drawn a solution of the equation.
 
-            $$
-            x^2 + xy + y^2 \;=\; \Bigl(x + \tfrac{y}{2}\Bigr)^{\!2} + \tfrac{3}{4}\,y^2.
-            $$
+        **The arrows.** Each one points along
+        $(1, dy/dx) = (1, -M/N) = (1, -(2x+y)/(x+2y))$. Look at any
+        arrow and the contour underneath it: the arrow is tangent.
+        The ellipse *is* the solution; the slope field *is* the same
+        picture, viewed twice. That equivalence is the whole moral of
+        the chapter in one figure.
+        """
+    )
+    return
 
-            Two squared quantities added together can never be negative,
-            and they're both zero only when $x + y/2 = 0$ *and* $y = 0$ —
-            i.e. only at the origin. So slicing this bowl horizontally at
-            any positive height $C$ gives a closed curve. The slice
-            happens to be an ellipse, tilted around the origin, because
-            the bowl is quadratic.
-            """
-        ),
-        mo.accordion(
-            {
-                "Side note: 'positive definite' — a name and a one-line test (optional, click to expand)":
+
+# --- The shape of F (sum-of-squares + positive definite + slider) lives
+# --- inside one accordion. It's a beautiful side topic, but it's about
+# --- quadratic forms more than about differential equations — readers
+# --- who want it can expand it; readers heading for Part 2 can skip it.
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    # The slider widget is created here but not displayed inline; it gets
+    # rendered later, inside the accordion below.
+    a_panel = delib.param_panel(
+        [{"name": "a", "label": "cross-term coefficient a",
+          "start": -3.0, "stop": 3.0, "step": 0.1, "value": 1.0}]
+    )
+    return (a_panel,)
+
+
+@app.cell(hide_code=True)
+def _(a_panel, delib):
+    # Same: build the slider figure but don't display it inline. It also
+    # gets rendered inside the accordion.
+    a = a_panel.value["a"]
+    _F = lambda x, y, _a=a: x**2 + _a*x*y + y**2
+    _M = lambda x, y, _a=a: 2*x + _a*y
+    _N = lambda x, y, _a=a: _a*x + 2*y
+    slider_fig = delib.level_curves(
+        _F, (-3.0, 3.0), (-3.0, 3.0),
+        levels=[-4.0, -2.0, -0.5, 0.5, 2.0, 4.0, 7.0],
+        field=(_M, _N),
+        title=f"F(x, y) = x² + {a:+.2f}·xy + y²",
+    )
+    return (slider_fig,)
+
+
+@app.cell(hide_code=True)
+def _(a_panel, mo, slider_fig):
+    # The big optional dive: shape of the hidden landscape, with the slider
+    # for interactive exploration. Everything inside this accordion is
+    # about quadratic forms (bowl / trough / saddle, discriminant test,
+    # positive-definite) more than about the equation itself, so it's
+    # collapsed by default. Readers who want the analytical story expand it.
+    mo.accordion(
+        {
+            "Optional dive: a closer look at the shape of the hidden "
+            "landscape (bowl, trough, or saddle?)":
+            mo.vstack([
                 mo.md(
                     r"""
+                    ### Why those level curves are closed loops
+
+                    The landscape $F(x, y) = x^2 + xy + y^2$ is a
+                    **bowl** — zero at the origin and growing in every
+                    direction as you walk away from it. The cleanest
+                    way to see "never negative" is to rewrite $F$ as a
+                    sum of squares:
+
+                    $$
+                    x^2 + xy + y^2 \;=\; \Bigl(x + \tfrac{y}{2}\Bigr)^{\!2}
+                    + \tfrac{3}{4}\,y^2.
+                    $$
+
+                    Two squared quantities added together can never be
+                    negative, and they're both zero only when
+                    $x + y/2 = 0$ *and* $y = 0$ — i.e. only at the
+                    origin. So slicing this bowl horizontally at any
+                    positive height $C$ gives a closed curve. The
+                    slice happens to be an ellipse, tilted around the
+                    origin, because the bowl is quadratic.
+
+                    ### "Positive definite" — a name and a one-line test
+
                     What we just verified about $F$ — *non-negative
-                    everywhere, zero only at the origin* — has a standard
-                    name: $F$ is **positive definite**. Quadratic forms with
-                    this property show up everywhere stability does (a
-                    spring's potential energy near rest, the
-                    second-derivative test in calculus, the energy function
-                    of a convex optimisation), so it's worth knowing the
-                    name and the calculation.
+                    everywhere, zero only at the origin* — has a
+                    standard name: $F$ is **positive definite**.
+                    Quadratic forms with this property show up
+                    everywhere stability does (a spring's potential
+                    energy near rest, the second-derivative test in
+                    calculus, the energy function of a convex
+                    optimisation).
 
                     For *any* two-variable quadratic
                     $\;A\,x^2 + B\,xy + C\,y^2$, you can check
-                    positive-definiteness in one line without completing
-                    the square:
+                    positive-definiteness in one line without
+                    completing the square:
 
                     $$
                     B^2 - 4AC \;<\; 0
                     \quad \text{(together with } A > 0\text{, so the bowl opens upward).}
                     $$
 
-                    The quantity $B^2 - 4AC$ is the **discriminant** — yes,
+                    The quantity $B^2 - 4AC$ is the **discriminant** —
                     the same expression that decides whether
-                    $Ax^2 + Bx + C = 0$ has real roots, doing the analogous
-                    job here: it controls whether the level sets *close up*
-                    (no real roots → bowl → ellipses) or *open out* (real
-                    roots → saddle → hyperbolas).
+                    $Ax^2 + Bx + C = 0$ has real roots, doing the
+                    analogous job here: it controls whether the level
+                    sets *close up* (no real roots → bowl → ellipses)
+                    or *open out* (real roots → saddle → hyperbolas).
 
-                    For our $F = x^2 + xy + y^2$: $A = 1$, $B = 1$, $C = 1$,
-                    so $B^2 - 4AC = 1 - 4 = -3 < 0$. Positive definite,
-                    confirming the bowl. The slider in the next section
-                    uses this one-line test once, and three regimes drop
-                    out instantly.
+                    For our $F = x^2 + xy + y^2$: $A = 1$, $B = 1$,
+                    $C = 1$, so $B^2 - 4AC = 1 - 4 = -3 < 0$. Positive
+                    definite, confirming the bowl.
+
+                    ### Morph the contours — bowl, trough, saddle
+
+                    Vary $a$ in $F(x, y) = x^2 + a\,xy + y^2$. We can
+                    predict each regime ahead of time using the
+                    discriminant test above: matching coefficients
+                    $(A, B, C) = (1,\,a,\,1)$, we get
+
+                    $$
+                    B^2 - 4AC \;=\; a^2 - 4.
+                    $$
+
+                    That single quantity controls everything:
                     """
-                )
-            }
-        ),
-        mo.md(
-            r"""
-            **The arrows.** Each one points along
-            $(1, dy/dx) = (1, -M/N) = (1, -(2x+y)/(x+2y))$. Look at any
-            arrow and the contour underneath it: the arrow is tangent.
-            The ellipse *is* the solution; the slope field *is* the same
-            picture, viewed twice. That equivalence is the whole moral
-            of the chapter in one figure.
-            """
-        ),
-    ])
-    return
+                ),
+                a_panel,
+                slider_fig,
+                mo.md(
+                    r"""
+                    - **$|a| < 2$ — discriminant negative. Positive
+                      definite, a bowl.** Slices are closed curves —
+                      **ellipses**, tilted around the origin.
+                    - **$a = \pm 2$ — discriminant zero. The boundary
+                      case, a trough.** $F$ collapses to $(x \pm y)^2$
+                      — zero all along the line $y = \mp x$, growing
+                      only as you walk away from that line. Slices are
+                      pairs of parallel lines, and $F_x$ and $F_y$
+                      both vanish along the trough's bottom — so the
+                      slope field has no direction to point.
+                    - **$|a| > 2$ — discriminant positive. No longer
+                      positive definite, a saddle.** $F$ now *grows*
+                      in some directions and *shrinks* (goes negative)
+                      in others. Slices are **hyperbolas**, branching
+                      off to infinity, and there are level sets at
+                      both positive and negative $C$.
 
-
-@app.cell(hide_code=True)
-def _(delib, mo):
-    # Beat 6 — slider: morph F = x^2 + a*xy + y^2 from ellipses through
-    # degenerate to hyperbolas.
-    a_panel = delib.param_panel(
-        [{"name": "a", "label": "cross-term coefficient a",
-          "start": -3.0, "stop": 3.0, "step": 0.1, "value": 1.0}]
-    )
-    mo.vstack([
-        mo.md(
-            r"""
-            ## Slider: morph the contours
-
-            Vary $a$ in $F(x, y) = x^2 + a\,xy + y^2$. We can predict the
-            three regimes ahead of time using the discriminant test from
-            the side note: matching coefficients
-            $(A, B, C) = (1,\,a,\,1)$, we get
-
-            $$
-            B^2 - 4AC \;=\; a^2 - 4.
-            $$
-
-            That single quantity controls everything:
-
-            - **$|a| < 2$ — discriminant negative. Positive definite, a
-              bowl.** Slices are closed curves — **ellipses**, tilted
-              around the origin.
-            - **$a = \pm 2$ — discriminant zero. The boundary case, a
-              trough.** $F$ collapses to $(x \pm y)^2$ — zero all along
-              the line $y = \mp x$, growing only as you walk away from
-              that line. Slices are pairs of parallel lines, and $F_x$
-              and $F_y$ both vanish along the trough's bottom — so the
-              slope field has no direction to point.
-            - **$|a| > 2$ — discriminant positive. No longer positive
-              definite, a saddle.** $F$ now *grows* in some directions
-              and *shrinks* (goes negative) in others. Slices are
-              **hyperbolas**, branching off to infinity, and there are
-              level sets at both positive and negative $C$.
-
-            Drag through $a = 2$ slowly and watch the closed loops snap
-            open into the unbounded branches. That qualitative change in
-            the whole picture — caused by one parameter crossing a
-            threshold — has a name. It's a **bifurcation**, and we'll
-            see it again in Ch 6 in the context of 1-D ODEs.
-            """
-        ),
-        a_panel,
-    ])
-    return (a_panel,)
-
-
-@app.cell(hide_code=True)
-def _(a_panel, delib):
-    a = a_panel.value["a"]
-    _F = lambda x, y, _a=a: x**2 + _a*x*y + y**2
-    _M = lambda x, y, _a=a: 2*x + _a*y
-    _N = lambda x, y, _a=a: _a*x + 2*y
-    delib.level_curves(
-        _F, (-3.0, 3.0), (-3.0, 3.0),
-        levels=[-4.0, -2.0, -0.5, 0.5, 2.0, 4.0, 7.0],
-        field=(_M, _N),
-        title=f"F(x, y) = x² + {a:+.2f}·xy + y²",
+                    Drag through $a = 2$ slowly and watch the closed
+                    loops snap open into the unbounded branches. That
+                    qualitative change in the whole picture — caused
+                    by one parameter crossing a threshold — has a
+                    name. It's a **bifurcation**, and we'll see it
+                    again in Ch 6 in the context of 1-D ODEs.
+                    """
+                ),
+            ])
+        }
     )
     return
 
