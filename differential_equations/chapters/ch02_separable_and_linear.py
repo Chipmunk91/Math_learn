@@ -267,6 +267,113 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
+    # Beat 3e — second method: the linear / integrating-factor route to the
+    # same closed form, applied to the cooling equation. Delivers on the
+    # "spot a linear equation and solve it too" promise from the chapter's
+    # learning objectives, and sets up the more general integrating-factor
+    # idea that returns in Ch 3.
+    mo.md(
+        r"""
+        ### A second way to the same answer — the linear method
+
+        The recipe we just watched — *separate, then integrate* — worked
+        because the cooling equation lets us shove all the $T$s to one
+        side and all the $t$s to the other once we divide. Not every
+        linear-looking equation cooperates that way; many don't. So
+        there's a second recipe, specifically for **linear** first-order
+        equations
+
+        $$
+        y' + p(t)\,y \;=\; q(t),
+        $$
+
+        that handles cases the separable method can't touch. The cooling
+        equation is *also* in this shape — rearrange $dT/dt = -k(T - T_r)$
+        as $T' + kT = kT_r$, and you have $p(t) = k$, $q(t) = kT_r$. So
+        we can run the linear recipe on it and watch the same closed form
+        fall out by a different door.
+
+        **The idea.** Multiply both sides of $T' + kT = kT_r$ by some
+        function $\mu(t)$, chosen so that the left side collapses into
+        the derivative of $\mu \cdot T$:
+
+        $$
+        \mu \cdot T' + \mu \cdot kT
+        \;\stackrel{?}{=}\; \frac{d}{dt}\bigl(\mu T\bigr).
+        $$
+
+        If we can pick a $\mu$ that makes this true, the whole equation
+        reads $(\mu T)' = \mu \cdot kT_r$ — and the left side is now a
+        single derivative we can integrate directly.
+
+        **What $\mu$ has to be.** Expand the right-hand side with the
+        product rule for derivatives:
+
+        $$
+        \frac{d}{dt}(\mu T) \;=\; \mu' T + \mu T'.
+        $$
+
+        Match it against $\mu T' + k\mu T$: the $\mu T'$ pieces already
+        agree, so what's left is the condition $\mu' = k\mu$. That's a
+        small ODE for $\mu$ itself, and the simplest function whose
+        derivative is $k$ times itself is
+
+        $$
+        \mu(t) \;=\; e^{kt}.
+        $$
+
+        (Any constant multiple of $e^{kt}$ would also work — we just
+        need *one* such $\mu$, so we pick the cleanest.)
+
+        **Apply it.** Multiply the cooling equation through by $e^{kt}$:
+
+        $$
+        e^{kt}\,T' \;+\; k\,e^{kt}\,T \;=\; k\,T_r\,e^{kt}.
+        $$
+
+        By construction the left side is exactly $\dfrac{d}{dt}\bigl(e^{kt} T\bigr)$
+        — that's the whole reason we chose this $\mu$. So:
+
+        $$
+        \frac{d}{dt}\bigl(e^{kt}\,T\bigr) \;=\; k\,T_r\,e^{kt}.
+        $$
+
+        Integrate both sides with respect to $t$:
+
+        $$
+        e^{kt}\,T \;=\; T_r\,e^{kt} + A.
+        $$
+
+        Divide through by $e^{kt}$:
+
+        $$
+        T(t) \;=\; T_r \;+\; A\,e^{-kt}.
+        $$
+
+        **The same closed form** the separable method gave — recovered
+        by a different route. Two recipes, one answer.
+
+        The general version of this recipe — applied to any
+        $y' + p(t)\,y = q(t)$, not just the cooling equation — is:
+
+        > 1. Compute $\mu(t) = \exp\!\bigl(\int p(t)\,dt\bigr)$. This is
+        >    called the **integrating factor**.
+        > 2. Multiply the equation through by $\mu$. The left side
+        >    becomes $(\mu y)'$ automatically.
+        > 3. Integrate both sides, then divide by $\mu$.
+
+        The integrating factor is worth knowing as its own object, and
+        not just as a step in this recipe — in Chapter 3 we'll see it
+        reappear as the simplest case of a much more general idea, where
+        the trick of multiplying through by a clever $\mu$ rescues
+        equations that aren't even linear to begin with.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
     # Beat 4 — bridge into the field.
     mo.md(
         r"""

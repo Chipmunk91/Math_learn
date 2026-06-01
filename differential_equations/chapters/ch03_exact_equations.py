@@ -854,17 +854,17 @@ def _(mo):
         \mu(x) \;=\; \exp\!\left(\int p(x)\,dx\right).
         $$
 
-        That's *exactly* the integrating factor we used in Chapter 2 to
-        solve linear ODEs — derived there as a clever trick. Here it
-        falls out of the integrating-factor recipe with $N$ pinned at
-        $1$.
+        That's *exactly* the integrating factor we derived in Chapter 2
+        for linear equations — there, by requiring the left-hand side of
+        $y' + p(t)\,y = q(t)$ to collapse into $(\mu y)'$. Here, the
+        same formula falls out of a totally different starting point:
+        requiring the *rescaled* equation $\mu M\,dx + \mu N\,dy = 0$
+        to pass the exactness test, then specialising to $N = 1$.
 
-        The Chapter 2 method wasn't a trick at all. It was the
-        integrating-factor recipe, specialised to one particular shape
-        of equation. **One mechanism, two appearances.** Later chapters
-        will keep pulling that thread: most of the methods that look
-        like one-off tricks turn out to be special cases of more general
-        ideas.
+        Two completely different roads, one formula at the end. **One
+        mechanism, two appearances.** Later chapters will keep pulling
+        that thread: most of the methods that look like one-off tricks
+        turn out to be special cases of more general ideas.
         """
     )
     return
