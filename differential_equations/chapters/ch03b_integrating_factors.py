@@ -630,24 +630,32 @@ def _(mo):
     # below sets up "why this shape, why this substitution."
     mo.md(
         r"""
-        ## Substitution: when nonlinearity has a useful shape
+        ## Substitution: when the equation hides a familiar shape
 
-        The integrating-factor recipe handles every *linear*
-        first-order ODE — a lot of equations, but not all of them.
-        Many real rate laws are nonlinear: populations limited by
-        carrying capacity, autocatalytic reactions, the rumor on the
-        1,000-person campus from Chapter 1. None of those rate laws
-        are linear in $y$.
+        Most differential equations in the wild are nonlinear —
+        population models with carrying capacity, autocatalytic
+        reactions, the rumor on the 1,000-person campus from Chapter 1.
+        The tools we've built so far don't address that head-on.
+        Chapter 2's integrating factor needs the equation to be
+        **linear**; Part 1's recipe (and Part 2's rescue) needs it to
+        be **exact**, or rescuable to exact by a $\mu(x, y)$. Plenty
+        of nonlinear equations sit outside both boxes.
 
-        So when we meet a nonlinear equation, is there hope, or do we
-        hand off to numerical methods?
+        For those, we need a different angle of attack. The idea: some
+        nonlinear equations have a recognisable *shape* underneath —
+        a structure that becomes visible only after we change
+        variables. The right substitution exposes the shape and turns
+        the equation into one of the kinds we already know how to
+        solve.
 
-        Sometimes there's still hope — when the nonlinearity happens
-        to have a particular *shape*, a clever **substitution** can
-        flatten it back into one of the equations we already know
-        how to solve. We'll look at one shape in detail (it covers a
-        surprising fraction of the first-order equations you'll meet
-        in physics and biology), then briefly mention a sibling.
+        We'll look at one shape in detail — the **Bernoulli**
+        equation, which covers a surprising fraction of the
+        first-order equations you'll meet in physics and biology —
+        and then briefly mention a sibling (the **homogeneous**
+        equation). In both cases the move is the same: find a
+        substitution that maps the equation onto a shape we already
+        know — linear, separable, or exact — then run the recipe
+        you've already learned.
 
         ### The Bernoulli shape
 

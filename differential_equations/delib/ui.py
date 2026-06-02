@@ -74,14 +74,18 @@ def run_exercise(code: str, run_pressed: bool, *, check=None, ns_extra: Mapping 
         delib.run_exercise(editor.value, run_btn.value, check=my_check)
 
     Execs ``code`` in the standard namespace (``mo, np, plt, go, delib`` plus any
-    ``ns_extra``), renders a ``view`` if the code assigns one, and runs
-    ``check(ns) -> (ok: bool, message: str)`` to show a pass/fail callout. The
+    ``ns_extra``), renders a ``view`` if the code assigns one, runs
+    ``check(ns) -> (ok: bool, message: str)`` to show a pass/fail callout, and
+    surfaces any ``print()`` output the student wrote (useful when they want to
+    inspect intermediate sympy expressions while working a problem). The
     student code runs in the visitor's own browser sandbox, so it can only affect
     their session. Returns a marimo object to display.
     """
     if not run_pressed:
         return mo.md("*Write your answer above and press **Run**.*")
 
+    import contextlib
+    import io
     import traceback
     import math
     import numpy as np
@@ -101,12 +105,31 @@ def run_exercise(code: str, run_pressed: bool, *, check=None, ns_extra: Mapping 
     }
     if ns_extra:
         ns.update(ns_extra)
+
+    # Capture stdout (and stderr) so any print() / display lands in the page
+    # instead of vanishing into the browser console. Anything printed appears as
+    # a code-block callout above the view / check result.
+    captured = io.StringIO()
     try:
-        exec(code, ns)
+        with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
+            exec(code, ns)
     except Exception:
-        return mo.callout(mo.md(f"```\n{traceback.format_exc()}\n```"), kind="danger")
+        stdout_text = captured.getvalue()
+        tb = traceback.format_exc()
+        body = (f"```\n{stdout_text}```\n\n```\n{tb}\n```"
+                if stdout_text else f"```\n{tb}\n```")
+        return mo.callout(mo.md(body), kind="danger")
 
     out = []
+    stdout_text = captured.getvalue()
+    if stdout_text:
+        # Trim absurdly large prints to keep the page light.
+        if len(stdout_text) > 6000:
+            stdout_text = stdout_text[:6000] + "\n... (truncated)"
+        out.append(mo.callout(
+            mo.md("**Printed output**\n\n```\n" + stdout_text + "```"),
+            kind="neutral",
+        ))
     view = ns.get("view")
     if isinstance(view, matplotlib.axes.Axes):
         view = view.figure
