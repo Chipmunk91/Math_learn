@@ -190,7 +190,7 @@ def _(mo):
            recover $\mu$:
 
            $$
-           \mu(x) \;=\; \exp\!\left(\int \frac{M_y - N_x}{N}\,dx\right).
+           \mu(x) \;=\; \exp\left(\int \frac{M_y - N_x}{N}\,dx\right).
            $$
 
         One computation, two answers — *whether* the rescue works
@@ -212,7 +212,7 @@ def _(mo):
         2. **Build $\mu$.** Integrate the ratio and exponentiate:
 
            $$
-           \mu(x) \;=\; \exp\!\left(\int r(x)\,dx\right).
+           \mu(x) \;=\; \exp\left(\int r(x)\,dx\right).
            $$
         3. **Multiply the original equation through by $\mu$**:
 
@@ -529,7 +529,7 @@ def _(mo):
         $N$). When *this* ratio depends on $y$ alone, then
 
         $$
-        \mu(y) \;=\; \exp\!\left(\int \frac{N_x - M_y}{M}\,dy\right).
+        \mu(y) \;=\; \exp\left(\int \frac{N_x - M_y}{M}\,dy\right).
         $$
 
         **In practice**, when you meet a non-exact equation, you
@@ -569,7 +569,7 @@ def _(mo):
         video derived gives
 
         $$
-        \mu(x) \;=\; \exp\!\left(\int p(x)\,dx\right),
+        \mu(x) \;=\; \exp\left(\int p(x)\,dx\right),
         $$
 
         *exactly* the integrating factor from Chapter 2's linear
@@ -689,7 +689,7 @@ def _(mo):
            compute
 
            $$
-           \mu_v(x) \;=\; \exp\!\left(\int (1 - n)\,p(x)\,dx\right).
+           \mu_v(x) \;=\; \exp\left(\int (1 - n)\,p(x)\,dx\right).
            $$
         2. **Multiply through** by $\mu_v(x)$. The left side collapses
            into a single derivative by construction:
@@ -832,7 +832,7 @@ def _(mo):
                 equation:
 
                 $$
-                y' \;=\; F\!\left(\tfrac{y}{x}\right),
+                y' \;=\; F\left(\tfrac{y}{x}\right),
                 $$
 
                 where the right-hand side depends on $x$ and $y$ only
@@ -1000,7 +1000,7 @@ def _(delib, e1_code, e1_run):
         ns, target=2.0, tol=1e-4,
         ok="Right — $(M_y - N_x)/N = 1/x$, so $\\mu(x) = x$ and $\\mu(2) = 2$.",
         hint="Compute $(M_y - N_x)/N$; if it depends on $x$ only, then "
-             "$\\mu(x) = \\exp\\!\\int (M_y - N_x)/N\\,dx$.",
+             "$\\mu(x) = \\exp\\int (M_y - N_x)/N\\,dx$.",
     ))
     return
 
@@ -1060,7 +1060,7 @@ def _(delib, e2_code, e2_run):
         ok="Right — $(N_x - M_y)/M = -3/y$, so $\\mu(y) = 1/y^3$ and "
            "$\\mu(2) = 1/8$.",
         hint="Compute $(N_x - M_y)/M$. If it depends on $y$ only, then "
-             "$\\mu(y) = \\exp\\!\\int (N_x - M_y)/M\\,dy$.",
+             "$\\mu(y) = \\exp\\int (N_x - M_y)/M\\,dy$.",
     ))
     return
 

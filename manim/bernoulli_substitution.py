@@ -27,6 +27,7 @@ Then it appears in ch03b via delib.video("bernoulli_substitution.mp4").
 
 import pathlib
 import sys
+import textwrap
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
@@ -35,8 +36,14 @@ from derivation_kit import HIGHLIGHT  # noqa: E402
 
 
 def _caption(text):
-    """Small grey caption below the stage."""
-    t = Text(text, font_size=22, color=GREY_B)
+    """Small grey caption below the stage. Long strings are auto-wrapped to
+    ~65 characters per line so they stay inside the Manim viewport at the
+    default config (font_size 22, ~14 units wide). Pass explicit ``\\n``
+    in the input to force a break at a specific spot."""
+    wrapped = "\n".join(
+        textwrap.fill(para, width=65) for para in text.split("\n")
+    )
+    t = Text(wrapped, font_size=22, color=GREY_B)
     t.to_edge(DOWN, buff=1.0)
     return t
 

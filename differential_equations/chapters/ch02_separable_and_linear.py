@@ -334,7 +334,7 @@ def _(mo):
         is the three-step recipe at the heart of every textbook
         treatment of linear ODEs:
 
-        > 1. Compute $\mu(t) = \exp\!\bigl(\int p(t)\,dt\bigr)$. This is
+        > 1. Compute $\mu(t) = \exp\bigl(\int p(t)\,dt\bigr)$. This is
         >    called the **integrating factor**.
         > 2. Multiply the equation through by $\mu$. The left side
         >    becomes $(\mu y)'$ automatically.

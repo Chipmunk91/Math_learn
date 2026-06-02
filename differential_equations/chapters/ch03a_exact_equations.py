@@ -674,7 +674,7 @@ def _(a_panel, mo, slider_fig):
                     sum of squares:
 
                     $$
-                    x^2 + xy + y^2 \;=\; \Bigl(x + \tfrac{y}{2}\Bigr)^{\!2} + \tfrac{3}{4}\,y^2.
+                    x^2 + xy + y^2 \;=\; \Bigl(x + \tfrac{y}{2}\Bigr)^{2} + \tfrac{3}{4}\,y^2.
                     $$
 
                     Two squared quantities added together can never be
