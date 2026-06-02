@@ -166,13 +166,18 @@ class SceneCoolingLinearMethod(Scene):
         new_lbl = _step_label("Step 5c — exponentiate")
         eq5c = MathTex(r"\mu(t) \;=\; e^{k\,t}").scale(1.6).set_color(HIGHLIGHT)
         new_cap = _caption(
-            "μ = e^(kt + C) = e^C · e^(kt). Pick e^C = 1 — the simplest μ "
-            "that works. Equivalently, μ(t) = exp(∫k dt) — exactly the "
-            "general integrating-factor formula with p(t) = k."
+            "μ = e^(kt + C) = e^C · e^(kt). Set A = e^C: the general "
+            "solution is μ(t) = A·e^(kt) for any nonzero A. We don't really "
+            "need to pick A — when we multiply both sides of the cooling "
+            "equation by μ in Step 6, the A appears on both sides and "
+            "cancels out, so every choice of A produces the same rescaled "
+            "equation. We just write A = 1 for the cleanest form. "
+            "Equivalently, μ(t) = exp(∫k dt) — the general "
+            "integrating-factor formula with p(t) = k."
         )
         self.play(Transform(step_lbl, new_lbl), Transform(eq, eq5c),
                   Transform(cap, new_cap))
-        self.wait(3.5)
+        self.wait(5.0)
 
         # ----------------------- Step 6 -----------------------------------
         new_lbl = _step_label("Step 6 — multiply the cooling equation through by e^(kt)")
