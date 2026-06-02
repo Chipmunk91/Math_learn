@@ -101,30 +101,53 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     # Beat 7 — integrating factors: intro before the Manim derivation.
+    # Frames the integrating factor as a *callback to Ch 2*, not a fresh
+    # tool — we already used it there for linear ODEs. Here it's the same
+    # move with a slightly different target (restore exactness, instead of
+    # collapse the LHS into a single derivative).
     mo.md(
         r"""
         ## When it isn't exact — multiply by $\mu$
 
-        The exactness test gives a clear binary: equation passes, look for
-        $F$; equation fails, no $F$ to find. But "no $F$ to find" isn't a
-        permanent verdict. There's a way to **rescue** a non-exact
-        equation: multiply both sides by a cleverly-chosen function
-        $\mu(x, y)$ — called an **integrating factor** — picked so that
-        the rescaled equation
+        The exactness test gives a clear binary: equation passes, look
+        for $F$; equation fails, no $F$ to find. But "no $F$ to find"
+        isn't a permanent verdict. The rescue tactic for the non-exact
+        case is one we've already met before, in Chapter 2 — we just
+        used it for a slightly different purpose there.
+
+        Recall the linear method from Chapter 2: given
+        $y' + p(x)\,y = q(x)$, we multiplied through by an
+        **integrating factor** $\mu(x)$ chosen so that the left side
+        collapsed into a single derivative $(\mu y)'$. Once that
+        happened, the equation was directly integrable and we were
+        done.
+
+        Same move now, more general target. Given a non-exact
+        equation $M\,dx + N\,dy = 0$, multiply through by some
+        $\mu(x, y)$ chosen so that the *rescaled* equation
 
         $$
         \mu(x, y)\,M\,dx \;+\; \mu(x, y)\,N\,dy \;=\; 0
         $$
 
-        *does* pass the exactness test. The contour map we couldn't find
-        before is now hiding behind the rescaled equation, and we can
-        recover it with the recipe from Part 1.
+        passes the exactness test. Then Part 1's recipe takes over —
+        recover $F$ from $(\mu M, \mu N)$, read off the contours
+        $F(x, y) = C$.
+
+        The integrating factor is doing the same job both times: it's
+        the clever multiplier that turns a problem into a shape we
+        already know how to handle. In Chapter 2 the target shape was
+        *"single derivative on the LHS";* here it's *"exact."*  We'll
+        see at the end of the section that the Chapter 2 case actually
+        falls out of this one as a special case ($N = 1$) — but for
+        now, the framing to carry is: same tool, broader use.
 
         How do we find such a $\mu$? The derivation is short but worth
-        following one move at a time — particularly the moment where what
-        looks like a hard equation in two variables collapses into an
-        easy one, because we make a single inspired guess about what
-        $\mu$ should look like. The video below walks through it.
+        following one move at a time — particularly the moment where
+        what looks like a hard equation in two variables collapses
+        into an easy one, because we make a single inspired guess
+        about what $\mu$ should look like. The video below walks
+        through it.
         """
     )
     return
