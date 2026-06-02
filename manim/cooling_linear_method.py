@@ -134,15 +134,45 @@ class SceneCoolingLinearMethod(Scene):
         self.play(Transform(eq, eq4b), Transform(cap, new_cap))
         self.wait(2.5)
 
-        # ----------------------- Step 5 -----------------------------------
-        new_lbl = _step_label("Step 5 — solve for μ")
-        eq5 = MathTex(r"\mu(t) \;=\; e^{k\,t}").scale(1.6).set_color(HIGHLIGHT)
+        # ----------------------- Step 5 — solve μ' = kμ explicitly --------
+        # (Previously this jumped straight from μ' = kμ to μ = e^(kt) by
+        # inspection -- "the simplest function whose derivative is k times
+        # itself." That sweeps the integration under the carpet, which is
+        # exactly where the chapter prose's μ = exp(∫p dt) formula comes
+        # from. Now we show the three moves explicitly: separate,
+        # integrate, exponentiate -- and the final caption ties the result
+        # back to the integral form.)
+        new_lbl = _step_label("Step 5a — separate variables")
+        eq5a = MathTex(r"\frac{d\mu}{\mu} \;=\; k\,dt").scale(1.4)
         new_cap = _caption(
-            "The simplest function whose derivative is k times itself: e to the kt."
+            "μ' = kμ is separable. Move μ to the left, t to the right."
         )
-        self.play(Transform(step_lbl, new_lbl), Transform(eq, eq5),
+        self.play(Transform(step_lbl, new_lbl), Transform(eq, eq5a),
                   Transform(cap, new_cap))
-        self.wait(3.0)
+        self.wait(2.5)
+
+        new_lbl = _step_label("Step 5b — integrate both sides")
+        eq5b = MathTex(
+            r"\int \frac{d\mu}{\mu} \;=\; \int k\,dt"
+            r"\quad\Longrightarrow\quad \ln|\mu| \;=\; k\,t + C"
+        ).scale(1.05)
+        new_cap = _caption(
+            "Left integral gives ln|μ|; right gives kt + C."
+        )
+        self.play(Transform(step_lbl, new_lbl), Transform(eq, eq5b),
+                  Transform(cap, new_cap))
+        self.wait(2.8)
+
+        new_lbl = _step_label("Step 5c — exponentiate")
+        eq5c = MathTex(r"\mu(t) \;=\; e^{k\,t}").scale(1.6).set_color(HIGHLIGHT)
+        new_cap = _caption(
+            "μ = e^(kt + C) = e^C · e^(kt). Pick e^C = 1 — the simplest μ "
+            "that works. Equivalently, μ(t) = exp(∫k dt) — exactly the "
+            "general integrating-factor formula with p(t) = k."
+        )
+        self.play(Transform(step_lbl, new_lbl), Transform(eq, eq5c),
+                  Transform(cap, new_cap))
+        self.wait(3.5)
 
         # ----------------------- Step 6 -----------------------------------
         new_lbl = _step_label("Step 6 — multiply the cooling equation through by e^(kt)")
