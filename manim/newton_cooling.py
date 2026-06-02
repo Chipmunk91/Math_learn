@@ -72,7 +72,7 @@ class SceneNewtonCoolingFull(Scene):
         rp.next_to(Tr, RIGHT, buff=0.08)
         initial = VGroup(dT, bar, dt, eq, negk, lp, Tv, mns, Tr, rp)
         initial.move_to(ORIGIN)
-        cap = _caption("Start: dT/dt = -k(T − T_r), our cooling rule.")
+        cap = _caption("Start: cooling rule — temperature T relaxes toward the room, with rate constant k.")
         self.play(Write(initial), FadeIn(cap))
         self.wait(0.6)
 
@@ -214,7 +214,7 @@ class SceneNewtonCoolingFull(Scene):
         re4 = ORIGIN - post4.get_center()
         for _t in (Tr_iso, plus_iso, A_iso, e_iso, negk_iso, t_iso):
             _t.shift(re4)
-        new_cap = _caption("4 · Solve for T: move T_r across — the cup decays toward T_r.")
+        new_cap = _caption("4 · Solve for T: move the room-temperature term across — the cup decays toward the room.")
         self.play(
             Transform(mns, plus_iso, path_arc=-PI / 2),
             Transform(Tr, Tr_iso, path_arc=-PI / 2),

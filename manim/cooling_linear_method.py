@@ -89,12 +89,19 @@ class SceneCoolingLinearMethod(Scene):
         self.wait(2.5)
 
         # ----------------------- Step 2 -----------------------------------
+        # Plain `=` here (no \stackrel{!}{=}): the step label "demand" carries
+        # the intent that this is the equality we're requiring, not one we've
+        # already proved. The \stackrel{!}{=} notation rendered as a literal "!"
+        # above the equals in marimo's KaTeX pipeline, which read as a glitch.
         new_lbl = _step_label("Step 2 — demand the LHS equal d/dt(μT)")
         eq2 = MathTex(
-            r"\mu\,T' \;+\; \mu\,k\,T \;\stackrel{!}{=}\; \frac{d}{dt}\bigl(\mu\,T\bigr)"
+            r"\mu\,T' \;+\; \mu\,k\,T \;=\; \frac{d}{dt}\bigl(\mu\,T\bigr)"
         ).scale(1.15)
+        # Caption uses plain text (no subscripts), so write the right side
+        # without T_r — that underscore renders literally in Manim Text.
         new_cap = _caption(
-            "If this works, the equation becomes (μT)' = μ k T_r — directly integrable."
+            "If this works, the LHS collapses into a single derivative — "
+            "directly integrable in t."
         )
         self.play(Transform(step_lbl, new_lbl), Transform(eq, eq2),
                   Transform(cap, new_cap))
