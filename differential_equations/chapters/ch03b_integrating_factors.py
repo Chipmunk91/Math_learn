@@ -963,34 +963,35 @@ def _(mo):
         r"""
         ## Try it — in code
 
-        Three drills for this part, in order of cost:
+        The integrating-factor work was just covered in *Your turn*
+        above. So these three challenges drill the **substitution**
+        side of the chapter: recognise the shape, choose the
+        substitution that exposes a linear or separable equation in
+        the new variable, solve, recover $y$, evaluate at a point.
 
-        1. **Find an integrating factor $\mu(x)$.** Compute the
-           diagnostic ratio, integrate, read off $\mu$ at a specific
-           value of $x$. The same equation the hook posed.
-        2. **Find an integrating factor $\mu(y)$ — the mirror case.**
-           Same recipe with the roles of $x$ and $y$ swapped.
-        3. **Solve a Bernoulli equation in closed form.** The
-           $v = y^{1-n}$ substitution, then read off $y$ at a specific
-           time. Chapter 1's logistic equation, this time as an
-           explicit formula.
+        1. **A bare Bernoulli with no $p$ term.** The simplest
+           possible substitution case — confirm the recipe runs
+           through.
+        2. **A Bernoulli with a non-constant $p(x)$.** Same
+           substitution, but the linearised equation in $v$ now needs
+           the integrating-factor recipe to solve, so the two halves
+           of the chapter chain together.
+        3. **A homogeneous equation.** A different substitution
+           ($v = y/x$) for a different shape — the equation reduces
+           to separable in $(v, x)$, and two integrations finish.
         """
     )
     return
 
 
-# --- Challenge 1: integrating factor μ(x) ------------------------------------
+# --- Challenge 1: Bernoulli with constant coefficients ----------------------
 @app.cell
 def _(mo):
     e1_get, e1_set = mo.state(
-        "# The equation (3*x*y + y**2) dx + (x**2 + x*y) dy = 0 is NOT exact.\n"
-        "# Find an integrating factor mu(x) (it depends on x only here).\n"
-        "# Then evaluate mu(2) and put it in `answer`.\n"
-        "import sympy as sp\n"
-        "x, y = sp.symbols('x y')\n"
-        "M = 3*x*y + y**2\n"
-        "N = x**2 + x*y\n"
-        "# Hint: (M_y - N_x) / N should depend on x only.\n"
+        "# Solve the Bernoulli equation y' = y^2 with y(0) = 1.\n"
+        "# Use the substitution v = y^(1 - 2) = 1/y. The linearised\n"
+        "# equation in v is separable. Find y at t = 0.5 and put it\n"
+        "# in `answer`.\n"
         "answer = ...\n"
     )
     return e1_get, e1_set
@@ -1007,9 +1008,11 @@ async def _(api_field, delib, e1_ai, e1_code, e1_gen, e1_set, key_bridge):
     await delib.exercise_ai(
         e1_gen, e1_ai, e1_code, e1_set,
         api_field.value or (key_bridge.value or {}).get("key", ""),
-        context="M = 3 x y + y^2; N = x^2 + x y. M_y = 3 x + 2 y; N_x = 2 x + y; not equal. "
-                "(M_y - N_x) / N = (x + y) / (x(x + y)) = 1/x -- depends on x only. "
-                "So mu(x) = exp(integral 1/x dx) = x. Thus mu(2) = 2. Put 2 in `answer`.",
+        context="Bernoulli y' = y^2, n=2, p=0, q=1. Sub v = 1/y -> v' = -y'/y^2. "
+                "Divide original by y^2: y'/y^2 = 1, i.e. -v' = 1, so v' = -1. "
+                "Integrate: v(t) = -t + C. y(0)=1 -> v(0)=1 -> C=1. "
+                "v(t) = 1 - t. y(t) = 1/(1 - t). y(0.5) = 1/0.5 = 2. "
+                "Put 2 in `answer`.",
     )
     return
 
@@ -1017,9 +1020,8 @@ async def _(api_field, delib, e1_ai, e1_code, e1_gen, e1_set, key_bridge):
 @app.cell(hide_code=True)
 def _(delib, e1_ai, e1_code, e1_gen, e1_run):
     delib.exercise_view(
-        "**1.** The equation $(3xy + y^2)\\,dx + (x^2 + xy)\\,dy = 0$ is "
-        "not exact. Find an integrating factor $\\mu(x)$ that depends "
-        "only on $x$, evaluate $\\mu(2)$, and put it in `answer`.",
+        "**1.** Solve $\\dot y = y^2$ with $y(0) = 1$ by Bernoulli "
+        "substitution. Find $y(0.5)$ and put it in `answer`.",
         e1_ai, e1_gen, e1_code, e1_run,
     )
     return
@@ -1029,25 +1031,26 @@ def _(delib, e1_ai, e1_code, e1_gen, e1_run):
 def _(delib, e1_code, e1_run):
     delib.run_exercise(e1_code.value, e1_run.value, check=lambda ns: delib.check_number(
         ns, target=2.0, tol=1e-4,
-        ok="Right — $(M_y - N_x)/N = 1/x$, so $\\mu(x) = x$ and $\\mu(2) = 2$.",
-        hint="Compute $(M_y - N_x)/N$; if it depends on $x$ only, then "
-             "$\\mu(x) = \\exp\\int (M_y - N_x)/N\\,dx$.",
+        ok="Right — the substitution $v = 1/y$ gives $\\dot v = -1$, "
+           "so $v(t) = 1 - t$ and $y(t) = 1/(1 - t)$. At $t = 0.5$, "
+           "$y = 2$.",
+        hint="Try $v = 1/y$. The equation $\\dot y = y^2$ becomes "
+             "$\\dot v = -1$ after dividing by $y^2$ — that's just "
+             "integrate-once and invert.",
     ))
     return
 
 
-# --- Challenge 2: integrating factor μ(y) (the mirror case) -------------------
+# --- Challenge 2: Bernoulli with non-constant p(x) --------------------------
 @app.cell
 def _(mo):
     e2_get, e2_set = mo.state(
-        "# The equation y**2 dx - x*y dy = 0 is NOT exact, and (M_y - N_x)/N\n"
-        "# is NOT a function of x alone. Try the mirror case: find mu(y)\n"
-        "# (depends on y only) and evaluate it at y = 2. Put mu(2) in `answer`.\n"
-        "import sympy as sp\n"
-        "x, y = sp.symbols('x y')\n"
-        "M = y**2\n"
-        "N = -x*y\n"
-        "# Hint: (N_x - M_y) / M should depend on y only.\n"
+        "# Solve the Bernoulli equation y' + y/x = y^2 with y(1) = 1/2.\n"
+        "# This is Bernoulli with p(x) = 1/x, q(x) = 1, n = 2.\n"
+        "# Use the substitution v = 1/y. The equation in v turns out\n"
+        "# linear — solve it with the integrating-factor recipe.\n"
+        "# Find y at x = e (Euler's number) and put it in `answer`.\n"
+        "import math\n"
         "answer = ...\n"
     )
     return e2_get, e2_set
@@ -1064,10 +1067,13 @@ async def _(api_field, delib, e2_ai, e2_code, e2_gen, e2_set, key_bridge):
     await delib.exercise_ai(
         e2_gen, e2_ai, e2_code, e2_set,
         api_field.value or (key_bridge.value or {}).get("key", ""),
-        context="M = y^2; N = -x y. M_y = 2 y; N_x = -y; not equal. "
-                "(N_x - M_y)/M = (-y - 2y)/y^2 = -3y/y^2 = -3/y -- depends on y only. "
-                "So mu(y) = exp(integral -3/y dy) = exp(-3 ln y) = 1/y^3. "
-                "Thus mu(2) = 1/8 = 0.125. Put 1/8 (or 0.125) in `answer`.",
+        context="Bernoulli y' + y/x = y^2: p=1/x, q=1, n=2. Sub v = 1/y. "
+                "v' = -y'/y^2. Divide original by y^2: y'/y^2 + 1/(xy) = 1, "
+                "so -v' + v/x = 1, i.e. v' - v/x = -1 — linear in v. "
+                "IF mu = exp(-int dx/x) = 1/x. (v/x)' = -1/x. v/x = -ln(x) + C. "
+                "v = x(C - ln x). y(1)=1/2 -> v(1)=2 -> C=2. v(x) = x(2 - ln x). "
+                "y(x) = 1/[x(2 - ln x)]. y(e) = 1/[e*(2 - 1)] = 1/e ≈ 0.3679. "
+                "Put math.exp(-1) in `answer`.",
     )
     return
 
@@ -1075,10 +1081,9 @@ async def _(api_field, delib, e2_ai, e2_code, e2_gen, e2_set, key_bridge):
 @app.cell(hide_code=True)
 def _(delib, e2_ai, e2_code, e2_gen, e2_run):
     delib.exercise_view(
-        "**2.** The equation $y^2\\,dx - xy\\,dy = 0$ is also not exact, "
-        "and its $(M_y - N_x)/N$ ratio doesn't simplify to a function of "
-        "$x$ alone. Try the mirror recipe: find $\\mu(y)$ (depending only "
-        "on $y$), evaluate $\\mu(2)$, and put it in `answer`.",
+        "**2.** Solve $\\dot y + y/x = y^2$ with $y(1) = 1/2$ by "
+        "Bernoulli substitution. Find $y(e)$ (where $e \\approx 2.718$) "
+        "and put it in `answer`.",
         e2_ai, e2_gen, e2_code, e2_run,
     )
     return
@@ -1086,23 +1091,28 @@ def _(delib, e2_ai, e2_code, e2_gen, e2_run):
 
 @app.cell(hide_code=True)
 def _(delib, e2_code, e2_run):
+    import math
     delib.run_exercise(e2_code.value, e2_run.value, check=lambda ns: delib.check_number(
-        ns, target=0.125, tol=1e-4,
-        ok="Right — $(N_x - M_y)/M = -3/y$, so $\\mu(y) = 1/y^3$ and "
-           "$\\mu(2) = 1/8$.",
-        hint="Compute $(N_x - M_y)/M$. If it depends on $y$ only, then "
-             "$\\mu(y) = \\exp\\int (N_x - M_y)/M\\,dy$.",
+        ns, target=math.exp(-1), tol=1e-3,
+        ok="Right — $v = 1/y$ turns the equation into $v' - v/x = -1$, "
+           "linear in $v$. Integrating-factor recipe gives "
+           "$v(x) = x(2 - \\ln x)$, so $y(x) = 1/[x(2 - \\ln x)]$, and "
+           "$y(e) = 1/[e \\cdot 1] = 1/e \\approx 0.368$.",
+        hint="$v = 1/y$ gives a linear equation $v' - v/x = -1$ in $v$. "
+             "Use the Ch 2 integrating factor $\\mu = 1/x$.",
     ))
     return
 
 
-# --- Challenge 3: Bernoulli / logistic ----------------------------------------
+# --- Challenge 3: Homogeneous (v = y/x) -------------------------------------
 @app.cell
 def _(mo):
     e3_get, e3_set = mo.state(
-        "# Solve the logistic equation dy/dt = y * (1 - y) with y(0) = 0.1.\n"
-        "# It's Bernoulli with n = 2. The closed form is y(t) = 1 / (1 + C * exp(-t)).\n"
-        "# Pin C from y(0) = 0.1, then evaluate y(2) and put it in `answer`.\n"
+        "# Solve the homogeneous equation y' = (x + y) / x with y(1) = 0.\n"
+        "# The right side is 1 + y/x — depends on x and y only through\n"
+        "# their ratio. Substitute v = y/x (so y = x*v and y' = v + x*v'\n"
+        "# by the product rule). The equation in v becomes separable.\n"
+        "# Find y at x = e (Euler's number) and put it in `answer`.\n"
         "import math\n"
         "answer = ...\n"
     )
@@ -1120,9 +1130,11 @@ async def _(api_field, delib, e3_ai, e3_code, e3_gen, e3_set, key_bridge):
     await delib.exercise_ai(
         e3_gen, e3_ai, e3_code, e3_set,
         api_field.value or (key_bridge.value or {}).get("key", ""),
-        context="Logistic ẏ = y(1 - y), y(0) = 0.1. Closed form y(t) = 1/(1 + C exp(-t)). "
-                "y(0) = 1/(1 + C) = 0.1 -> C = 9. y(2) = 1/(1 + 9 * exp(-2)) "
-                "≈ 1/(1 + 1.2181) ≈ 0.4510. Put float(1/(1 + 9 * math.exp(-2))) in `answer`.",
+        context="Homogeneous y' = (x+y)/x = 1 + y/x. Sub v = y/x -> y = xv, "
+                "y' = v + xv'. Equation becomes v + xv' = 1 + v -> xv' = 1 -> "
+                "dv = dx/x -> v = ln|x| + C. y = xv = x ln|x| + Cx. "
+                "y(1)=0 -> 0 = 0 + C -> C = 0. y(x) = x ln|x|. "
+                "y(e) = e · 1 = e ≈ 2.7183. Put math.e in `answer`.",
     )
     return
 
@@ -1130,8 +1142,8 @@ async def _(api_field, delib, e3_ai, e3_code, e3_gen, e3_set, key_bridge):
 @app.cell(hide_code=True)
 def _(delib, e3_ai, e3_code, e3_gen, e3_run):
     delib.exercise_view(
-        "**3.** Solve $\\dot y = y(1 - y)$ with $y(0) = 0.1$ via Bernoulli "
-        "substitution and evaluate $y(2)$. Put it in `answer`.",
+        "**3.** Solve $\\dot y = (x + y)/x$ with $y(1) = 0$ by "
+        "homogeneous substitution. Find $y(e)$ and put it in `answer`.",
         e3_ai, e3_gen, e3_code, e3_run,
     )
     return
@@ -1140,17 +1152,20 @@ def _(delib, e3_ai, e3_code, e3_gen, e3_run):
 @app.cell(hide_code=True)
 def _(delib, e3_code, e3_run):
     import math
-    target = 1.0 / (1.0 + 9.0 * math.exp(-2.0))
     delib.run_exercise(e3_code.value, e3_run.value, check=lambda ns: delib.check_number(
-        ns, target=target, tol=1e-3,
-        ok="Right — $y(0) = 0.1$ pins $C = 9$, so $y(2) = 1/(1 + 9 e^{-2}) \\approx 0.451$.",
-        hint="$v = 1/y$ turns the equation into $\\dot v + v = 1$; integrate to get "
-             "$v = 1 + Ce^{-t}$, then invert.",
+        ns, target=math.e, tol=1e-3,
+        ok="Right — $v = y/x$ gives $v + xv' = 1 + v$, so $xv' = 1$ "
+           "and $v = \\ln|x| + C$. With $y(1) = 0$ we get $C = 0$, "
+           "so $y(x) = x\\,\\ln|x|$ and $y(e) = e \\cdot 1 = e$.",
+        hint="$y = xv$ implies $y' = v + xv'$ (product rule). "
+             "Substituting into the equation kills both $v$'s on the "
+             "right, leaving $xv' = 1$ — a separable equation.",
     ))
     return
 
 
 # --- Playground ----------------------------------------------------------------
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(

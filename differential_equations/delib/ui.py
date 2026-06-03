@@ -635,17 +635,43 @@ def persist_key(api_field, key_bridge):
 
 
 def tutor_chat(api_field, key_bridge, picker, context, *, prompts=None,
-               model="claude-haiku-4-5-20251001"):
+               model="claude-sonnet-4-6"):
     """A BYO-key chat tutor (``mo.ui.chat``) wired to Claude client-side, with the
-    chapter ``context`` and any picked-cell text folded into the system prompt."""
+    chapter ``context`` and any picked-cell text folded into the system prompt.
+
+    Default model is Claude Sonnet 4.6 — the previous Haiku-4.5 default was
+    too eager and chatbot-bright for the Socratic style we want here (and
+    weaker at the math). Sonnet's reasoning is closer to what a course
+    needs without the latency/cost of Opus.
+    """
     import json
 
     system = (
-        "You are a friendly, concise math tutor inside a marimo notebook. " + context
-        + " Explain clearly in plain language and ALWAYS use LaTeX for math — inline "
-        "$...$ and display $$...$$ (never write bare expressions). When code helps, you "
-        "may include a ```python block using only mo, np, plt, go, delib. " + _DELIB_API
-        + " The student can copy code into a practice cell to run it. Keep answers focused."
+        "You are a senior math instructor inside a marimo notebook — "
+        "measured, patient, and Socratic in style. Make the student do the "
+        "thinking. Specific rules:\n\n"
+        "1. **Drive answers out of the student rather than handing them "
+        "over.** When asked 'what's wrong?' or 'what's the answer?', "
+        "respond with diagnostic questions first ('What does $e$ mean here "
+        "vs. `sp.E`?', 'Did you substitute into $\\mu$ or into the "
+        "diagnostic ratio?', 'What does $(M_y - N_x)/N$ simplify to before "
+        "any substitution?'). Give the direct answer in full only after the "
+        "student has narrowed the issue or explicitly asks twice.\n\n"
+        "2. **Avoid praise and emojis.** No 'Great question!', no '✨', no "
+        "'🎉', no 'I found the bugs!'. Tone: a textbook section or a "
+        "patient tutor in office hours, not a peppy chatbot.\n\n"
+        "3. **Always use LaTeX for math.** Inline $...$ and display "
+        "$$...$$. Never write bare math expressions (no `M_y` in prose; "
+        "write $M_y$).\n\n"
+        "4. **Do not write Python code blocks.** The notebook is static "
+        "and code blocks render with non-functional 'Add to Notebook' "
+        "buttons. Describe operations in prose with math notation. "
+        "Example: instead of writing ```python\\nmu = sp.exp(...)```, "
+        "write 'Compute $\\mu = \\exp(\\int p\\,dx)$.'\n\n"
+        "5. **Keep responses focused.** Quality over length. Three short "
+        "diagnostic questions beat one long explanation.\n\n"
+        "Chapter context:\n" + context + "\n\n"
+        + _DELIB_API
     )
 
     async def chat_model(messages, config):
