@@ -92,13 +92,17 @@ def run_exercise(code: str, run_pressed: bool, *, check=None, ns_extra: Mapping 
     import matplotlib
     import matplotlib.pyplot as plt
     import plotly.graph_objects as go
+    import sympy as sp
     import delib as _delib
 
     # Common math names are pre-bound so a student can write exp(-k*t), e, pi,
     # sqrt(...) directly without an import — the array-aware numpy versions, so
-    # they work on scalars and grids alike. ns_extra (below) can override any.
+    # they work on scalars and grids alike. Sympy is also pre-loaded as ``sp``
+    # for symbol manipulation (sp.symbols, sp.diff, sp.integrate, sp.simplify,
+    # sp.exp, sp.E, etc.). ns_extra (below) can override any.
     ns = {
         "mo": mo, "np": np, "plt": plt, "go": go, "delib": _delib, "math": math,
+        "sp": sp, "sympy": sp,
         "e": math.e, "pi": math.pi, "tau": math.tau, "inf": math.inf,
         "exp": np.exp, "log": np.log, "log10": np.log10, "sqrt": np.sqrt,
         "sin": np.sin, "cos": np.cos, "tan": np.tan, "abs": abs,

@@ -990,8 +990,13 @@ def _(mo):
     e1_get, e1_set = mo.state(
         "# Solve the Bernoulli equation y' = y^2 with y(0) = 1.\n"
         "# Use the substitution v = y^(1 - 2) = 1/y. The linearised\n"
-        "# equation in v is separable. Find y at t = 0.5 and put it\n"
-        "# in `answer`.\n"
+        "# equation in v is separable.\n"
+        "#\n"
+        "# Find y at t = 0.5 and put the number in `answer`.\n"
+        "#\n"
+        "# (Sympy is pre-loaded as `sp` if you want to work the\n"
+        "# substitution through symbolically. Use sp.symbols, sp.diff,\n"
+        "# sp.integrate, sp.simplify as needed.)\n"
         "answer = ...\n"
     )
     return e1_get, e1_set
@@ -1046,11 +1051,15 @@ def _(delib, e1_code, e1_run):
 def _(mo):
     e2_get, e2_set = mo.state(
         "# Solve the Bernoulli equation y' + y/x = y^2 with y(1) = 1/2.\n"
-        "# This is Bernoulli with p(x) = 1/x, q(x) = 1, n = 2.\n"
-        "# Use the substitution v = 1/y. The equation in v turns out\n"
-        "# linear — solve it with the integrating-factor recipe.\n"
-        "# Find y at x = e (Euler's number) and put it in `answer`.\n"
-        "import math\n"
+        "# This is Bernoulli with p(x) = 1/x, q(x) = 1, n = 2. Use the\n"
+        "# substitution v = 1/y; the equation in v turns out linear, so\n"
+        "# solve it with the integrating-factor recipe.\n"
+        "#\n"
+        "# Find y at x = e (Euler's number, pre-bound as `e` or as\n"
+        "# `sp.E` for sympy's exact value). Put the number in `answer`.\n"
+        "#\n"
+        "# (Sympy is pre-loaded as `sp`. Use sp.symbols, sp.diff,\n"
+        "# sp.integrate, sp.exp, sp.E as needed.)\n"
         "answer = ...\n"
     )
     return e2_get, e2_set
@@ -1091,9 +1100,9 @@ def _(delib, e2_ai, e2_code, e2_gen, e2_run):
 
 @app.cell(hide_code=True)
 def _(delib, e2_code, e2_run):
-    import math
+    import math as _math
     delib.run_exercise(e2_code.value, e2_run.value, check=lambda ns: delib.check_number(
-        ns, target=math.exp(-1), tol=1e-3,
+        ns, target=_math.exp(-1), tol=1e-3,
         ok="Right — $v = 1/y$ turns the equation into $v' - v/x = -1$, "
            "linear in $v$. Integrating-factor recipe gives "
            "$v(x) = x(2 - \\ln x)$, so $y(x) = 1/[x(2 - \\ln x)]$, and "
@@ -1112,8 +1121,12 @@ def _(mo):
         "# The right side is 1 + y/x — depends on x and y only through\n"
         "# their ratio. Substitute v = y/x (so y = x*v and y' = v + x*v'\n"
         "# by the product rule). The equation in v becomes separable.\n"
-        "# Find y at x = e (Euler's number) and put it in `answer`.\n"
-        "import math\n"
+        "#\n"
+        "# Find y at x = e (Euler's number, pre-bound as `e` or `sp.E`).\n"
+        "# Put the number in `answer`.\n"
+        "#\n"
+        "# (Sympy is pre-loaded as `sp`. Use sp.symbols, sp.diff,\n"
+        "# sp.integrate, sp.log, sp.E as needed.)\n"
         "answer = ...\n"
     )
     return e3_get, e3_set
@@ -1151,9 +1164,9 @@ def _(delib, e3_ai, e3_code, e3_gen, e3_run):
 
 @app.cell(hide_code=True)
 def _(delib, e3_code, e3_run):
-    import math
+    import math as _math
     delib.run_exercise(e3_code.value, e3_run.value, check=lambda ns: delib.check_number(
-        ns, target=math.e, tol=1e-3,
+        ns, target=_math.e, tol=1e-3,
         ok="Right — $v = y/x$ gives $v + xv' = 1 + v$, so $xv' = 1$ "
            "and $v = \\ln|x| + C$. With $y(1) = 0$ we get $C = 0$, "
            "so $y(x) = x\\,\\ln|x|$ and $y(e) = e \\cdot 1 = e$.",

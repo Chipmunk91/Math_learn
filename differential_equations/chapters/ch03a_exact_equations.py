@@ -838,9 +838,9 @@ def _(delib, e1_ai, e1_code, e1_gen, e1_run):
 
 @app.cell(hide_code=True)
 def _(delib, e1_code, e1_run):
-    import math
+    import math as _math
     delib.run_exercise(e1_code.value, e1_run.value, check=lambda ns: delib.check_number(
-        ns, target=math.sin(1) + 1.0, tol=1e-3,
+        ns, target=_math.sin(1) + 1.0, tol=1e-3,
         ok="Right — $F = \\sin x + x^2 y + \\cos y$, so $F(1, 0) = \\sin 1 + 1 \\approx 1.8415$.",
         hint="Integrate $M$ in $x$ → $\\sin x + x^2 y + g(y)$; then $F_y = x^2 + g'(y)$ must match $N$.",
     ))
