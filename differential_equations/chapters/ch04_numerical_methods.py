@@ -208,8 +208,9 @@ def _(mo):
         r"""
         ## Writing the step down
 
-        Beat 2 said "look at the slope, step in that direction, repeat."
-        Let's turn that into a single line of algebra.
+        The previous section said "look at the slope, step in that
+        direction, repeat." Let's turn that into a single line of
+        algebra.
 
         You're standing at the point $(x_n, y_n)$ at step $n$ of your
         walk. The slope of the true solution *passing through that
@@ -285,13 +286,50 @@ def _(mo):
 
         ### How small is small enough?
 
-        That's what the rest of this chapter answers. The next beat
-        watches Euler walk the field step by step in an animation —
-        same equation, same $h$, but with the slope vector drawn at
-        each step so you can see the recipe in motion. The beat
-        after that gives you a slider so you can shrink $h$ yourself
-        and watch the red polyline collapse onto the smooth curve.
+        That's what the rest of this chapter answers. Next, an
+        animation walks Euler through the field step by step — same
+        equation, same $h$, but with the slope vector drawn at each
+        step so you can see the recipe in motion. After that you'll
+        get a slider for $h$ so you can shrink it yourself and watch
+        the red polyline collapse onto the smooth curve.
         """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 4 (intro) — frame the Manim that animates Euler walking the
+    # field of y' = y - x², step by step. Same equation and h = 0.25 as
+    # the hook figure, so the video literally brings that figure to life.
+    mo.md(
+        r"""
+        ## Watch the recipe in motion
+
+        Same equation as above, $y' = y - x^2$ with $y(0) = 1$, same
+        step size $h = 0.25$. The video below builds Euler's walk one
+        step at a time. At each step you see the slope vector the
+        equation gives at the current point, then the dot stepping
+        along that slope, and finally the segment laid down as part
+        of the polyline. After eight steps the exact solution comes
+        in as an overlay — the gap between the red polyline and the
+        smooth blue curve is the per-step error compounding.
+
+        This is the same picture as the hook figure, drawn live.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    # Beat 4 — Manim hero: Euler walking the slope field of y' = y - x²
+    # with h = 0.25, eight steps, exact-solution overlay at the end.
+    delib.video(
+        "euler_walks_field.mp4",
+        caption="Euler's method walking the slope field of  y' = y − x²,   h = 0.25",
+        fallback="The Euler-walks-field animation is being rendered "
+                 "(see manim/euler_walks_field.py).",
     )
     return
 

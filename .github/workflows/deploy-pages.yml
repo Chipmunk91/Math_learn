@@ -72,6 +72,8 @@ jobs:
           find media -name 'integrating_factor.mp4' -exec cp {} assets-rendered/ \; || true
           manim render -qm -o bernoulli_substitution manim/bernoulli_substitution.py SceneBernoulliSubstitution || true
           find media -name 'bernoulli_substitution.mp4' -exec cp {} assets-rendered/ \; || true
+          manim render -qm -o euler_walks_field manim/euler_walks_field.py SceneEulerWalksField || true
+          find media -name 'euler_walks_field.mp4' -exec cp {} assets-rendered/ \; || true
           ls -la assets-rendered || true
 
       - name: Upload rendered media
