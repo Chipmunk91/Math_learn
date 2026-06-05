@@ -198,6 +198,104 @@ def _(mo):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 3 — derive Euler's method as a single line of algebra from
+    # Beat 2's intuition, plus a worked first step on the hook equation
+    # so the formula is concrete. Text + math only; Beat 4 (planned
+    # Manim) will be the visual companion.
+    mo.md(
+        r"""
+        ## Writing the step down
+
+        Beat 2 said "look at the slope, step in that direction, repeat."
+        Let's turn that into a single line of algebra.
+
+        You're standing at the point $(x_n, y_n)$ at step $n$ of your
+        walk. The slope of the true solution *passing through that
+        point* is $f(x_n, y_n)$ — that's all the equation gives you,
+        and it's all you have. (You don't know yet where the true
+        solution is heading next, because you haven't taken the step.)
+
+        Take a step of width $h$ in the $x$-direction. Follow that
+        slope exactly — as if the solution were a straight line with
+        that slope over the whole step. You arrive at the new
+        $x$-coordinate $x_n + h$, and at a $y$-coordinate that has
+        gone up (or down) by (slope $\times$ step width):
+
+        $$
+        y \;=\; y_n \;+\; h \cdot f(x_n, y_n).
+        $$
+
+        Call this new point $(x_{n+1}, y_{n+1})$. Then repeat from
+        there. The update rule is just:
+
+        $$
+        \boxed{\quad
+        x_{n+1} = x_n + h,
+        \qquad
+        y_{n+1} = y_n + h \cdot f(x_n, y_n).
+        \quad}
+        $$
+
+        This is **Euler's method**, the simplest possible numerical
+        recipe for an ODE. Two lines. That's the whole thing.
+
+        Notice what we just did — and didn't do. The slope
+        $f(x_n, y_n)$ is the *true* slope of the solution at our
+        current point. But by following it for a full step of width
+        $h$, we've ended up at $(x_{n+1}, y_{n+1})$, which is
+        **generally not on the true solution**. The true solution
+        curves; our step is straight. So at the *next* step we'll be
+        reading the equation's slope at a point that's slightly off
+        the real curve. The error compounds as we go.
+
+        For small $h$, the per-step error is small — the linear
+        approximation to a smooth curve is very accurate over short
+        distances. For large $h$, the per-step error is large, and
+        after enough steps the accumulated error can swamp the
+        answer.
+
+        ### One step, worked out
+
+        Take the equation from the hook, $y' = y - x^2$, with the
+        initial condition $y(0) = 1$. Use step size $h = 0.25$. Compute
+        the first step by hand:
+
+        - At $(x_0, y_0) = (0, 1)$, the slope is
+          $f(0, 1) = 1 - 0^2 = 1$.
+        - Step in $x$: $x_1 = 0 + 0.25 = 0.25$.
+        - Step in $y$: $y_1 = 1 + 0.25 \cdot 1 = 1.25$.
+
+        So after one step the simulator's dot lands at
+        $(0.25, 1.25)$. The exact solution at $x = 0.25$ is
+        $y = 2 + 0.5 + 0.0625 - e^{0.25} \approx 1.279$. The Euler
+        dot is at $1.250$, below the true curve by about $0.029$ —
+        that's the per-step error.
+
+        For step 2, we read the slope *at the dot*, not at the true
+        curve: $f(0.25, 1.25) = 1.25 - 0.0625 = 1.1875$. The dot
+        lands at $(0.5,\; 1.25 + 0.25 \cdot 1.1875) = (0.5, 1.547)$.
+        The true value at $x = 0.5$ is about $1.602$, so the dot is
+        now off by $0.055$ — the error has grown.
+
+        Continue this for eight steps and you reproduce the red dots
+        from the hook figure exactly. (You can flip back and verify
+        the arithmetic.)
+
+        ### How small is small enough?
+
+        That's what the rest of this chapter answers. The next beat
+        watches Euler walk the field step by step in an animation —
+        same equation, same $h$, but with the slope vector drawn at
+        each step so you can see the recipe in motion. The beat
+        after that gives you a slider so you can shrink $h$ yourself
+        and watch the red polyline collapse onto the smooth curve.
+        """
+    )
+    return
+
+
 # --- Tutor (BYO-key chat, from delib). Skeleton for now; chapter content
 # --- will fill in below as later beats are built.
 @app.cell
