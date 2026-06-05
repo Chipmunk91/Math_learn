@@ -652,10 +652,17 @@ def persist_key(api_field, key_bridge):
         key_bridge.widget.save_value = new_val
 
 
-def tutor_chat(api_field, key_bridge, picker, context, *, prompts=None,
+def tutor_chat(api_field, key_bridge, context, *, prompts=None,
                model="claude-sonnet-4-6"):
     """A BYO-key chat tutor (``mo.ui.chat``) wired to Claude client-side, with the
-    chapter ``context`` and any picked-cell text folded into the system prompt.
+    chapter ``context`` folded into the system prompt.
+
+    The previous ``picker`` argument (cell-picker widget) was removed because
+    it caused the tutor_chat cell to re-execute every time the picker's value
+    changed, recreating the chat widget and leaking previous draft input back
+    into the new chat box (reader-reported bug: "previous query revives at
+    next chat"). The "ask about this cell" affordance is gone; the student
+    can paste cell content into the chat directly if they want to reference it.
 
     Default model is Claude Sonnet 4.6 — the previous Haiku-4.5 default was
     too eager and chatbot-bright for the Socratic style we want here (and
@@ -694,13 +701,9 @@ def tutor_chat(api_field, key_bridge, picker, context, *, prompts=None,
 
     async def chat_model(messages, config):
         key = api_field.value or (key_bridge.value or {}).get("key", "")
-        sys = system
-        picked = (picker.value or {}).get("picked_text", "")
-        if picked:
-            sys += '\n\nThe student is asking about this cell:\n"""\n' + picked + '\n"""'
         msgs = [{"role": m.role, "content": m.content} for m in messages
                 if m.role in ("user", "assistant") and m.content]
-        body = json.dumps({"model": model, "max_tokens": 800, "system": sys, "messages": msgs})
+        body = json.dumps({"model": model, "max_tokens": 800, "system": system, "messages": msgs})
         headers = {"content-type": "application/json", "x-api-key": key,
                    "anthropic-version": "2023-06-01",
                    "anthropic-dangerous-direct-browser-access": "true"}
@@ -726,13 +729,14 @@ def tutor_chat(api_field, key_bridge, picker, context, *, prompts=None,
     return mo.ui.chat(chat_model, prompts=prompts or [])
 
 
-def tutor_sidebar(api_field, key_bridge, picker, chatbox, *, title="Tutor"):
-    """Render the tutor as a left sidebar: key field, then (once a key is set) the
-    cell picker and chat; otherwise a prompt to add a key."""
+def tutor_sidebar(api_field, key_bridge, chatbox, *, title="Tutor"):
+    """Render the tutor as a left sidebar: key field, then (once a key is set)
+    the chat; otherwise a prompt to add a key. The cell-picker widget was
+    removed alongside the picker arg in tutor_chat (see that docstring)."""
     key_ok = bool(api_field.value or (key_bridge.value or {}).get("key"))
     items = [mo.md(f"### {title}"), key_bridge, api_field]
     if key_ok:
-        items += [mo.md("key set ✓"), picker, chatbox]
+        items += [mo.md("key set ✓"), chatbox]
     else:
         items.append(mo.callout(mo.md(
             "**Add your Anthropic API key** above to ask the tutor.\n\nNo key yet? "

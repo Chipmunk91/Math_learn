@@ -528,12 +528,6 @@ def _(delib):
 
 @app.cell
 def _(delib):
-    picker = delib.cell_picker_widget()
-    return (picker,)
-
-
-@app.cell
-def _(delib):
     api_field = delib.key_field()
     return (api_field,)
 
@@ -545,9 +539,9 @@ def _(api_field, delib, key_bridge):
 
 
 @app.cell
-def _(api_field, delib, key_bridge, picker):
+def _(api_field, delib, key_bridge):
     chatbox = delib.tutor_chat(
-        api_field, key_bridge, picker,
+        api_field, key_bridge,
         "This is Chapter 1 of a differential-equations course: first-order ODEs and "
         "slope fields, worked through the logistic equation y' = a*y*(1 - y/K) with "
         "growth rate a and carrying capacity K (equilibria at y=0 and y=K).",
@@ -561,8 +555,8 @@ def _(api_field, delib, key_bridge, picker):
 
 
 @app.cell(hide_code=True)
-def _(api_field, chatbox, delib, key_bridge, picker):
-    delib.tutor_sidebar(api_field, key_bridge, picker, chatbox)
+def _(api_field, chatbox, delib, key_bridge):
+    delib.tutor_sidebar(api_field, key_bridge, chatbox)
     return
 
 

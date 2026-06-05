@@ -492,12 +492,6 @@ def _(delib):
 
 @app.cell
 def _(delib):
-    picker = delib.cell_picker_widget()
-    return (picker,)
-
-
-@app.cell
-def _(delib):
     api_field = delib.key_field()
     return (api_field,)
 
@@ -509,9 +503,9 @@ def _(api_field, delib, key_bridge):
 
 
 @app.cell
-def _(api_field, delib, key_bridge, picker):
+def _(api_field, delib, key_bridge):
     chatbox = delib.tutor_chat(
-        api_field, key_bridge, picker,
+        api_field, key_bridge,
         "This is Chapter 3 of a differential-equations course: 1-D fixed points "
         "and stability, worked through the bistable equation x' = x - x^3 (the "
         "wall-light-switch story). Key visuals: phase line (filled = stable, "
@@ -527,8 +521,8 @@ def _(api_field, delib, key_bridge, picker):
 
 
 @app.cell(hide_code=True)
-def _(api_field, chatbox, delib, key_bridge, picker):
-    delib.tutor_sidebar(api_field, key_bridge, picker, chatbox)
+def _(api_field, chatbox, delib, key_bridge):
+    delib.tutor_sidebar(api_field, key_bridge, chatbox)
     return
 
 

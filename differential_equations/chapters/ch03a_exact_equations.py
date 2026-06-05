@@ -1022,12 +1022,6 @@ def _(delib):
 
 @app.cell
 def _(delib):
-    picker = delib.cell_picker_widget()
-    return (picker,)
-
-
-@app.cell
-def _(delib):
     api_field = delib.key_field()
     return (api_field,)
 
@@ -1039,9 +1033,9 @@ def _(api_field, delib, key_bridge):
 
 
 @app.cell
-def _(api_field, delib, key_bridge, picker):
+def _(api_field, delib, key_bridge):
     chatbox = delib.tutor_chat(
-        api_field, key_bridge, picker,
+        api_field, key_bridge,
         "This is Chapter 3, Part 1 of a differential-equations course: "
         "*exact* first-order equations, anchored to the hiker-on-a-contour-map "
         "story. Key ideas: the exactness condition M_y = N_x; what it means "
@@ -1065,8 +1059,8 @@ def _(api_field, delib, key_bridge, picker):
 
 
 @app.cell(hide_code=True)
-def _(api_field, chatbox, delib, key_bridge, picker):
-    delib.tutor_sidebar(api_field, key_bridge, picker, chatbox)
+def _(api_field, chatbox, delib, key_bridge):
+    delib.tutor_sidebar(api_field, key_bridge, chatbox)
     return
 
 
