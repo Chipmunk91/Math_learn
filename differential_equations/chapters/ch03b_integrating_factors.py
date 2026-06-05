@@ -1028,6 +1028,7 @@ def _(delib, e1_ai, e1_code, e1_gen, e1_run):
         "**1.** Solve $\\dot y = y^2$ with $y(0) = 1$ by Bernoulli "
         "substitution. Find $y(0.5)$ and put it in `answer`.",
         e1_ai, e1_gen, e1_code, e1_run,
+        with_ai=False,
     )
     return
 
@@ -1094,6 +1095,7 @@ def _(delib, e2_ai, e2_code, e2_gen, e2_run):
         "Bernoulli substitution. Find $y(e)$ (where $e \\approx 2.718$) "
         "and put it in `answer`.",
         e2_ai, e2_gen, e2_code, e2_run,
+        with_ai=False,
     )
     return
 
@@ -1158,6 +1160,7 @@ def _(delib, e3_ai, e3_code, e3_gen, e3_run):
         "**3.** Solve $\\dot y = (x + y)/x$ with $y(1) = 0$ by "
         "homogeneous substitution. Find $y(e)$ and put it in `answer`.",
         e3_ai, e3_gen, e3_code, e3_run,
+        with_ai=False,
     )
     return
 

@@ -633,9 +633,23 @@ def cell_picker_widget():
 
 
 def persist_key(api_field, key_bridge):
-    """Persist a key typed in ``api_field`` to the shared slot via the bridge."""
-    if api_field.value:
-        key_bridge.widget.save_value = api_field.value
+    """Persist a key typed in ``api_field`` to the shared slot via the bridge.
+
+    Idempotent: only writes ``save_value`` when it actually differs from
+    what the bridge already holds. The previous unconditional write caused
+    a reactive cascade -- writing the same value triggered the bridge's JS
+    to set ``key`` (a syncing traitlet), which propagated back to Python,
+    which re-ran every cell depending on ``key_bridge`` (including the
+    tutor chat and the exercise widgets), wiping in-progress user input
+    after each pass. The guard breaks the loop.
+    """
+    new_val = api_field.value or ""
+    try:
+        current = key_bridge.widget.save_value
+    except Exception:
+        current = ""
+    if new_val and new_val != current:
+        key_bridge.widget.save_value = new_val
 
 
 def tutor_chat(api_field, key_bridge, picker, context, *, prompts=None,

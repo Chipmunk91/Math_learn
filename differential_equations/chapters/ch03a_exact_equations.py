@@ -832,6 +832,7 @@ def _(delib, e1_ai, e1_code, e1_gen, e1_run):
         "**1.** For $(\\cos x + 2xy)\\,dx + (x^2 - \\sin y)\\,dy = 0$: check "
         "exactness, recover $F$, and evaluate $F(1, 0)$. Put it in `answer`.",
         e1_ai, e1_gen, e1_code, e1_run,
+        with_ai=False,
     )
     return
 
@@ -894,6 +895,7 @@ def _(delib, e2_ai, e2_code, e2_gen, e2_run):
         "through $(x, y) = (1, 0)$ is the contour $F(x, y) = C$ for some "
         "constant $C$. Find $C$ and put it in `answer`.",
         e2_ai, e2_gen, e2_code, e2_run,
+        with_ai=False,
     )
     return
 
