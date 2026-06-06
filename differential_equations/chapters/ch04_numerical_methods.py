@@ -531,6 +531,17 @@ def _(mo):
         microscope physicists and engineers reach for whenever they
         suspect something obeys a power law and want to read off the
         exponent.
+
+        Let's take an example on the same anchor equation we've been
+        walking all chapter, $y' = y - x^2$ with $y(0) = 1$. We'll
+        pick seven step sizes — $h = 0.5$, then halved again and
+        again down to $h \approx 0.008$ — run Euler all the way out
+        to $x = 2$ at each step size, and measure the gap between
+        Euler's last point and the exact value $y(2) = 2 + 4 + 4 - e^2$.
+        Plot those seven $(h, |\text{error}|)$ pairs on log-log axes
+        and lay a dashed reference line of slope $1$ on top. If the
+        Taylor argument is right, the seven red dots should lie on
+        that reference line — at least once $h$ is small enough.
         """
     )
     return
