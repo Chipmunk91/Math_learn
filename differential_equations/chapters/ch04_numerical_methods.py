@@ -510,13 +510,60 @@ def _(mo):
 
         ### See it on a log-log plot
 
-        The relationship $E \approx C h^p$ becomes a **straight line
-        of slope $p$** when you plot $\log E$ vs $\log h$. The figure
-        below sweeps $h$ from $0.5$ down to about $0.008$ (each step
-        halved), measures the gap at $x = 2$, and plots the result.
-        The dashed grey reference line has slope exactly $1$, which is
-        what theory predicts. Euler's points should lie on it once
-        $h$ is small enough that the asymptotic regime has kicked in.
+        We have a *prediction* — $E(h) \approx C \cdot h$ for Euler —
+        and we'd like to verify it from actual numbers. The cleanest
+        way is to plot the error against the step size, but on
+        **logarithmic axes** for both. Here's why.
+
+        Take the logarithm of both sides of $E = C \cdot h^p$:
+
+        $$
+        \log E \;=\; \log C \;+\; p \cdot \log h.
+        $$
+
+        Compare with the equation of a straight line, $y = b + m \cdot x$.
+        Same shape. With $\log h$ playing the role of $x$ and $\log E$
+        the role of $y$, the exponent $p$ becomes the **slope** of a
+        straight line. So a power law $E = C h^p$ — which on linear
+        axes is a curve — becomes a **straight line on log-log axes**,
+        and the *slope of that line is the exponent you're trying to
+        measure*. That's the entire trick. Log-log plots are the
+        microscope physicists and engineers reach for whenever they
+        suspect something obeys a power law and want to read off the
+        exponent.
+
+        ### How to read a slope of 1 on a log-log plot
+
+        On linear axes, slope 1 means "rise 1, run 1." On log-log
+        axes, the rule is the same but with *decades* instead of
+        units: **slope 1 means the line falls (or rises) by one
+        decade in $y$ for every one decade in $x$.** Shrink $h$ by
+        10× — from $0.1$ down to $0.01$ — and the error should also
+        shrink by 10×. Shrink $h$ by 100× and the error shrinks by
+        100×. The dashed grey line in the figure is exactly that
+        reference: a perfect slope-1 line.
+
+        Now look at the red points. At **small $h$** (left side of
+        the plot), the red dots sit right on top of the dashed line.
+        Euler is converging at slope 1 — exactly what the Taylor
+        argument predicted. At **large $h$** (right side), the red
+        line is slightly *flatter* than the reference: the error
+        grows a little slower than the formula says it should. That's
+        the same effect the ratio table picks up — the ratios climb
+        from $1.57$ up to $1.98$ rather than being a flat $2$. The
+        formula $E \approx C h^p$ is an **asymptotic** statement,
+        meaning it becomes exact only in the limit $h \to 0$. Out at
+        $h = 0.5$ the higher-order terms (the $h^2$, $h^3$ bits the
+        Taylor expansion threw away) still bend the curve a little.
+        Shrink $h$ enough and they vanish; the asymptotic slope
+        rules.
+
+        That's the whole story this plot tells: **in the small-$h$
+        regime where the prediction is supposed to hold, Euler
+        converges at exactly slope 1.** Order of accuracy isn't a
+        vibes-level claim about whether the method is "fast" or
+        "slow" — it's a sharp, measurable exponent, and a log-log
+        plot lets you eyeball it directly.
         """
     )
     return
@@ -568,8 +615,10 @@ def _(delib, go, mo, np):
                  "(y' = y − x²)",
             x=0.02,
         ),
-        xaxis=dict(title="step size  h", type="log", zeroline=False),
-        yaxis=dict(title="|error at x = 2|", type="log", zeroline=False),
+        xaxis=dict(title="step size  h  (log scale)", type="log",
+                   zeroline=False),
+        yaxis=dict(title="|error at x = 2|  (log scale)", type="log",
+                   zeroline=False),
         paper_bgcolor="white", plot_bgcolor="white",
         height=440, showlegend=True,
         legend=dict(x=0.02, y=0.98, bgcolor="rgba(255,255,255,0.85)"),
@@ -591,14 +640,16 @@ def _(delib, go, mo, np):
     mo.vstack([
         _fig,
         mo.md(
-            "**Read it off the log-log plot:** the red points lie on a "
-            "straight line, and that line's slope is the order of the "
-            "method. For Euler, slope $\\approx 1$ — exactly what the "
-            "Taylor argument above predicted.\n\n"
-            "**Read it off the table:** the rightmost column is the "
-            "ratio of one row's error to the next. It approaches $2$ "
-            "from below. That number *is* the order: each halving of "
-            "$h$ multiplies the accuracy by $2^1 = 2$.\n\n"
+            "**Eyeball the slope.** The leftmost red point sits at "
+            "roughly $h = 0.008$ and error $\\approx 0.008$. The next "
+            "point right of it sits at $h = 0.016$ (one factor of two "
+            "bigger) and error $\\approx 0.015$ (one factor of two "
+            "bigger). That's slope 1 in action — and exactly why the "
+            "red dots cling to the dashed reference at the small-$h$ end.\n\n"
+            "**Eyeball the table.** The rightmost column is the ratio of "
+            "one row's error to the next. It approaches $2$ from below "
+            "as $h$ shrinks. That number *is* the order: each halving "
+            "of $h$ multiplies the accuracy by $2^1 = 2$.\n\n"
             f"{_table}\n\n"
             "**What this costs you.** To shrink the error by 10×, you "
             "need $h$ to shrink by 10× — which means **10× more steps**, "
