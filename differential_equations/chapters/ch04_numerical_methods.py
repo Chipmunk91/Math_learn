@@ -446,6 +446,172 @@ def _(delib, go, h_panel, mo, np):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 6 (intro) — turn the slider's "halving h halves the error"
+    # observation into a formula. Briefly distinguish local vs global
+    # error, sketch the Taylor argument for why Euler is order 1, set
+    # up the log-log figure below as the empirical confirmation.
+    mo.md(
+        r"""
+        ## Why halving the step halves the error
+
+        The slider gave you the headline result: shrink $h$, and the
+        gap at $x = 2$ shrinks by roughly the same factor. Let's name
+        the relationship.
+
+        For a numerical method, the **global error** $E(h)$ is how far
+        off the numerical solution is from the true solution at a fixed
+        final $x$, when you took the walk with step size $h$. For most
+        well-behaved methods, this error settles into the form
+
+        $$
+        E(h) \;\approx\; C \cdot h^{p}
+        $$
+
+        for some constant $C$ that depends on the equation and the
+        interval, and some exponent $p$ that depends only on the
+        **method**. That exponent $p$ is the method's **order of
+        accuracy**. Euler's method is **first-order**, meaning $p = 1$:
+        the error is proportional to $h$. Halve $h$, halve the error.
+
+        ### Where does $p = 1$ come from?
+
+        Take a Taylor expansion of the true solution around the current
+        point $(x_n, y_n)$:
+
+        $$
+        y(x_n + h) \;=\; y(x_n) \;+\; h\, y'(x_n) \;+\; \tfrac{1}{2}\, h^2\, y''(x_n) \;+\; \mathcal{O}(h^3).
+        $$
+
+        Euler's step *only keeps the first two terms* — it uses
+        $y(x_n) + h \cdot f(x_n, y_n)$, which is exactly $y(x_n) + h
+        \cdot y'(x_n)$. So the **per-step error** (called the *local
+        truncation error*) is what Euler threw away:
+
+        $$
+        y(x_n + h) \;-\; \bigl[y_n + h \cdot f(x_n, y_n)\bigr]
+        \;=\; \tfrac{1}{2}\, h^2\, y''(x_n) \;+\; \mathcal{O}(h^3).
+        $$
+
+        Each step costs you something on the order of $h^2$. But to
+        walk across a fixed interval of length $L$, you take $L/h$
+        steps — and these errors accumulate. Multiplying $h^2$ per
+        step by $L/h$ steps gives a **global error of order $h$**.
+        That's Euler's $p = 1$.
+
+        The argument generalises. Any method whose per-step error is
+        $\mathcal{O}(h^{p+1})$ has global error $\mathcal{O}(h^{p})$,
+        because you take $L/h$ such steps. So matching higher-order
+        Taylor terms in the local step buys you a steeper error
+        curve globally. **RK4** matches through $h^4$ locally, so its
+        global error is $\mathcal{O}(h^4)$ — quartic. We'll build it
+        in Beat 7.
+
+        ### See it on a log-log plot
+
+        The relationship $E \approx C h^p$ becomes a **straight line
+        of slope $p$** when you plot $\log E$ vs $\log h$. The figure
+        below sweeps $h$ from $0.5$ down to about $0.008$ (each step
+        halved), measures the gap at $x = 2$, and plots the result.
+        The dashed grey reference line has slope exactly $1$, which is
+        what theory predicts. Euler's points should lie on it once
+        $h$ is small enough that the asymptotic regime has kicked in.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, go, mo, np):
+    # Beat 6 — log-log plot of |gap at x = 2| vs h for Euler on the
+    # anchor equation y' = y - x^2. Reference dashed line of slope 1
+    # makes the order-of-accuracy claim visually checkable. Same
+    # equation as Beats 1, 3, 4, 5 — the chapter has one running
+    # anchor for the smooth-convergence story.
+    _f = lambda x, y: y - x**2
+    _x_end = 2.0
+    _exact_end = 2 + 2 * _x_end + _x_end**2 - float(np.exp(_x_end))
+
+    _hs = [0.5 / (2 ** k) for k in range(7)]  # 0.5, 0.25, ..., 0.0078125
+    _errs = []
+    for _h in _hs:
+        _n = max(1, int(round(_x_end / _h)))
+        _, _ys = delib.euler_steps(_f, 0.0, 1.0, _h, _n)
+        _errs.append(abs(float(_ys[-1]) - _exact_end))
+
+    # Reference line through the smallest-h point with slope exactly 1.
+    _h_arr = np.array(_hs)
+    _e_arr = np.array(_errs)
+    _C_ref = _e_arr[-1] / _h_arr[-1]  # anchor at the cleanest point
+    _ref = _C_ref * _h_arr
+
+    _fig = go.Figure()
+    _fig.add_trace(go.Scatter(
+        x=_h_arr, y=_ref, mode="lines",
+        line=dict(color="#7c8aa0", width=1.8, dash="dash"),
+        name="slope 1 reference  (E = C·h)",
+        hoverinfo="skip",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=_h_arr, y=_e_arr, mode="lines+markers",
+        line=dict(color="#d1495b", width=2),
+        marker=dict(size=10, color="#d1495b",
+                    line=dict(color="#7a2a3a", width=1.2)),
+        name="Euler — measured |gap at x = 2|",
+        hovertemplate="h = %{x:.4f}<br>|error| = %{y:.4e}<extra></extra>",
+    ))
+    _fig.update_layout(
+        template="plotly_white",
+        title=dict(
+            text="Order of accuracy: |error at x = 2|  vs  step size h   "
+                 "(y' = y − x²)",
+            x=0.02,
+        ),
+        xaxis=dict(title="step size  h", type="log", zeroline=False),
+        yaxis=dict(title="|error at x = 2|", type="log", zeroline=False),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=440, showlegend=True,
+        legend=dict(x=0.02, y=0.98, bgcolor="rgba(255,255,255,0.85)"),
+        margin=dict(l=70, r=20, t=60, b=55),
+    )
+
+    # Tidy table of the same numbers so the halving-ratio claim is
+    # checkable digit-by-digit, not just visually.
+    _rows = ["| h | n_steps | \\|error\\| | error(prev) / error(cur) |",
+             "|---|---|---|---|"]
+    _prev = None
+    for _h, _e in zip(_hs, _errs):
+        _ratio = "—" if _prev is None else f"{_prev / _e:.3f}"
+        _n = max(1, int(round(_x_end / _h)))
+        _rows.append(f"| {_h:.5f} | {_n} | {_e:.4e} | {_ratio} |")
+        _prev = _e
+    _table = "\n".join(_rows)
+
+    mo.vstack([
+        _fig,
+        mo.md(
+            "**Read it off the log-log plot:** the red points lie on a "
+            "straight line, and that line's slope is the order of the "
+            "method. For Euler, slope $\\approx 1$ — exactly what the "
+            "Taylor argument above predicted.\n\n"
+            "**Read it off the table:** the rightmost column is the "
+            "ratio of one row's error to the next. It approaches $2$ "
+            "from below. That number *is* the order: each halving of "
+            "$h$ multiplies the accuracy by $2^1 = 2$.\n\n"
+            f"{_table}\n\n"
+            "**What this costs you.** To shrink the error by 10×, you "
+            "need $h$ to shrink by 10× — which means **10× more steps**, "
+            "i.e. 10× more compute. That linear tradeoff is fine when "
+            "the equation is benign, but it's brutal when you need many "
+            "digits of accuracy. The next section builds RK4, which "
+            "buys 10× more accuracy for only $10^{1/4} \\approx 1.8$× "
+            "more steps. That's the whole reason RK4 exists."
+        ),
+    ])
+    return
+
+
 # --- Tutor (BYO-key chat, from delib). Skeleton for now; chapter content
 # --- will fill in below as later beats are built.
 @app.cell
