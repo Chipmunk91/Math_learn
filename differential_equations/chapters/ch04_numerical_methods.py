@@ -534,14 +534,18 @@ def _(mo):
 
         Let's take an example on the same anchor equation we've been
         walking all chapter, $y' = y - x^2$ with $y(0) = 1$. We'll
-        pick seven step sizes — $h = 0.5$, then halved again and
-        again down to $h \approx 0.008$ — run Euler all the way out
-        to $x = 2$ at each step size, and measure the gap between
-        Euler's last point and the exact value $y(2) = 2 + 4 + 4 - e^2$.
-        Plot those seven $(h, |\text{error}|)$ pairs on log-log axes
-        and lay a dashed reference line of slope $1$ on top. If the
-        Taylor argument is right, the seven red dots should lie on
-        that reference line — at least once $h$ is small enough.
+        pick **nine step sizes** spaced cleanly along the log axis —
+        the "1, 2, 5" sequence per decade that scientific plots
+        traditionally use: $h = 0.5,\; 0.2,\; 0.1,\; 0.05,\; 0.02,\;
+        0.01,\; 0.005,\; 0.002,\; 0.001$. (No more $0.0078125$ kind
+        of numbers — these are round.) For each $h$, run Euler all
+        the way out to $x = 2$ and measure the gap between Euler's
+        last point and the exact value $y(2) = 2 + 4 + 4 - e^2
+        \approx 2.611$. Plot those nine $(h,\; |\text{error}|)$
+        pairs on log-log axes and lay a dashed reference line of
+        slope $1$ on top. If the Taylor argument is right, the red
+        dots should lie on that reference line — at least once $h$
+        is small enough.
         """
     )
     return
@@ -558,7 +562,10 @@ def _(delib, go, np):
     _x_end = 2.0
     _exact_end = 2 + 2 * _x_end + _x_end**2 - float(np.exp(_x_end))
 
-    _hs = [0.5 / (2 ** k) for k in range(7)]  # 0.5, 0.25, ..., 0.0078125
+    # 1-2-5 sequence per decade — the cleanest spacing for log axes,
+    # and the only h values that fall *on* the visible tick marks (no
+    # more arbitrary 0.0078125-flavoured numbers). Spans 3 decades.
+    _hs = [0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001]
     _errs = []
     for _h in _hs:
         _n = max(1, int(round(_x_end / _h)))
@@ -571,8 +578,8 @@ def _(delib, go, np):
     _C_ref = _e_arr[-1] / _h_arr[-1]  # anchor at the cleanest point
     _ref = _C_ref * _h_arr
 
-    # Per-point text labels: "h = 0.250, E = 0.188" beside each marker
-    # so the picture is self-contained without a second table look-up.
+    # Per-point text labels: "h = 0.05, E = 0.047" beside each marker
+    # so the picture is self-contained without a table look-up.
     _labels = [f"h = {h:g},  E = {e:.3g}" for h, e in zip(_hs, _errs)]
 
     _fig = go.Figure()
@@ -595,7 +602,9 @@ def _(delib, go, np):
         hovertemplate="h = %{x:.4f}<br>|error| = %{y:.4e}<extra></extra>",
     ))
     # dtick=1 on a log axis = one tick per decade; suppresses the
-    # 2,3,...9 minor labels that were reading as a second axis.
+    # 2,3,...9 minor labels that were reading as a second axis. Range
+    # padded on the left for the leftmost label and on the right so the
+    # 'h = 0.5, E = ...' label doesn't clip.
     _fig.update_layout(
         template="plotly_white",
         title=dict(
@@ -605,16 +614,16 @@ def _(delib, go, np):
         ),
         xaxis=dict(title="step size  h  (log scale)", type="log",
                    dtick=1, minor=dict(showgrid=False),
-                   range=[np.log10(_hs[-1]) - 0.5, np.log10(_hs[0]) + 0.3],
+                   range=[np.log10(_hs[-1]) - 0.6, np.log10(_hs[0]) + 0.5],
                    zeroline=False),
         yaxis=dict(title="|error at x = 2|  (log scale)", type="log",
                    dtick=1, minor=dict(showgrid=False),
-                   range=[np.log10(min(_errs)) - 0.6, np.log10(max(_errs)) + 0.5],
+                   range=[np.log10(min(_errs)) - 0.7, np.log10(max(_errs)) + 0.6],
                    zeroline=False),
         paper_bgcolor="white", plot_bgcolor="white",
-        height=480, showlegend=True,
+        height=560, showlegend=True,
         legend=dict(x=0.02, y=0.98, bgcolor="rgba(255,255,255,0.85)"),
-        margin=dict(l=70, r=20, t=60, b=55),
+        margin=dict(l=70, r=40, t=60, b=55),
     )
     _fig
     return
@@ -628,21 +637,26 @@ def _(delib, mo, np):
     _f = lambda x, y: y - x**2
     _x_end = 2.0
     _exact_end = 2 + 2 * _x_end + _x_end**2 - float(np.exp(_x_end))
-    _hs = [0.5 / (2 ** k) for k in range(7)]
+    _hs = [0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001]
     _errs = []
     for _h in _hs:
         _n = max(1, int(round(_x_end / _h)))
         _, _ys = delib.euler_steps(_f, 0.0, 1.0, _h, _n)
         _errs.append(abs(float(_ys[-1]) - _exact_end))
 
-    _rows = ["| h | n_steps | \\|error\\| | error(prev) / error(cur) |",
-             "|---|---|---|---|"]
-    _prev = None
+    # Table compares the h-shrink ratio to the error-shrink ratio. For
+    # first-order (slope 1), they should match. With the 1-2-5 sequence
+    # the h ratio alternates 2.5, 2, 2, 2.5, 2, 2, ... and the error
+    # ratio tracks it almost exactly once h is small.
+    _rows = ["| h | n_steps | \\|error\\| | h(prev) / h(cur) | error(prev) / error(cur) |",
+             "|---|---|---|---|---|"]
+    _prev_h, _prev_e = None, None
     for _h, _e in zip(_hs, _errs):
-        _ratio = "—" if _prev is None else f"{_prev / _e:.3f}"
+        _hr = "—" if _prev_h is None else f"{_prev_h / _h:.2f}"
+        _er = "—" if _prev_e is None else f"{_prev_e / _e:.3f}"
         _n = max(1, int(round(_x_end / _h)))
-        _rows.append(f"| {_h:.5f} | {_n} | {_e:.4e} | {_ratio} |")
-        _prev = _e
+        _rows.append(f"| {_h:g} | {_n} | {_e:.4e} | {_hr} | {_er} |")
+        _prev_h, _prev_e = _h, _e
     _table = "\n".join(_rows)
 
     mo.md(
@@ -654,9 +668,14 @@ def _(delib, mo, np):
         "10× and the error should also shrink by 10×. The dashed grey "
         "line is exactly that reference: a perfect slope-1 line.\n\n"
         "**Eyeball the slope.** Look at the two leftmost red points: "
-        "$h$ goes from $0.0078$ to $0.0156$ (one doubling), and the "
-        "error goes from $0.0077$ to $0.0153$ (one doubling). Same "
-        "factor on both axes. That's slope 1 in action.\n\n"
+        "$h$ goes from $0.001$ to $0.002$ (a doubling), and the error "
+        "goes from $0.000999$ to $0.001995$ (also a doubling). Same "
+        "factor on both axes — that's slope 1 in action. Step right "
+        "to the next pair ($h = 0.002 \\to 0.005$, a $2.5\\times$ "
+        "step) and the error goes from $0.001995$ to $0.004969$, "
+        "almost exactly $2.5\\times$ as well. Whatever factor you "
+        "shrink $h$ by, the error shrinks by the same factor — that's "
+        "*literally what 'slope 1' means*.\n\n"
         "**Why the curve flattens at large $h$.** Out at the rightmost "
         "points, the red line is slightly *flatter* than the dashed "
         "reference — the error grows a bit slower than the formula "
@@ -665,10 +684,13 @@ def _(delib, mo, np):
         "Out at $h = 0.5$ the higher-order Taylor terms (the $h^2$, "
         "$h^3$ bits Euler threw away) still bend the curve. Shrink $h$ "
         "and they vanish.\n\n"
-        "**Eyeball the table.** The rightmost column is the ratio of "
-        "one row's error to the next. It approaches $2$ from below as "
-        "$h$ shrinks — each halving of $h$ multiplies the accuracy by "
-        f"$2^1 = 2$.\n\n{_table}\n\n"
+        "**Eyeball the table.** The last two columns are the *h ratio* "
+        "and the *error ratio* between consecutive rows. For a "
+        "first-order method these should be equal. Out at large $h$ "
+        "the error ratio falls short of the $h$ ratio (1.86 vs 2.5, "
+        "1.79 vs 2). At small $h$ they line up to three digits "
+        f"(2.491 vs 2.50, 1.998 vs 2.00). That's the asymptotic regime "
+        f"locking in.\n\n{_table}\n\n"
         "**What this costs you.** To shrink the error by 10×, you need "
         "$h$ to shrink by 10× — which means **10× more steps**, i.e. "
         "10× more compute. That linear tradeoff is fine when the "
