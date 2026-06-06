@@ -27,6 +27,8 @@ __all__ = [
     "potential_plot",
     "level_curves",
     "euler_steps",
+    "heun_steps",
+    "rk4_steps",
 ]
 
 # y' = f(x, y) for a first-order scalar ODE.
@@ -310,6 +312,50 @@ def euler_steps(
     for i in range(n):
         xs[i + 1] = xs[i] + h
         ys[i + 1] = ys[i] + h * float(f(xs[i], ys[i]))
+    return xs, ys
+
+
+def heun_steps(
+    f: Callable[[float, float], float],
+    x0: float,
+    y0: float,
+    h: float,
+    n: int,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Heun's method (improved Euler / RK2 trapezoidal): two slope reads,
+    averaged. Second-order accurate — halving h quarters the error."""
+    xs = np.empty(n + 1, dtype=float)
+    ys = np.empty(n + 1, dtype=float)
+    xs[0], ys[0] = float(x0), float(y0)
+    for i in range(n):
+        k1 = float(f(xs[i], ys[i]))
+        k2 = float(f(xs[i] + h, ys[i] + h * k1))
+        xs[i + 1] = xs[i] + h
+        ys[i + 1] = ys[i] + 0.5 * h * (k1 + k2)
+    return xs, ys
+
+
+def rk4_steps(
+    f: Callable[[float, float], float],
+    x0: float,
+    y0: float,
+    h: float,
+    n: int,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Classical 4-stage Runge–Kutta. Four slope reads per step, combined
+    with Simpson-like weights ``(1, 2, 2, 1) / 6``. Fourth-order accurate —
+    halving h cuts the error by 16."""
+    xs = np.empty(n + 1, dtype=float)
+    ys = np.empty(n + 1, dtype=float)
+    xs[0], ys[0] = float(x0), float(y0)
+    for i in range(n):
+        x_i, y_i = xs[i], ys[i]
+        k1 = float(f(x_i, y_i))
+        k2 = float(f(x_i + 0.5 * h, y_i + 0.5 * h * k1))
+        k3 = float(f(x_i + 0.5 * h, y_i + 0.5 * h * k2))
+        k4 = float(f(x_i + h, y_i + h * k3))
+        xs[i + 1] = x_i + h
+        ys[i + 1] = y_i + (h / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
     return xs, ys
 
 

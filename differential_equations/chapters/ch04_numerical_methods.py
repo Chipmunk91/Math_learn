@@ -537,8 +537,7 @@ def _(mo):
         pick **nine step sizes** spaced cleanly along the log axis —
         the "1, 2, 5" sequence per decade that scientific plots
         traditionally use: $h = 0.5,\; 0.2,\; 0.1,\; 0.05,\; 0.02,\;
-        0.01,\; 0.005,\; 0.002,\; 0.001$. (No more $0.0078125$ kind
-        of numbers — these are round.)
+        0.01,\; 0.005,\; 0.002,\; 0.001$.
 
         For each one of those nine $h$ values, we run a **completely
         independent** Euler walk:
@@ -678,44 +677,286 @@ def _(delib, mo, np):
     _table = "\n".join(_rows)
 
     mo.md(
-        "### How to read a slope of 1 on the picture above\n\n"
-        "On linear axes, slope 1 means \"rise 1, run 1.\" On log-log "
-        "axes, the rule is the same but with *decades* instead of "
-        "units: **slope 1 means the line falls (or rises) by one "
-        "decade in $y$ for every one decade in $x$.** Shrink $h$ by "
-        "10× and the error should also shrink by 10×. The dashed grey "
-        "line is exactly that reference: a perfect slope-1 line.\n\n"
-        "**Eyeball the slope.** Look at the two leftmost red points: "
-        "$h$ goes from $0.001$ to $0.002$ (a doubling), and the error "
-        "goes from $0.000999$ to $0.001995$ (also a doubling). Same "
-        "factor on both axes — that's slope 1 in action. Step right "
-        "to the next pair ($h = 0.002 \\to 0.005$, a $2.5\\times$ "
-        "step) and the error goes from $0.001995$ to $0.004969$, "
-        "almost exactly $2.5\\times$ as well. Whatever factor you "
-        "shrink $h$ by, the error shrinks by the same factor — that's "
-        "*literally what 'slope 1' means*.\n\n"
-        "**Why the curve flattens at large $h$.** Out at the rightmost "
-        "points, the red line is slightly *flatter* than the dashed "
-        "reference — the error grows a bit slower than the formula "
-        "predicts. That's because $E \\approx C h^p$ is an "
-        "**asymptotic** statement, true only in the limit $h \\to 0$. "
-        "Out at $h = 0.5$ the higher-order Taylor terms (the $h^2$, "
-        "$h^3$ bits Euler threw away) still bend the curve. Shrink $h$ "
-        "and they vanish.\n\n"
-        "**Eyeball the table.** The last two columns are the *h ratio* "
-        "and the *error ratio* between consecutive rows. For a "
-        "first-order method these should be equal. Out at large $h$ "
-        "the error ratio falls short of the $h$ ratio (1.86 vs 2.5, "
-        "1.79 vs 2). At small $h$ they line up to three digits "
-        f"(2.491 vs 2.50, 1.998 vs 2.00). That's the asymptotic regime "
-        f"locking in.\n\n{_table}\n\n"
-        "**What this costs you.** To shrink the error by 10×, you need "
-        "$h$ to shrink by 10× — which means **10× more steps**, i.e. "
-        "10× more compute. That linear tradeoff is fine when the "
-        "equation is benign, but it's brutal when you need many digits "
-        "of accuracy. The next section builds RK4, which buys 10× more "
-        "accuracy for only $10^{1/4} \\approx 1.8$× more steps. "
-        "That's the whole reason RK4 exists."
+        "### What the picture says about the trade-off\n\n"
+        "**The exchange rate is one-for-one.** *Whatever factor you "
+        "shrink $h$ by, the error shrinks by the same factor* — at "
+        "least once $h$ is small enough. Look at the leftmost pair "
+        "of dots: $h$ doubles from $0.001$ to $0.002$ and the error "
+        "doubles from $0.000999$ to $0.001995$. Step right one pair "
+        "and $h$ goes up $2.5\\times$; the error goes up $2.5\\times$ "
+        "too. Both axes move in lockstep. So *the number of extra "
+        "steps you take is literally how much accuracy you buy*. "
+        "Halve $h$ → twice as many steps → twice the accuracy. Ten "
+        "times the steps → ten times the accuracy. That linear trade "
+        "is the whole bargain Euler offers.\n\n"
+        "**The bargain breaks down at large $h$.** Out at $h = 0.5$ "
+        "the red point sits *below* the dashed reference — the error "
+        "grew a little slower than the formula predicted. The "
+        "first-order rule $E \\approx C h$ is an **asymptotic** "
+        "statement, true only in the small-$h$ limit. At $h = 0.5$ "
+        "the higher-order Taylor terms (the $h^2$, $h^3$ bits Euler "
+        "threw away in Beat 6's derivation) still bend the curve, "
+        "and the constant $C$ hasn't even stabilised. The practical "
+        "lesson: don't trust the slope-1 cost model when $h$ is "
+        "big. Shrink $h$ until consecutive rows of the table give "
+        "matching ratios, *then* use the model to plan further "
+        "refinement.\n\n"
+        f"{_table}\n\n"
+        "**The trade-off, named.** Now we can answer the question we "
+        "started with — *how much accuracy do we buy by taking more, "
+        "smaller steps?* — with a sharp number: **for Euler, it's "
+        "one-for-one, forever.** Want $10\\times$ better accuracy? "
+        "Take $10\\times$ more steps, do $10\\times$ more compute. "
+        "Want $100\\times$ better accuracy? $100\\times$ more compute. "
+        "Want six digits where you currently have two? A million "
+        "times more compute. That's fine when the equation is benign "
+        "and two digits are enough. It's brutal when you need real "
+        "precision, or when you're running a physics engine at 60 Hz "
+        "over a multi-hour simulation and *10× more compute* knocks "
+        "you out of real-time.\n\n"
+        "The next section builds **RK4**, which changes the exchange "
+        "rate. With RK4 you buy $10\\times$ more accuracy for only "
+        "$10^{1/4} \\approx 1.8\\times$ more compute. A million times "
+        "more accuracy for only $\\approx 32\\times$ more compute. "
+        "That's the whole reason RK4 exists, and it's the central "
+        "trade-off all of numerical analysis circles back to."
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 7 (intro) — motivate higher-order methods by going back to
+    # what Euler threw away: the slope it used was only the slope at the
+    # *start* of the interval. Introduce Heun's method (RK2) as the
+    # first improvement, derived as the trapezoidal rule applied to the
+    # integral of y'.
+    mo.md(
+        r"""
+        ## A better walk: sample the slope more than once per step
+
+        Beat 6 named the trade-off Euler offers — one unit of compute
+        buys one unit of accuracy, forever. Now we ask whether a
+        cleverer recipe can change the exchange rate.
+
+        Go back to what Euler actually does. At step $n$, it reads
+        the slope $f(x_n, y_n)$ at the *start* of the interval, then
+        uses that *single number* as if it were the slope across the
+        entire interval $[x_n, x_n + h]$. But the true solution
+        curves. The slope at the start is only an instantaneous
+        snapshot — by the time you're halfway through the step, the
+        true slope has already changed a little.
+
+        So here's the natural question: **what if we sampled the
+        slope at more than one point within the step, and combined
+        the samples cleverly?** That's the entire idea behind the
+        Runge–Kutta family of methods. We'll build it up in two
+        moves: first a method that samples the slope **twice**
+        (start and end), and then RK4, which samples **four times**.
+
+        ### Move 1 — average the start slope and the end-guess slope
+
+        Here's the most obvious improvement on Euler. At step $n$,
+        with current point $(x_n, y_n)$:
+
+        - Read the slope at the start: $k_1 = f(x_n, y_n)$.
+        - Use $k_1$ to make a tentative Euler step to the end:
+          $\tilde y = y_n + h \cdot k_1$. This is just one provisional
+          Euler step.
+        - Now read the slope *at that tentative endpoint*:
+          $k_2 = f(x_n + h, \tilde y)$.
+        - For the actual step, **average the two slopes** and use the
+          average as the slope across the whole interval:
+
+        $$
+        y_{n+1} \;=\; y_n \;+\; \frac{h}{2}\,(k_1 + k_2).
+        $$
+
+        This is called **Heun's method**, or "improved Euler," or
+        RK2. The intuition is geometric: instead of trusting the
+        slope at one end of the interval, you peek at what the slope
+        would be at the other end and split the difference.
+
+        **Why it's better.** Look at the update formula
+        $\tfrac{h}{2}(k_1 + k_2)$ and compare it to integrating the
+        true derivative across the interval,
+        $\int_{x_n}^{x_n + h} y'(s)\, ds$. Approximating that integral
+        by a *single* sample at the left end gives $h \cdot k_1$ —
+        that's Euler. Approximating it by the *average* of the left
+        and right samples times the width is the **trapezoidal
+        rule** — that's Heun's. The trapezoidal rule is exact for
+        linear integrands and almost-exact for smooth ones, while
+        the left-endpoint rule is exact only for constants. So Heun
+        captures the *change* in slope across the interval that
+        Euler missed, at the cost of one extra slope read per step.
+
+        The Taylor accounting works out to **local error
+        $\mathcal{O}(h^3)$, global error $\mathcal{O}(h^2)$**.
+        Heun's is *second-order accurate*. Halve $h$ and the error
+        drops by a factor of $4$, not $2$. So you've changed the
+        exchange rate: each unit of extra compute now buys you a
+        *bigger* unit of accuracy.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 7 — RK4 recipe. State the four k's and the weighted average,
+    # then justify the weights via the Simpson's-rule connection (in the
+    # autonomous case f(x, y) = g(x), RK4 literally *is* Simpson's rule
+    # applied to the integral of g).
+    mo.md(
+        r"""
+        ### Move 2 — sample four times, weight Simpson-style
+
+        Heun's already gave us order 2 for one extra slope read.
+        What if we sample the slope **four times** within each step,
+        chosen carefully, and combine them with the right weights?
+        That's **RK4** — the classical fourth-order Runge–Kutta
+        method, the one that every numerical library reaches for as
+        its default.
+
+        At step $n$, starting from $(x_n, y_n)$:
+
+        $$
+        \begin{aligned}
+        k_1 &= f(x_n,\;\; y_n) \\
+        k_2 &= f\!\left(x_n + \tfrac{h}{2},\;\; y_n + \tfrac{h}{2}\, k_1\right) \\
+        k_3 &= f\!\left(x_n + \tfrac{h}{2},\;\; y_n + \tfrac{h}{2}\, k_2\right) \\
+        k_4 &= f\!\left(x_n + h,\;\;\;\;\, y_n + h\, k_3\right) \\[4pt]
+        y_{n+1} &= y_n + \frac{h}{6}\bigl(k_1 + 2 k_2 + 2 k_3 + k_4\bigr).
+        \end{aligned}
+        $$
+
+        Read what's happening operationally:
+
+        - $k_1$ is the slope at the *start* of the interval — same as
+          Euler's only slope.
+        - $k_2$ uses $k_1$ to project to the **midpoint**, then reads
+          the slope there. A first guess at what's happening in the
+          middle of the step.
+        - $k_3$ uses $k_2$ to project to the midpoint *again* (with
+          the refined slope), and re-reads. A second, better guess at
+          the midpoint.
+        - $k_4$ uses $k_3$ to project all the way to the **end** of
+          the step, and reads the slope there.
+
+        So you've sampled the slope at four points within the
+        interval: once at the start, **twice** at the middle (cross-
+        checking each other), and once at the end. Now combine them
+        with weights $(1, 2, 2, 1) / 6$ — the start and end get
+        weight $1$, each midpoint sample gets weight $2$, divide by
+        $6$ so the weights sum to $1$.
+
+        ### Why those weights? — Simpson's rule in disguise
+
+        The weighting isn't arbitrary; it's stolen from a much older
+        result, **Simpson's rule** for numerical integration. To see
+        the connection, look at the special case where the equation
+        has no $y$-dependence: $y' = g(x)$. Then integrating gives
+        the exact answer
+
+        $$
+        y(x_n + h) - y(x_n) \;=\; \int_{x_n}^{x_n + h} g(s)\, ds.
+        $$
+
+        Simpson's rule approximates that integral as
+
+        $$
+        \int_{x_n}^{x_n + h} g(s)\, ds
+        \;\approx\; \frac{h}{6}\bigl(g(x_n) + 4\, g(x_n + \tfrac{h}{2}) + g(x_n + h)\bigr),
+        $$
+
+        and is **exact for any polynomial $g$ of degree $\le 3$**.
+        Now look at what the four RK4 slopes become in this no-$y$
+        case: $k_1 = g(x_n)$, $k_2 = g(x_n + h/2)$, $k_3 = g(x_n + h/2)$
+        (same as $k_2$ because no $y$-dependence), $k_4 = g(x_n + h)$.
+        The RK4 update is
+
+        $$
+        \frac{h}{6}(k_1 + 2 k_2 + 2 k_3 + k_4)
+        \;=\; \frac{h}{6}\bigl(g(x_n) + 4\, g(x_n + \tfrac{h}{2}) + g(x_n + h)\bigr).
+        $$
+
+        That's **exactly Simpson's rule**. So in the autonomous case
+        RK4 inherits Simpson's exactness-for-cubics property — local
+        error $\mathcal{O}(h^5)$, global error $\mathcal{O}(h^4)$.
+        For the general $y' = f(x, y)$ case, $k_2$ and $k_3$ aren't
+        equal (the $y$-dependence makes the two midpoint estimates
+        slightly different), but their average plays the same
+        Simpson-midpoint role, and the order-4 accuracy carries
+        through — that's the actual content of the original
+        Runge–Kutta derivation, which we won't grind through.
+
+        **What you've bought.** Four slope evaluations per step
+        instead of one — i.e. $4\times$ the per-step cost. In
+        exchange the order jumped from $1$ (Euler) to $4$ (RK4).
+        Halving $h$ now divides the error by $2^4 = 16$, not $2$.
+        Want $10\times$ more accuracy? Shrink $h$ by only
+        $10^{1/4} \approx 1.8\times$, which costs only
+        $\approx 1.8 \times 4 \approx 7\times$ more compute than
+        Euler at the original $h$. For modest accuracy that ratio
+        sounds bad. For *high* accuracy the gap is astronomical, as
+        the numbers below make vivid.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, mo, np):
+    # Beat 7 — numerical comparison: error at x = 2 for Euler, Heun
+    # (RK2), and RK4 on the anchor equation, at six h values. Builds
+    # the table that makes the order-1 vs order-2 vs order-4 picture
+    # impossible to dismiss as theoretical.
+    _f = lambda x, y: y - x**2
+    _x_end = 2.0
+    _exact_end = 2 + 2 * _x_end + _x_end**2 - float(np.exp(_x_end))
+
+    _hs = [0.5, 0.2, 0.1, 0.05, 0.02, 0.01]
+    _rows = ["| h | n_steps | Euler \\|err\\| | Heun (RK2) \\|err\\| | RK4 \\|err\\| | RK4 better than Euler by |",
+             "|---|---|---|---|---|---|"]
+    for _h in _hs:
+        _n = max(1, int(round(_x_end / _h)))
+        _, _y_e = delib.euler_steps(_f, 0.0, 1.0, _h, _n)
+        _, _y_h = delib.heun_steps(_f, 0.0, 1.0, _h, _n)
+        _, _y_r = delib.rk4_steps(_f, 0.0, 1.0, _h, _n)
+        _e_eu = abs(float(_y_e[-1]) - _exact_end)
+        _e_he = abs(float(_y_h[-1]) - _exact_end)
+        _e_rk = abs(float(_y_r[-1]) - _exact_end)
+        _ratio = _e_eu / _e_rk
+        _rows.append(
+            f"| {_h:g} | {_n} | {_e_eu:.3e} | {_e_he:.3e} | {_e_rk:.3e} | {_ratio:,.0f}× |"
+        )
+    _table = "\n".join(_rows)
+
+    mo.md(
+        "### See the order in numbers\n\n"
+        "Same anchor equation as Beat 6 — $y' = y - x^2$ with "
+        "$y(0) = 1$, walk out to $x = 2$, compare to the exact value "
+        f"$y(2) \\approx 2.611$. For each $h$, run all three methods "
+        f"and tabulate the error.\n\n{_table}\n\n"
+        "**Read down each column.** Halve $h$ (e.g. $0.1 \\to 0.05$) "
+        "and watch the error column shrink:\n\n"
+        "- Euler shrinks by $\\approx 2\\times$ — first order.\n"
+        "- Heun shrinks by $\\approx 4\\times$ — second order.\n"
+        "- RK4 shrinks by $\\approx 16\\times$ — fourth order.\n\n"
+        "Each new order squares the previous error-reduction factor.\n\n"
+        "**Read across each row.** At $h = 0.1$ — a reasonable step "
+        "size — Euler is off by about $0.09$ (two-digit accuracy), "
+        "Heun by $0.0075$ (still two digits), and RK4 by $1.3 \\times "
+        "10^{-6}$ (six digits). RK4 is about **67,000× more accurate "
+        "than Euler at the same $h$**, for $4\\times$ the per-step "
+        "cost. That ratio is *astonishing*. It's why nobody actually "
+        "uses Euler when accuracy matters — RK4 dominates it on every "
+        "axis except raw simplicity.\n\n"
+        "Beat 8 makes this concrete: a single hero figure with all "
+        "three methods walking the slope field side by side, and a "
+        "log-log convergence plot stacking the three power-law lines "
+        "(slope 1, slope 2, slope 4) so the orders are visible at a "
+        "glance."
     )
     return
 
