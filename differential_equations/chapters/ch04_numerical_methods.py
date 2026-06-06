@@ -531,46 +531,13 @@ def _(mo):
         microscope physicists and engineers reach for whenever they
         suspect something obeys a power law and want to read off the
         exponent.
-
-        ### How to read a slope of 1 on a log-log plot
-
-        On linear axes, slope 1 means "rise 1, run 1." On log-log
-        axes, the rule is the same but with *decades* instead of
-        units: **slope 1 means the line falls (or rises) by one
-        decade in $y$ for every one decade in $x$.** Shrink $h$ by
-        10× — from $0.1$ down to $0.01$ — and the error should also
-        shrink by 10×. Shrink $h$ by 100× and the error shrinks by
-        100×. The dashed grey line in the figure is exactly that
-        reference: a perfect slope-1 line.
-
-        Now look at the red points. At **small $h$** (left side of
-        the plot), the red dots sit right on top of the dashed line.
-        Euler is converging at slope 1 — exactly what the Taylor
-        argument predicted. At **large $h$** (right side), the red
-        line is slightly *flatter* than the reference: the error
-        grows a little slower than the formula says it should. That's
-        the same effect the ratio table picks up — the ratios climb
-        from $1.57$ up to $1.98$ rather than being a flat $2$. The
-        formula $E \approx C h^p$ is an **asymptotic** statement,
-        meaning it becomes exact only in the limit $h \to 0$. Out at
-        $h = 0.5$ the higher-order terms (the $h^2$, $h^3$ bits the
-        Taylor expansion threw away) still bend the curve a little.
-        Shrink $h$ enough and they vanish; the asymptotic slope
-        rules.
-
-        That's the whole story this plot tells: **in the small-$h$
-        regime where the prediction is supposed to hold, Euler
-        converges at exactly slope 1.** Order of accuracy isn't a
-        vibes-level claim about whether the method is "fast" or
-        "slow" — it's a sharp, measurable exponent, and a log-log
-        plot lets you eyeball it directly.
         """
     )
     return
 
 
 @app.cell(hide_code=True)
-def _(delib, go, mo, np):
+def _(delib, go, np):
     # Beat 6 — log-log plot of |gap at x = 2| vs h for Euler on the
     # anchor equation y' = y - x^2. Reference dashed line of slope 1
     # makes the order-of-accuracy claim visually checkable. Same
@@ -593,6 +560,10 @@ def _(delib, go, mo, np):
     _C_ref = _e_arr[-1] / _h_arr[-1]  # anchor at the cleanest point
     _ref = _C_ref * _h_arr
 
+    # Per-point text labels: "h = 0.250, E = 0.188" beside each marker
+    # so the picture is self-contained without a second table look-up.
+    _labels = [f"h = {h:g},  E = {e:.3g}" for h, e in zip(_hs, _errs)]
+
     _fig = go.Figure()
     _fig.add_trace(go.Scatter(
         x=_h_arr, y=_ref, mode="lines",
@@ -601,13 +572,19 @@ def _(delib, go, mo, np):
         hoverinfo="skip",
     ))
     _fig.add_trace(go.Scatter(
-        x=_h_arr, y=_e_arr, mode="lines+markers",
+        x=_h_arr, y=_e_arr, mode="lines+markers+text",
         line=dict(color="#d1495b", width=2),
         marker=dict(size=10, color="#d1495b",
                     line=dict(color="#7a2a3a", width=1.2)),
+        text=_labels,
+        textposition="top left",
+        textfont=dict(size=11, color="#7a2a3a"),
+        cliponaxis=False,
         name="Euler — measured |gap at x = 2|",
         hovertemplate="h = %{x:.4f}<br>|error| = %{y:.4e}<extra></extra>",
     ))
+    # dtick=1 on a log axis = one tick per decade; suppresses the
+    # 2,3,...9 minor labels that were reading as a second axis.
     _fig.update_layout(
         template="plotly_white",
         title=dict(
@@ -616,17 +593,37 @@ def _(delib, go, mo, np):
             x=0.02,
         ),
         xaxis=dict(title="step size  h  (log scale)", type="log",
+                   dtick=1, minor=dict(showgrid=False),
+                   range=[np.log10(_hs[-1]) - 0.5, np.log10(_hs[0]) + 0.3],
                    zeroline=False),
         yaxis=dict(title="|error at x = 2|  (log scale)", type="log",
+                   dtick=1, minor=dict(showgrid=False),
+                   range=[np.log10(min(_errs)) - 0.6, np.log10(max(_errs)) + 0.5],
                    zeroline=False),
         paper_bgcolor="white", plot_bgcolor="white",
-        height=440, showlegend=True,
+        height=480, showlegend=True,
         legend=dict(x=0.02, y=0.98, bgcolor="rgba(255,255,255,0.85)"),
         margin=dict(l=70, r=20, t=60, b=55),
     )
+    _fig
+    return
 
-    # Tidy table of the same numbers so the halving-ratio claim is
-    # checkable digit-by-digit, not just visually.
+
+@app.cell(hide_code=True)
+def _(delib, mo, np):
+    # Beat 6 — post-figure walk-through: how to read slope 1 off the
+    # picture, the ratio table, and the cost argument that motivates
+    # RK4 in the next beat.
+    _f = lambda x, y: y - x**2
+    _x_end = 2.0
+    _exact_end = 2 + 2 * _x_end + _x_end**2 - float(np.exp(_x_end))
+    _hs = [0.5 / (2 ** k) for k in range(7)]
+    _errs = []
+    for _h in _hs:
+        _n = max(1, int(round(_x_end / _h)))
+        _, _ys = delib.euler_steps(_f, 0.0, 1.0, _h, _n)
+        _errs.append(abs(float(_ys[-1]) - _exact_end))
+
     _rows = ["| h | n_steps | \\|error\\| | error(prev) / error(cur) |",
              "|---|---|---|---|"]
     _prev = None
@@ -637,29 +634,38 @@ def _(delib, go, mo, np):
         _prev = _e
     _table = "\n".join(_rows)
 
-    mo.vstack([
-        _fig,
-        mo.md(
-            "**Eyeball the slope.** The leftmost red point sits at "
-            "roughly $h = 0.008$ and error $\\approx 0.008$. The next "
-            "point right of it sits at $h = 0.016$ (one factor of two "
-            "bigger) and error $\\approx 0.015$ (one factor of two "
-            "bigger). That's slope 1 in action — and exactly why the "
-            "red dots cling to the dashed reference at the small-$h$ end.\n\n"
-            "**Eyeball the table.** The rightmost column is the ratio of "
-            "one row's error to the next. It approaches $2$ from below "
-            "as $h$ shrinks. That number *is* the order: each halving "
-            "of $h$ multiplies the accuracy by $2^1 = 2$.\n\n"
-            f"{_table}\n\n"
-            "**What this costs you.** To shrink the error by 10×, you "
-            "need $h$ to shrink by 10× — which means **10× more steps**, "
-            "i.e. 10× more compute. That linear tradeoff is fine when "
-            "the equation is benign, but it's brutal when you need many "
-            "digits of accuracy. The next section builds RK4, which "
-            "buys 10× more accuracy for only $10^{1/4} \\approx 1.8$× "
-            "more steps. That's the whole reason RK4 exists."
-        ),
-    ])
+    mo.md(
+        "### How to read a slope of 1 on the picture above\n\n"
+        "On linear axes, slope 1 means \"rise 1, run 1.\" On log-log "
+        "axes, the rule is the same but with *decades* instead of "
+        "units: **slope 1 means the line falls (or rises) by one "
+        "decade in $y$ for every one decade in $x$.** Shrink $h$ by "
+        "10× and the error should also shrink by 10×. The dashed grey "
+        "line is exactly that reference: a perfect slope-1 line.\n\n"
+        "**Eyeball the slope.** Look at the two leftmost red points: "
+        "$h$ goes from $0.0078$ to $0.0156$ (one doubling), and the "
+        "error goes from $0.0077$ to $0.0153$ (one doubling). Same "
+        "factor on both axes. That's slope 1 in action.\n\n"
+        "**Why the curve flattens at large $h$.** Out at the rightmost "
+        "points, the red line is slightly *flatter* than the dashed "
+        "reference — the error grows a bit slower than the formula "
+        "predicts. That's because $E \\approx C h^p$ is an "
+        "**asymptotic** statement, true only in the limit $h \\to 0$. "
+        "Out at $h = 0.5$ the higher-order Taylor terms (the $h^2$, "
+        "$h^3$ bits Euler threw away) still bend the curve. Shrink $h$ "
+        "and they vanish.\n\n"
+        "**Eyeball the table.** The rightmost column is the ratio of "
+        "one row's error to the next. It approaches $2$ from below as "
+        "$h$ shrinks — each halving of $h$ multiplies the accuracy by "
+        f"$2^1 = 2$.\n\n{_table}\n\n"
+        "**What this costs you.** To shrink the error by 10×, you need "
+        "$h$ to shrink by 10× — which means **10× more steps**, i.e. "
+        "10× more compute. That linear tradeoff is fine when the "
+        "equation is benign, but it's brutal when you need many digits "
+        "of accuracy. The next section builds RK4, which buys 10× more "
+        "accuracy for only $10^{1/4} \\approx 1.8$× more steps. "
+        "That's the whole reason RK4 exists."
+    )
     return
 
 
