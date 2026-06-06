@@ -538,14 +538,32 @@ def _(mo):
         the "1, 2, 5" sequence per decade that scientific plots
         traditionally use: $h = 0.5,\; 0.2,\; 0.1,\; 0.05,\; 0.02,\;
         0.01,\; 0.005,\; 0.002,\; 0.001$. (No more $0.0078125$ kind
-        of numbers — these are round.) For each $h$, run Euler all
-        the way out to $x = 2$ and measure the gap between Euler's
-        last point and the exact value $y(2) = 2 + 4 + 4 - e^2
-        \approx 2.611$. Plot those nine $(h,\; |\text{error}|)$
-        pairs on log-log axes and lay a dashed reference line of
-        slope $1$ on top. If the Taylor argument is right, the red
-        dots should lie on that reference line — at least once $h$
-        is small enough.
+        of numbers — these are round.)
+
+        For each one of those nine $h$ values, we run a **completely
+        independent** Euler walk:
+
+        1. Start fresh at $(x_0, y_0) = (0, 1)$.
+        2. Take $n = 2 / h$ steps of width $h$, applying the rule
+           from earlier: $y_{n+1} = y_n + h \cdot f(x_n, y_n)$.
+        3. After $n$ steps you've arrived at $x = 2$. Call the final
+           $y$ value $y_\text{Euler}$.
+        4. Compare to the exact value
+           $y(2) = 2 + 4 + 4 - e^2 \approx 2.611$.
+        5. The **error** for this $h$ is $|y_\text{Euler} - y(2)|$.
+
+        So each row of the table below is *its own walk*, not a
+        refinement of the previous one. The interval covered is
+        always $x \in [0, 2]$, but the granularity changes:
+        $h = 0.5$ gets there in $4$ giant steps, $h = 0.1$ takes
+        $20$ steps, $h = 0.001$ takes $2000$ tiny ones. The
+        question we're asking is: *how much accuracy do we buy by
+        taking more, smaller steps?*
+
+        Plot those nine $(h,\; |\text{error}|)$ pairs on log-log
+        axes and lay a dashed reference line of slope $1$ on top.
+        If the Taylor argument is right, the red dots should lie on
+        that reference line — at least once $h$ is small enough.
         """
     )
     return
