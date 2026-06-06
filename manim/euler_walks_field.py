@@ -30,12 +30,14 @@ from derivation_kit import HIGHLIGHT  # noqa: E402
 
 
 def _caption(text):
-    """Small grey caption below the stage, auto-wrapped to ~65 chars."""
+    """Small grey caption at the bottom edge, auto-wrapped to ~70 chars.
+    Smaller font (20) and tighter wrap than the other scenes' default to
+    leave clearance for the axes' x-tick labels above."""
     wrapped = "\n".join(
-        textwrap.fill(para, width=65) for para in text.split("\n")
+        textwrap.fill(para, width=70) for para in text.split("\n")
     )
-    t = Text(wrapped, font_size=22, color=GREY_B)
-    t.to_edge(DOWN, buff=0.6)
+    t = Text(wrapped, font_size=20, color=GREY_B)
+    t.to_edge(DOWN, buff=0.35)
     return t
 
 
@@ -51,11 +53,14 @@ class SceneEulerWalksField(Scene):
 
     def construct(self):
         # --- Setup: axes + slope field --------------------------------------
+        # Axes are smaller and pushed up so there's clearance between the
+        # x-tick labels and the bottom caption. (The previous version had
+        # the caption colliding with the axis numbers.)
         axes = Axes(
             x_range=[-0.1, 2.2, 0.5],
             y_range=[0.4, 3.3, 0.5],
             x_length=8.0,
-            y_length=4.6,
+            y_length=3.8,
             tips=False,
             axis_config=dict(
                 color=GREY_B, stroke_width=1.5,
@@ -63,7 +68,7 @@ class SceneEulerWalksField(Scene):
                 font_size=20,
             ),
         )
-        axes.shift(DOWN * 0.4)
+        axes.shift(UP * 0.5)
         axes_labels = axes.get_axis_labels(
             x_label=MathTex("x").scale(0.8),
             y_label=MathTex("y").scale(0.8),
@@ -71,14 +76,13 @@ class SceneEulerWalksField(Scene):
 
         # Slope field: small line segments aligned with the local slope of
         # f(x, y) = y - x². Each segment is centred on its grid point and
-        # has a fixed length in display units so the field reads cleanly.
+        # has a fixed length in axes units so the field reads cleanly.
         f = lambda x, y: y - x ** 2
         slope_lines = VGroup()
         seg_len = 0.18  # in axes units
         for xi in np.arange(0.0, 2.2, 0.25):
             for yi in np.arange(0.5, 3.3, 0.3):
                 s = f(xi, yi)
-                # Direction (1, s) normalised to length seg_len.
                 norm = (1 + s * s) ** 0.5
                 dx = seg_len / norm
                 dy = s * dx
@@ -88,11 +92,10 @@ class SceneEulerWalksField(Scene):
                 slope_lines.add(seg)
 
         title = Text("Euler's method on  y' = y − x²,   h = 0.25",
-                     font_size=26).to_edge(UP, buff=0.3)
+                     font_size=26).to_edge(UP, buff=0.25)
         cap = _caption(
-            "The slope field tells us, at every point, which way the true "
-            "solution is heading. Euler's method just follows it in tiny "
-            "straight-line steps."
+            "Slope field shows where the true solution heads at every "
+            "point. Euler follows it in tiny straight-line steps."
         )
 
         self.play(Write(title))
@@ -119,9 +122,6 @@ class SceneEulerWalksField(Scene):
             x_new = x + h
             y_new = y + h * slope
 
-            # Slope vector at the current point, in HIGHLIGHT teal,
-            # extended to (x + h, y + h*slope) so the reader sees exactly
-            # where the next step will land.
             slope_arrow = Arrow(
                 start=axes.c2p(x, y),
                 end=axes.c2p(x_new, y_new),
@@ -132,13 +132,13 @@ class SceneEulerWalksField(Scene):
                 max_tip_length_to_length_ratio=0.25,
             )
 
-            # Step-label + caption updates
             new_lbl = _step_label(f"Step {i + 1}")
-            slope_str = f"{slope:+.3f}".replace("+", "")
+            # Short per-step caption so it stays on at most two lines and
+            # doesn't crowd the axes.
             new_cap = _caption(
-                f"At ({x:.2f}, {y:.3f}), the equation gives slope "
-                f"f({x:.2f}, {y:.3f}) = {slope_str}. Step by h·slope = "
-                f"{h * slope:+.4f}; land at ({x_new:.2f}, {y_new:.3f})."
+                f"At ({x:.2f}, {y:.2f}): slope {slope:+.3f}. "
+                f"Step h·slope = {h * slope:+.3f}. "
+                f"Land at ({x_new:.2f}, {y_new:.2f})."
             )
 
             if i == 0:
@@ -151,8 +151,6 @@ class SceneEulerWalksField(Scene):
                           GrowArrow(slope_arrow), run_time=1.3)
             self.wait(0.5)
 
-            # Turn the slope-arrow into the polyline segment (drop the
-            # arrowhead, recolour red), and move the dot.
             poly_seg = Line(
                 axes.c2p(x, y), axes.c2p(x_new, y_new),
                 color=RED_E, stroke_width=3.5,
@@ -163,16 +161,15 @@ class SceneEulerWalksField(Scene):
                 Transform(dot, new_dot),
                 run_time=0.55,
             )
-            polyline_segments.add(slope_arrow)  # keep the (now red) seg
+            polyline_segments.add(slope_arrow)
             x, y = x_new, y_new
 
         # --- Reveal: exact solution overlay ---------------------------------
         new_lbl = _step_label("After 8 steps")
         new_cap = _caption(
-            "Now overlay the exact solution y = 2 + 2x + x² − eˣ (which we "
-            "happen to know in closed form for this equation). The red "
-            "polyline is below it through x ≈ 1.5, then crosses above — "
-            "that's the per-step error compounding over the walk."
+            "Exact solution y = 2 + 2x + x² − eˣ overlaid in blue. The "
+            "polyline tracks below until x ≈ 1.5, then crosses above — "
+            "per-step error compounding over the walk."
         )
         exact_curve = axes.plot(
             lambda u: 2 + 2 * u + u ** 2 - np.exp(u),
