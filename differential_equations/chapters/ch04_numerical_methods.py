@@ -796,8 +796,170 @@ def _(mo):
         drops by a factor of $4$, not $2$. So you've changed the
         exchange rate: each unit of extra compute now buys you a
         *bigger* unit of accuracy.
+
+        ### Watch one Heun's step assemble itself
+
+        Drag the $h$ slider below to see the construction. The figure
+        is one Heun's step on the anchor equation $y' = y - x^2$
+        starting at $(0, 1)$:
+
+        - The **dashed red line** is Euler's tentative step — uses
+          the start slope $k_1$ alone, lands at the open marker.
+        - The **teal arrows** are the two slope reads: $k_1$ at the
+          start, $k_2$ at Euler's tentative endpoint.
+        - The **solid red line** is Heun's actual step — uses the
+          *average* slope $(k_1 + k_2)/2$, lands at the filled marker.
+        - The **blue diamond** is where the true solution actually
+          ends up at $x = h$. Notice how the solid red sits closer
+          to it than the dashed red, especially as $h$ grows.
+
+        At small $h$ all three points cluster — Euler is already
+        pretty good when the step is tiny. Push $h$ up toward $0.8$
+        and the gap between Euler's tentative endpoint (dashed) and
+        the true solution opens dramatically, while Heun's endpoint
+        (solid) stays close. That's the trapezoidal-rule advantage
+        in pictures: by averaging two slopes instead of trusting
+        one, Heun captures the *curvature* across the step.
         """
     )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    # Beat 7 — slider for the Heun's-construction figure below. Default
+    # h = 0.5 so the geometry is dramatically visible without being
+    # degenerate (at h = 1 on this equation k_1 happens to equal k_2,
+    # which makes Heun and Euler coincide — confusing). Range 0.1..0.8.
+    h_heun_panel = delib.param_panel([
+        {"name": "h", "label": "step size  h",
+         "start": 0.1, "stop": 0.8, "step": 0.05, "value": 0.5},
+    ])
+    return (h_heun_panel,)
+
+
+@app.cell(hide_code=True)
+def _(delib, go, h_heun_panel, mo, np):
+    # Beat 7 — interactive Heun's construction. Shows one step of
+    # Heun's method built from its pieces (k_1 arrow at start, dashed
+    # Euler tentative step, k_2 arrow at the tentative endpoint, solid
+    # Heun's step using the averaged slope) against the exact solution.
+    _f = lambda x, y: y - x**2
+    _x0, _y0 = 0.0, 1.0
+    _h = float(h_heun_panel.value["h"])
+
+    _k1 = _f(_x0, _y0)
+    _x_tent, _y_tent = _x0 + _h, _y0 + _h * _k1
+    _k2 = _f(_x_tent, _y_tent)
+    _k_avg = 0.5 * (_k1 + _k2)
+    _y_heun = _y0 + _h * _k_avg
+    _x_end = _x_tent
+    _y_exact_end = 2 + 2 * _x_end + _x_end**2 - float(np.exp(_x_end))
+
+    # Fixed view so the figure doesn't jump as the slider moves.
+    _xlim = (-0.05, 0.95)
+    _ylim = (0.7, 2.3)
+    _fig = delib.slope_field_plotly(
+        _f, _xlim, _ylim, density=18,
+        title="One Heun's step on  y' = y − x²  from (0, 1)",
+    )
+
+    # Exact solution curve across the visible window.
+    _xs_exact = np.linspace(_xlim[0] + 0.01, _xlim[1] - 0.01, 200)
+    _ys_exact = 2 + 2 * _xs_exact + _xs_exact**2 - np.exp(_xs_exact)
+    _fig.add_trace(go.Scatter(
+        x=_xs_exact, y=_ys_exact, mode="lines",
+        line=dict(color="#5b7db1", width=2.5),
+        name="exact solution",
+    ))
+
+    # Euler tentative step (dashed) — what we'd land on with just k_1.
+    _fig.add_trace(go.Scatter(
+        x=[_x0, _x_tent], y=[_y0, _y_tent], mode="lines",
+        line=dict(color="#d1495b", width=1.8, dash="dash"),
+        name=f"Euler tentative   (slope k₁ = {_k1:.3f})",
+    ))
+
+    # Heun's actual step (solid) — uses averaged slope.
+    _fig.add_trace(go.Scatter(
+        x=[_x0, _x_end], y=[_y0, _y_heun], mode="lines",
+        line=dict(color="#d1495b", width=3),
+        name=f"Heun's actual step   (avg slope = {_k_avg:.3f})",
+    ))
+
+    # Markers: start, tentative (open), Heun's (filled), true (diamond).
+    _fig.add_trace(go.Scatter(
+        x=[_x0], y=[_y0], mode="markers",
+        marker=dict(size=11, color="#d1495b",
+                    line=dict(color="#7a2a3a", width=1.5)),
+        name="start  (0, 1)",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=[_x_tent], y=[_y_tent], mode="markers",
+        marker=dict(size=11, color="white", symbol="circle",
+                    line=dict(color="#d1495b", width=2)),
+        name=f"Euler tentative endpoint",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=[_x_end], y=[_y_heun], mode="markers",
+        marker=dict(size=11, color="#d1495b",
+                    line=dict(color="#7a2a3a", width=1.5)),
+        name=f"Heun's endpoint",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=[_x_end], y=[_y_exact_end], mode="markers",
+        marker=dict(size=12, color="#5b7db1", symbol="diamond",
+                    line=dict(color="#395775", width=1.5)),
+        name=f"true solution at x = h",
+    ))
+
+    # Teal slope arrows at the two points where Heun's reads the slope.
+    # Length is in axes units, normalised so each arrow reads as a
+    # uniform direction-mark regardless of how steep the local slope is.
+    _arr_len = 0.18
+    for _xa, _ya, _slope in [(_x0, _y0, _k1), (_x_tent, _y_tent, _k2)]:
+        _norm = (1 + _slope * _slope) ** 0.5
+        _dx = _arr_len / _norm
+        _dy = _slope * _dx
+        _fig.add_annotation(
+            x=_xa + _dx, y=_ya + _dy, ax=_xa, ay=_ya,
+            xref="x", yref="y", axref="x", ayref="y",
+            arrowhead=2, arrowsize=1.3, arrowwidth=2.5,
+            arrowcolor="#2a9d8f", showarrow=True,
+        )
+
+    _fig.update_layout(
+        showlegend=True,
+        legend=dict(x=0.02, y=0.98, bgcolor="rgba(255,255,255,0.85)",
+                    font=dict(size=11)),
+        height=520,
+    )
+
+    _eu_err = abs(_y_tent - _y_exact_end)
+    _he_err = abs(_y_heun - _y_exact_end)
+    _ratio = (_eu_err / _he_err) if _he_err > 1e-12 else float("inf")
+
+    mo.vstack([
+        h_heun_panel,
+        _fig,
+        mo.md(
+            f"**At h = {_h:.2f}, one step from (0, 1):**\n\n"
+            f"| quantity | value |\n|---|---|\n"
+            f"| $k_1 = f(0, 1) = 1 - 0$ | **{_k1:.4f}** |\n"
+            f"| tentative Euler endpoint  $(h,\\; 1 + h\\,k_1)$ | "
+            f"**({_x_tent:.3f}, {_y_tent:.4f})** |\n"
+            f"| $k_2 = f$(tentative) $= {_y_tent:.3f} - {_x_tent:.3f}^2$ | "
+            f"**{_k2:.4f}** |\n"
+            f"| averaged slope  $(k_1 + k_2)/2$ | **{_k_avg:.4f}** |\n"
+            f"| **Heun's endpoint**  $(h,\\; 1 + h\\,\\text{{avg}})$ | "
+            f"**({_x_end:.3f}, {_y_heun:.4f})** |\n"
+            f"| true value $y({_x_end:.2f})$ from closed form | "
+            f"**{_y_exact_end:.4f}** |\n"
+            f"| Euler error  \\|tentative − true\\| | **{_eu_err:.4f}** |\n"
+            f"| Heun error  \\|Heun's − true\\| | **{_he_err:.4f}** |\n"
+            f"| Heun better than Euler by | **{_ratio:.1f}×** |\n"
+        ),
+    ])
     return
 
 
