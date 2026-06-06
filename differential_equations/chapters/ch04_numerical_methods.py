@@ -1157,11 +1157,276 @@ def _(delib, mo, np):
         "cost. That ratio is *astonishing*. It's why nobody actually "
         "uses Euler when accuracy matters — RK4 dominates it on every "
         "axis except raw simplicity.\n\n"
-        "Beat 8 makes this concrete: a single hero figure with all "
-        "three methods walking the slope field side by side, and a "
-        "log-log convergence plot stacking the three power-law lines "
-        "(slope 1, slope 2, slope 4) so the orders are visible at a "
-        "glance."
+        "The next section makes this concrete: a single hero figure "
+        "with all three methods walking the slope field side by side, "
+        "and a log-log convergence plot stacking the three power-law "
+        "lines (slope 1, slope 2, slope 4) so the orders are visible "
+        "at a glance."
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 8 (intro) — frame the two hero figures: a coarse-h trajectory
+    # picture so the order difference is *visible*, and a log-log
+    # convergence plot stacking the three power laws so the orders are
+    # legible as slopes.
+    mo.md(
+        r"""
+        ## Three methods, one picture
+
+        Numbers in a table only convince you so far. The next two
+        figures make the order story visible.
+
+        The **first** is a trajectory comparison at a deliberately
+        coarse step size, $h = 0.4$ — five steps to cross
+        $x \in [0, 2]$ on the anchor equation. Coarse enough that
+        Euler's polyline is dramatically off, Heun's tracks more
+        closely but is still visibly imperfect, and RK4's polyline is
+        nearly indistinguishable from the exact curve. With only five
+        steps in each polyline, the difference between *the order of
+        the method* is on screen, not buried in a number.
+
+        The **second** is the log-log convergence story from Beat 6,
+        now with all three methods stacked on the same axes. You'll
+        see three straight lines of different slopes — Euler at
+        slope $1$, Heun at slope $2$, RK4 at slope $4$. Reading them
+        is the headline result of the chapter: **the order of a
+        method is the steepness of its convergence line on log-log
+        axes**, and steeper is dramatically cheaper.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, go, np):
+    # Beat 8 — trajectory hero. y' = y - x^2 from (0, 1) at h = 0.4
+    # (5 steps to x = 2). Slope field + exact curve + three polylines:
+    # Euler (visibly off), Heun (close), RK4 (essentially on the curve).
+    _f = lambda x, y: y - x**2
+    _h, _n = 0.4, 5
+
+    _xs_eu, _ys_eu = delib.euler_steps(_f, 0.0, 1.0, _h, _n)
+    _xs_he, _ys_he = delib.heun_steps(_f, 0.0, 1.0, _h, _n)
+    _xs_rk, _ys_rk = delib.rk4_steps(_f, 0.0, 1.0, _h, _n)
+
+    _xs_exact = np.linspace(0, 2.0, 200)
+    _ys_exact = 2 + 2 * _xs_exact + _xs_exact**2 - np.exp(_xs_exact)
+
+    _fig = delib.slope_field_plotly(
+        _f, (-0.1, 2.2), (0.5, 3.3), density=18,
+        title="Euler vs Heun (RK2) vs RK4  —  y' = y − x², h = 0.4, 5 steps",
+    )
+    _fig.add_trace(go.Scatter(
+        x=_xs_exact, y=_ys_exact, mode="lines",
+        line=dict(color="#5b7db1", width=3),
+        name="exact solution",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=_xs_eu, y=_ys_eu, mode="lines+markers",
+        line=dict(color="#d1495b", width=2),
+        marker=dict(size=9, color="#d1495b",
+                    line=dict(color="#7a2a3a", width=1)),
+        name=f"Euler  (order 1) — end gap {abs(_ys_eu[-1] - _ys_exact[-1]):.3f}",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=_xs_he, y=_ys_he, mode="lines+markers",
+        line=dict(color="#e9a23b", width=2),
+        marker=dict(size=9, color="#e9a23b",
+                    line=dict(color="#8a5c0e", width=1)),
+        name=f"Heun  (order 2) — end gap {abs(_ys_he[-1] - _ys_exact[-1]):.3f}",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=_xs_rk, y=_ys_rk, mode="lines+markers",
+        line=dict(color="#2a9d8f", width=2),
+        marker=dict(size=9, color="#2a9d8f",
+                    line=dict(color="#1d6e64", width=1)),
+        name=f"RK4   (order 4) — end gap {abs(_ys_rk[-1] - _ys_exact[-1]):.5f}",
+    ))
+    _fig.update_layout(
+        height=500,
+        showlegend=True,
+        legend=dict(x=0.02, y=0.98, bgcolor="rgba(255,255,255,0.9)",
+                    font=dict(size=11)),
+    )
+    _fig
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 8 — caption for the trajectory hero, calling out what to
+    # notice as the reader compares the three polylines.
+    mo.md(
+        r"""
+        Five steps each, same step size, same starting point, same
+        equation. The only thing that changes between the polylines
+        is **how many slope samples each method takes per step** —
+        $1$ for Euler, $2$ for Heun, $4$ for RK4. Read the end-gap
+        numbers in the legend: Euler is off by $0.26$, Heun by
+        $0.12$, RK4 by $0.0005$. RK4 is **about 500× closer to the
+        exact curve than Euler** here, for $4\times$ the per-step
+        cost. The cost ratio is fixed; the accuracy ratio explodes
+        as the order increases.
+
+        Now the same story as a convergence plot.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, go, np):
+    # Beat 8 — log-log convergence hero. Three methods, same h sweep,
+    # three power-law lines that should land on three reference slopes
+    # (1, 2, 4). The figure stack puts the orders on top of each other
+    # for visual comparison.
+    _f = lambda x, y: y - x**2
+    _x_end = 2.0
+    _exact_end = 2 + 2 * _x_end + _x_end**2 - float(np.exp(_x_end))
+
+    _hs = [0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001]
+    _err_eu, _err_he, _err_rk = [], [], []
+    for _h in _hs:
+        _n = max(1, int(round(_x_end / _h)))
+        _, _y_e = delib.euler_steps(_f, 0.0, 1.0, _h, _n)
+        _, _y_h = delib.heun_steps(_f, 0.0, 1.0, _h, _n)
+        _, _y_r = delib.rk4_steps(_f, 0.0, 1.0, _h, _n)
+        _err_eu.append(abs(float(_y_e[-1]) - _exact_end))
+        _err_he.append(abs(float(_y_h[-1]) - _exact_end))
+        _err_rk.append(abs(float(_y_r[-1]) - _exact_end))
+
+    _h_arr = np.array(_hs)
+
+    # Reference power-law lines, anchored at the smallest h for each
+    # method (where the asymptotic regime is cleanest).
+    _ref_eu = _err_eu[-1] * (_h_arr / _hs[-1]) ** 1
+    _ref_he = _err_he[-1] * (_h_arr / _hs[-1]) ** 2
+    _ref_rk = _err_rk[-1] * (_h_arr / _hs[-1]) ** 4
+
+    _fig = go.Figure()
+    # Reference lines first so the data sits on top.
+    _fig.add_trace(go.Scatter(
+        x=_h_arr, y=_ref_eu, mode="lines",
+        line=dict(color="#d1495b", width=1.3, dash="dash"),
+        name="slope 1 reference  (∝ h¹)",
+        hoverinfo="skip",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=_h_arr, y=_ref_he, mode="lines",
+        line=dict(color="#e9a23b", width=1.3, dash="dash"),
+        name="slope 2 reference  (∝ h²)",
+        hoverinfo="skip",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=_h_arr, y=_ref_rk, mode="lines",
+        line=dict(color="#2a9d8f", width=1.3, dash="dash"),
+        name="slope 4 reference  (∝ h⁴)",
+        hoverinfo="skip",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=_h_arr, y=_err_eu, mode="lines+markers",
+        line=dict(color="#d1495b", width=2),
+        marker=dict(size=10, color="#d1495b",
+                    line=dict(color="#7a2a3a", width=1.2)),
+        name="Euler  (order 1)",
+        hovertemplate="h = %{x:.4f}<br>Euler error = %{y:.3e}<extra></extra>",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=_h_arr, y=_err_he, mode="lines+markers",
+        line=dict(color="#e9a23b", width=2),
+        marker=dict(size=10, color="#e9a23b",
+                    line=dict(color="#8a5c0e", width=1.2)),
+        name="Heun  (order 2)",
+        hovertemplate="h = %{x:.4f}<br>Heun error = %{y:.3e}<extra></extra>",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=_h_arr, y=_err_rk, mode="lines+markers",
+        line=dict(color="#2a9d8f", width=2),
+        marker=dict(size=10, color="#2a9d8f",
+                    line=dict(color="#1d6e64", width=1.2)),
+        name="RK4   (order 4)",
+        hovertemplate="h = %{x:.4f}<br>RK4 error = %{y:.3e}<extra></extra>",
+    ))
+
+    _y_min = min(min(_err_rk), min(_ref_rk))
+    _y_max = max(max(_err_eu), max(_ref_eu))
+
+    _fig.update_layout(
+        template="plotly_white",
+        title=dict(
+            text="Convergence: |error at x = 2|  vs  h  for three methods "
+                 "(y' = y − x²)",
+            x=0.02,
+        ),
+        xaxis=dict(title="step size  h  (log scale)", type="log",
+                   dtick=1, minor=dict(showgrid=False),
+                   range=[np.log10(_hs[-1]) - 0.6, np.log10(_hs[0]) + 0.5],
+                   zeroline=False),
+        yaxis=dict(title="|error at x = 2|  (log scale)", type="log",
+                   dtick=1, minor=dict(showgrid=False),
+                   range=[np.log10(_y_min) - 0.7, np.log10(_y_max) + 0.5],
+                   zeroline=False),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=540, showlegend=True,
+        legend=dict(x=0.02, y=0.98, bgcolor="rgba(255,255,255,0.9)",
+                    font=dict(size=11)),
+        margin=dict(l=70, r=20, t=60, b=55),
+    )
+    _fig
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 8 — closing insight: the three slopes ARE the orders, and
+    # the gap between them at small h is the practical case for higher
+    # order. Sets up Beat 9 (where the smooth-convergence story breaks).
+    mo.md(
+        r"""
+        Three straight lines, three different steepnesses. **The slope
+        of each line is the order of the method.** Euler hugs the
+        red dashed reference (slope $1$); Heun follows the orange
+        dashed reference (slope $2$); RK4 tracks the green dashed
+        reference (slope $4$). All three reach their asymptotic
+        slopes once $h$ is small enough — the slight bend in Heun
+        and Euler at large $h$ is the same higher-order-Taylor-terms
+        story from Beat 6.
+
+        The **practical** content of the picture is the vertical
+        separation between the lines at any chosen $h$. At
+        $h = 0.01$, Euler's error is $\sim\!10^{-2}$, Heun's is
+        $\sim\!10^{-4}$, RK4's is $\sim\!10^{-10}$. **Eight orders of
+        magnitude** separate Euler from RK4 at the same step size,
+        on the same equation. RK4 pays $4\times$ more per step; in
+        return it eats eight decimal digits of error that Euler can
+        only buy by taking *$10^{8}$ times more steps*.
+
+        That's why every serious numerical library — `scipy`,
+        `Sundials`, the integrators inside MuJoCo, the ones inside
+        every robotics simulator — defaults to an order-$4$ or
+        order-$5$ method, not Euler. Euler exists in the textbook to
+        explain the *idea* of walking the slope field; in production,
+        you almost always reach for something higher-order.
+
+        ### One catch, coming next
+
+        All of the above is a **smooth-convergence** story. The error
+        shrinks predictably with $h$, and "shrink $h$ further" always
+        works. That assumption is about to break.
+
+        Beat 9 introduces **stiffness**: a class of equations where
+        making $h$ smaller doesn't just give you slow convergence —
+        it gives you a numerical solution that **oscillates and
+        blows up** for any $h$ above some sharp threshold. The
+        threshold has nothing to do with accuracy and everything to
+        do with whether the recipe is *stable*. RK4 doesn't save
+        you from this either; it has its own threshold, just at a
+        different $h$. The fix turns out to require a different
+        family of methods entirely.
+        """
     )
     return
 
