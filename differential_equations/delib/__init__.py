@@ -18,6 +18,7 @@ from delib.fields import (
     phase_line,
     potential_plot,
     level_curves,
+    euler_steps,
 )
 from delib.animate import (
     animate_time,
@@ -61,6 +62,7 @@ __all__ = [
     "phase_line",
     "potential_plot",
     "level_curves",
+    "euler_steps",
     "animate_time",
     "animate_plotly",
     "flow_field",

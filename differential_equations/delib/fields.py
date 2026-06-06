@@ -26,6 +26,7 @@ __all__ = [
     "phase_line",
     "potential_plot",
     "level_curves",
+    "euler_steps",
 ]
 
 # y' = f(x, y) for a first-order scalar ODE.
@@ -286,6 +287,30 @@ def vector_field_plotly(
         margin=dict(l=55, r=20, t=50, b=45),
     )
     return fig
+
+
+# --- Euler walk: a polyline from the slope rule ------------------------------
+
+def euler_steps(
+    f: Callable[[float, float], float],
+    x0: float,
+    y0: float,
+    h: float,
+    n: int,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Apply Euler's method to ``y' = f(x, y)`` for ``n`` steps of width ``h``.
+
+    Returns ``(xs, ys)`` arrays of length ``n + 1`` (including the starting
+    point). At each step the slope is read at the *current* point — the
+    simplest possible recipe, exactly as derived in Chapter 4.
+    """
+    xs = np.empty(n + 1, dtype=float)
+    ys = np.empty(n + 1, dtype=float)
+    xs[0], ys[0] = float(x0), float(y0)
+    for i in range(n):
+        xs[i + 1] = xs[i] + h
+        ys[i + 1] = ys[i] + h * float(f(xs[i], ys[i]))
+    return xs, ys
 
 
 # --- 1-D dynamics: phase line + potential ------------------------------------

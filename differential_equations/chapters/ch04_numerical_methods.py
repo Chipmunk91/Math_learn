@@ -334,6 +334,118 @@ def _(delib):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 5 (intro) — set up the slider hero: shrink h, watch the polyline
+    # collapse onto the exact curve. This is the visual the chapter has been
+    # promising since the hook ("how small is small enough?").
+    mo.md(
+        r"""
+        ## Shrink the step yourself
+
+        The previous animation used $h = 0.25$ — a deliberately coarse
+        step so each piece of the polyline is visible. In practice you
+        almost never run a simulator that coarse; you'd typically pick
+        $h$ small enough that the polyline is *visually* indistinguishable
+        from the true curve.
+
+        The slider below lets you do exactly that. Same equation,
+        $y' = y - x^2$ with $y(0) = 1$, same window. The red polyline
+        is Euler's walk at whatever $h$ you choose; the smooth blue
+        curve is the exact solution. Drag $h$ down and watch the
+        polyline melt onto the curve. Drag $h$ up toward $0.5$ and
+        watch the gap open dramatically — at the largest step, the
+        eight-step walk is already noticeably off by $x = 2$.
+
+        Some things worth noticing as you scrub:
+
+        - **The gap doesn't blow up.** Even at $h = 0.5$, Euler still
+          tracks the *shape* of the solution. It's wrong by a constant
+          amount, not catastrophically wrong. This will not be true
+          for every equation — Beat 9 shows one where it is.
+        - **Halving $h$ roughly halves the error.** Try $h = 0.25$,
+          then $h = 0.125$, then $h = 0.0625$, and eyeball the gap at
+          $x = 2$. Each halving cuts the gap by about two. That ratio
+          is what *first-order accurate* means, and the next section
+          turns it into a formula.
+        - **It costs you compute.** Halving $h$ doubles the number of
+          steps you have to take. In a physics engine running at
+          60 Hz over a 10-second simulation, that matters. The whole
+          art of numerical integration is buying accuracy *cheaply* —
+          which is exactly what RK4 (later in the chapter) is about.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    # Beat 5 — slider for h. Range 0.025..0.5 in 0.025 increments so the
+    # student can sweep from "indistinguishable from exact" to "visibly
+    # polygonal." Default 0.25 matches the hook + Manim, so the chapter
+    # opens on the worst case and the slider improves from there.
+    h_panel = delib.param_panel([
+        {"name": "h", "label": "step size  h",
+         "start": 0.025, "stop": 0.5, "step": 0.025, "value": 0.25},
+    ])
+    return (h_panel,)
+
+
+@app.cell(hide_code=True)
+def _(delib, go, h_panel, mo, np):
+    # Beat 5 — interactive hero: Euler polyline (red) vs exact solution
+    # (blue) for y' = y - x^2 with y(0) = 1, parametrised by h. Number of
+    # steps adapts so the walk always covers x in [0, 2].
+    _f = lambda x, y: y - x**2
+    _h = float(h_panel.value["h"])
+    _x_end = 2.0
+    _n = max(1, int(round(_x_end / _h)))
+
+    _xs_e, _ys_e = delib.euler_steps(_f, 0.0, 1.0, _h, _n)
+
+    _xs_exact = np.linspace(0, _x_end, 200)
+    _ys_exact = 2 + 2 * _xs_exact + _xs_exact**2 - np.exp(_xs_exact)
+
+    _fig = delib.slope_field_plotly(
+        _f, (-0.1, 2.2), (0.5, 3.3),
+        density=18,
+        title=f"y' = y − x²  with  h = {_h:.3f}   ({_n} steps to x = 2)",
+    )
+    _fig.add_trace(go.Scatter(
+        x=_xs_exact, y=_ys_exact, mode="lines",
+        line=dict(color="#5b7db1", width=3),
+        name="exact solution",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=_xs_e, y=_ys_e, mode="lines+markers",
+        line=dict(color="#d1495b", width=2),
+        marker=dict(size=7, color="#d1495b", symbol="circle",
+                    line=dict(color="#7a2a3a", width=1)),
+        name=f"Euler walk (h = {_h:.3f})",
+    ))
+
+    # Gap at the endpoint — the single number that says "how wrong are
+    # you at x = 2 with this h?" Useful for the halving-the-step ratio
+    # the prose calls out.
+    _exact_end = 2 + 2 * _x_end + _x_end**2 - np.exp(_x_end)
+    _gap_end = _ys_e[-1] - _exact_end
+    _fig.update_layout(
+        showlegend=True,
+        legend=dict(x=0.02, y=0.98, bgcolor="rgba(255,255,255,0.8)"),
+    )
+
+    mo.vstack([
+        h_panel,
+        _fig,
+        mo.md(
+            rf"At $x = 2$: Euler gives $y \approx {_ys_e[-1]:.4f}$, "
+            rf"exact $y \approx {_exact_end:.4f}$, "
+            rf"**gap $= {_gap_end:+.4f}$**."
+        ),
+    ])
+    return
+
+
 # --- Tutor (BYO-key chat, from delib). Skeleton for now; chapter content
 # --- will fill in below as later beats are built.
 @app.cell
