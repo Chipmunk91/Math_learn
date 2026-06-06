@@ -1433,6 +1433,443 @@ def _(mo):
 
 # --- Tutor (BYO-key chat, from delib). Skeleton for now; chapter content
 # --- will fill in below as later beats are built.
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 9 (intro) — switch anchor equation to radioactive decay
+    # N' = -lambda N, which is the textbook test case for stability.
+    # Frames the next several cells: even though Euler converges smoothly
+    # on benign equations, on decaying equations there's a sharp h
+    # threshold above which the numerical solution oscillates and blows
+    # up, and "shrink h" stops being a free lunch.
+    mo.md(
+        r"""
+        ## When more steps stops helping: stiffness
+
+        Everything in this chapter so far assumed that **shrinking
+        $h$ always helps**. The convergence plots in Beat 6 and
+        Beat 8 made the trade-off look smooth and tidy: each unit
+        of extra compute buys some predictable amount of accuracy,
+        and you can always pay for more by shrinking $h$ further.
+
+        That assumption is about to break, sharply, on a different
+        kind of equation. Switch from $y' = y - x^2$ to **radioactive
+        decay**:
+
+        $$
+        \frac{dN}{dt} \;=\; -\lambda\, N, \qquad N(0) = N_0.
+        $$
+
+        Real-world reading: $N(t)$ is the amount of a radioactive
+        substance at time $t$, and $\lambda > 0$ is the decay rate.
+        The bigger $\lambda$, the faster the substance disappears.
+        The exact solution is famously $N(t) = N_0\, e^{-\lambda t}$ —
+        a smooth, monotonic decay to zero, no oscillation, no surprises.
+        Any sane numerical method should reproduce that.
+
+        Apply Euler at step size $h$:
+
+        $$
+        N_{n+1} \;=\; N_n + h \cdot (-\lambda N_n) \;=\; N_n (1 - h\lambda).
+        $$
+
+        So each step *multiplies* the current value by the constant
+        $1 - h\lambda$. Call that constant the **amplification
+        factor**. After $n$ steps,
+
+        $$
+        N_n \;=\; N_0 \cdot (1 - h\lambda)^n.
+        $$
+
+        For the numerical solution to behave like the true one — decay
+        smoothly toward zero — we need the amplification factor to
+        satisfy $|1 - h\lambda| < 1$. Solve:
+
+        $$
+        |1 - h\lambda| < 1 \quad \Longleftrightarrow \quad 0 < h\lambda < 2.
+        $$
+
+        That gives a **hard ceiling on $h$**:
+
+        $$
+        h \;<\; \frac{2}{\lambda}.
+        $$
+
+        Above that ceiling, $1 - h\lambda$ has magnitude $\ge 1$, and
+        instead of decaying, the numerical solution **oscillates
+        between positive and negative values with growing magnitude**.
+        Negative *amount of radioactive material* — physically
+        nonsense — and the magnitude grows without bound as you take
+        more steps. The figure below makes this visible.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(go, mo, np):
+    # Beat 9 — Euler on radioactive decay at four h values bracketing
+    # the 2/lambda stability threshold. lambda = 1, t in [0, 8], so the
+    # threshold is at h = 2. Pick h = 0.5 (well-behaved), h = 1.5
+    # (oscillates but bounded), h = 2.5 (blows up oscillating), h = 3.0
+    # (blows up wildly). Exact decay overlaid in blue for reference.
+    _lam = 1.0
+    _N0 = 1.0
+    _t_end = 8.0
+    _hs = [0.5, 1.5, 2.5, 3.0]
+    _colors = ["#2a9d8f", "#e9a23b", "#d1495b", "#7a1a2a"]
+
+    _fig = go.Figure()
+    _ts_e = np.linspace(0, _t_end, 200)
+    _ns_e = _N0 * np.exp(-_lam * _ts_e)
+    _fig.add_trace(go.Scatter(
+        x=_ts_e, y=_ns_e, mode="lines",
+        line=dict(color="#5b7db1", width=3),
+        name="exact:  N(t) = N₀ e^(−λt)",
+    ))
+
+    for _h, _color in zip(_hs, _colors):
+        _n = max(1, int(round(_t_end / _h)))
+        _ts = np.arange(_n + 1) * _h
+        _ns = np.empty(_n + 1)
+        _ns[0] = _N0
+        _amp = 1 - _h * _lam
+        for _i in range(_n):
+            _ns[_i + 1] = _ns[_i] * _amp
+        _final_mag = abs(_ns[-1])
+        _tag = ("stable" if abs(_amp) < 1
+                else "marginal" if abs(_amp) == 1
+                else "BLOWING UP")
+        _fig.add_trace(go.Scatter(
+            x=_ts, y=_ns, mode="lines+markers",
+            line=dict(color=_color, width=2),
+            marker=dict(size=8, color=_color),
+            name=f"Euler h = {_h:.1f}   (1 − hλ = {_amp:+.2f}, {_tag})",
+        ))
+
+    _fig.update_layout(
+        template="plotly_white",
+        title=dict(
+            text="Euler on radioactive decay  N' = −N, N(0) = 1  "
+                 "(stability threshold: h < 2)",
+            x=0.02,
+        ),
+        xaxis=dict(title="t", zeroline=True, zerolinecolor="#bbb"),
+        yaxis=dict(title="N(t)", zeroline=True, zerolinecolor="#bbb",
+                   range=[-3, 3]),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=480, showlegend=True,
+        legend=dict(x=0.45, y=0.98, bgcolor="rgba(255,255,255,0.9)",
+                    font=dict(size=11)),
+        margin=dict(l=60, r=20, t=60, b=55),
+    )
+    mo.vstack([
+        _fig,
+        mo.md(
+            "Read by colour:\n\n"
+            "- **Teal $h = 0.5$**: amplification $0.5$, in $(-1, 1)$. "
+            "The polyline lies on the exact curve. Stable, as expected.\n"
+            "- **Gold $h = 1.5$**: amplification $-0.5$. Still in "
+            "$(-1, 1)$ in *magnitude*, but **negative** — so the sign "
+            "flips every step. The polyline zig-zags through zero, "
+            "but the zig-zag amplitude shrinks (eventually) toward "
+            "zero. Bounded but ugly.\n"
+            "- **Red $h = 2.5$**: amplification $-1.5$. Magnitude "
+            "*greater than 1*. Sign still flips, but now the swing "
+            "grows by $1.5\\times$ each step. The numerical solution "
+            "oscillates outward and exits the visible window almost "
+            "immediately.\n"
+            "- **Dark red $h = 3.0$**: amplification $-2$. The swing "
+            "*doubles* every step. Total blowup.\n\n"
+            "Notice what's *not* happening: the blowup has **nothing "
+            "to do with accuracy**. Even the bounded oscillation at "
+            "$h = 1.5$ is wildly inaccurate, but the disaster at "
+            "$h = 2.5$ and $h = 3$ is qualitatively different — the "
+            "solution diverges from *any* reasonable physical answer, "
+            "and increasing the number of steps only makes it worse "
+            "(more steps to amplify through).\n\n"
+            "This is **numerical instability**, and the threshold "
+            "$h < 2 / \\lambda$ is sharp. Above it Euler is useless "
+            "*at any precision*."
+        ),
+    ])
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 9 — what about RK4? It has its own stability threshold, more
+    # lenient than Euler but qualitatively the same disease. The polyfit
+    # for R(z) = 1 - z + z^2/2 - z^3/6 + z^4/24 has |R(z)| = 1 at
+    # z ≈ 2.785 on the real axis, so RK4 buys ~40% more h before blowup
+    # but doesn't fix the underlying problem.
+    mo.md(
+        r"""
+        ### Does RK4 save us? Only a little.
+
+        Higher-order methods have *more lenient* stability thresholds,
+        but the disease is the same. For RK4 on the same decay
+        equation, the amplification factor works out to
+
+        $$
+        R(z) \;=\; 1 - z + \tfrac{z^2}{2} - \tfrac{z^3}{6} + \tfrac{z^4}{24},
+        \qquad z = h\lambda,
+        $$
+
+        and $|R(z)| < 1$ holds for $h\lambda \lesssim 2.785$. So RK4
+        buys you about $40\\%$ more $h$ before blowup compared with
+        Euler. Useful, but only marginally — for a problem with
+        $\lambda = 100$, Euler needs $h < 0.02$ and RK4 needs $h <
+        0.028$. Both microscopic, both forced on you by stability
+        rather than accuracy.
+
+        And on equations with even faster components (think
+        $\lambda = 10^6$), $h$ must drop to $\sim\!10^{-6}$ for either
+        method to remain stable. Even if you only care about three
+        digits of accuracy, you're forced to take a million tiny
+        steps. **The fast component nobody cares about dictates the
+        step size for the whole simulation.** This is the textbook
+        definition of a **stiff** problem.
+
+        Stiffness is endemic in:
+
+        - **Chemistry**: reaction networks with rate constants
+          spanning many orders of magnitude.
+        - **Electrical engineering**: circuits with widely separated
+          time constants (fast transistors next to slow capacitors).
+        - **Combustion**: fast chemistry coupled to slow fluid motion.
+        - **Population biology**: short-lived predators vs long-lived
+          prey.
+
+        The fix isn't a better explicit method. It's a fundamentally
+        different family.
+
+        ### The fix: implicit methods
+
+        Look at Euler again:
+
+        $$
+        N_{n+1} \;=\; N_n + h \cdot \underbrace{f(t_n, N_n)}_{\text{slope at the } \mathbf{start}}.
+        $$
+
+        The slope is read at the **current** point. That's what
+        "explicit" means — the new value is given by a formula in
+        terms of the *old* value.
+
+        An **implicit** method reads the slope at the **destination**
+        instead:
+
+        $$
+        N_{n+1} \;=\; N_n + h \cdot \underbrace{f(t_{n+1}, N_{n+1})}_{\text{slope at the } \mathbf{end}}.
+        $$
+
+        Notice the catch: $N_{n+1}$ appears on *both sides*. You
+        can't just plug numbers in — you have to **solve** for
+        $N_{n+1}$ at every step. For nonlinear $f$ that means running
+        a Newton iteration per step (cheap, but a real cost).
+
+        On our linear decay test, though, the algebra closes in one
+        line. Substituting $f(t, N) = -\lambda N$:
+
+        $$
+        N_{n+1} \;=\; N_n - h \lambda N_{n+1}
+        \quad \Longleftrightarrow \quad
+        N_{n+1} (1 + h\lambda) = N_n
+        \quad \Longleftrightarrow \quad
+        N_{n+1} \;=\; \frac{N_n}{1 + h\lambda}.
+        $$
+
+        This is **backward Euler**. The amplification factor is now
+        $1/(1 + h\lambda)$, which is **always in $(0, 1)$ for any
+        $h > 0$**. There is no stability threshold. You can take a
+        step of size $h = 10^{6}$ on this equation and the numerical
+        solution will still decay monotonically toward zero. It may
+        be *inaccurate* — you've skipped over almost all the decay
+        in one step — but it won't blow up. The figure below shows
+        the same four $h$ values run through backward Euler.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(go, mo, np):
+    # Beat 9 — backward Euler on the same decay test at the same four
+    # h values. All four trajectories stay bounded and decay
+    # monotonically toward zero, demonstrating that the implicit step
+    # has no stability threshold on this problem.
+    _lam = 1.0
+    _N0 = 1.0
+    _t_end = 8.0
+    _hs = [0.5, 1.5, 2.5, 3.0]
+    _colors = ["#2a9d8f", "#e9a23b", "#d1495b", "#7a1a2a"]
+
+    _fig = go.Figure()
+    _ts_e = np.linspace(0, _t_end, 200)
+    _ns_e = _N0 * np.exp(-_lam * _ts_e)
+    _fig.add_trace(go.Scatter(
+        x=_ts_e, y=_ns_e, mode="lines",
+        line=dict(color="#5b7db1", width=3),
+        name="exact:  N(t) = N₀ e^(−λt)",
+    ))
+
+    for _h, _color in zip(_hs, _colors):
+        _n = max(1, int(round(_t_end / _h)))
+        _ts = np.arange(_n + 1) * _h
+        _ns = np.empty(_n + 1)
+        _ns[0] = _N0
+        _amp = 1.0 / (1.0 + _h * _lam)
+        for _i in range(_n):
+            _ns[_i + 1] = _ns[_i] * _amp
+        _fig.add_trace(go.Scatter(
+            x=_ts, y=_ns, mode="lines+markers",
+            line=dict(color=_color, width=2),
+            marker=dict(size=8, color=_color),
+            name=f"Backward Euler h = {_h:.1f}   "
+                 f"(1/(1+hλ) = {_amp:+.3f}, stable)",
+        ))
+
+    _fig.update_layout(
+        template="plotly_white",
+        title=dict(
+            text="Backward Euler on the same decay  "
+                 "(no stability threshold)",
+            x=0.02,
+        ),
+        xaxis=dict(title="t", zeroline=True, zerolinecolor="#bbb"),
+        yaxis=dict(title="N(t)", zeroline=True, zerolinecolor="#bbb",
+                   range=[-0.1, 1.1]),
+        paper_bgcolor="white", plot_bgcolor="white",
+        height=440, showlegend=True,
+        legend=dict(x=0.45, y=0.98, bgcolor="rgba(255,255,255,0.9)",
+                    font=dict(size=11)),
+        margin=dict(l=60, r=20, t=60, b=55),
+    )
+    mo.vstack([
+        _fig,
+        mo.md(
+            "All four trajectories *decay monotonically*, no matter how "
+            "big the step. The largest step ($h = 3.0$) is wildly "
+            "inaccurate — only three points to cover $t \\in [0, 8]$, "
+            "with the amplification of $0.25$ per step rather than the "
+            "true factor of $e^{-3} \\approx 0.05$ — but the solution "
+            "is **qualitatively correct**: positive, decreasing, "
+            "heading to zero. That's the *point* of implicit methods. "
+            "They trade per-step cost (you solve a small equation for "
+            "$N_{n+1}$ instead of computing it directly) for the "
+            "freedom to take a step size dictated by **accuracy**, "
+            "not by stability.\n\n"
+            "Production libraries reach for implicit methods the "
+            "moment they detect stiffness. `scipy.integrate.solve_ivp` "
+            "has the `BDF` and `Radau` options for exactly this; "
+            "`Sundials`'s `CVODE` switches between explicit and "
+            "implicit automatically based on a stiffness estimate. "
+            "Inside a physics engine, a contact-impact solver looks "
+            "stiff the instant a constraint becomes active — which is "
+            "why those solvers have whole subsystems for handling it."
+        ),
+    ])
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Beat 10 — adaptive step sizing. Production solvers don't ask you
+    # to choose h; they pick it themselves using an embedded-RK error
+    # estimate (RKF45 / Dormand–Prince). Closes the chapter with a
+    # pointer to Ch 5 (the connection between numerical stability and
+    # dynamical-systems stability).
+    mo.md(
+        r"""
+        ## Letting the solver pick the step size
+
+        Both halves of the chapter so far — accuracy on smooth
+        problems, and stability on stiff ones — assume you pick $h$
+        and live with the consequences. Real solvers don't work that
+        way. They **adjust $h$ on the fly**, taking big steps in
+        boring regions where the solution is slow and tame, and
+        shrinking $h$ in regions where it's wiggling fast or near
+        an event.
+
+        The trick is to estimate the per-step error cheaply, then
+        steer $h$ based on it. The most famous family is the
+        **embedded Runge–Kutta** methods. Here's the idea in one
+        sentence:
+
+        > Compute two RK steps at the *same* $h$ — one with order $4$
+        > and one with order $5$ — using mostly the same slope
+        > samples. The difference between the two answers is your
+        > estimate of the per-step error.
+
+        Why does it work? The order-$5$ result is *much* more
+        accurate than the order-$4$ result (by the order-of-accuracy
+        story you now know cold). So their difference is essentially
+        the error in the order-$4$ result. Use that estimate to
+        decide:
+
+        - If the estimated error is *bigger* than your tolerance,
+          **reject this step**, halve $h$ (or smarter), and try
+          again.
+        - If the estimated error is *smaller* than your tolerance,
+          **accept this step** and consider growing $h$ for the next
+          one.
+
+        The specific method most libraries default to is **Dormand–
+        Prince (RK45)** — `scipy.integrate.solve_ivp` calls it
+        `'RK45'` and uses it as the default. Each step costs six
+        slope evaluations (instead of four for plain RK4), but in
+        exchange you get the order-$5$ answer *and* a free error
+        estimate. You stop choosing $h$ — you choose a tolerance
+        like $10^{-6}$ and the solver chooses $h$ for you, step by
+        step.
+
+        ```python
+        from scipy.integrate import solve_ivp
+        sol = solve_ivp(lambda t, y: y - t**2, (0, 2), [1.0],
+                        method="RK45", rtol=1e-8, atol=1e-10)
+        ```
+
+        Behind that one line: the solver evaluates the slope a few
+        thousand times, automatically shrinks $h$ near features that
+        need it, automatically grows $h$ in calmer stretches, and
+        returns a trajectory good to eight digits. You never specify
+        a single step size.
+
+        For stiff problems the same idea applies, but with an
+        *implicit* embedded method (`'Radau'`, `'BDF'` in scipy).
+        Same adaptive-step machinery, different per-step solve.
+
+        ### How this chapter connects to the next
+
+        Two threads from this chapter feed directly into Chapter 5:
+
+        - **Numerical stability** (this chapter): is the *recipe*
+          well-behaved on a given equation at a given $h$? It's a
+          property of the method-plus-problem-plus-step-size combo.
+        - **Dynamical stability** (next chapter): is the *true
+          solution* of an ODE attracted to a particular point or
+          repelled from it? It's a property of the equation alone.
+
+        They're not the same thing, but they're related. The
+        eigenvalues of a linearised ODE govern both: where they sit
+        in the complex plane determines whether the true solution
+        decays or grows (dynamical stability), and that same location
+        determines what $h$ keeps a numerical method stable
+        (numerical stability — the $h\lambda < 2$ condition for
+        Euler is just the simplest case of this).
+
+        Chapter 5 turns this around. Instead of treating the ODE as
+        something to *simulate*, we'll treat it as something to
+        *understand*: fixed points, basins of attraction, the
+        long-term picture without ever solving the equation. The
+        numerical machinery from this chapter becomes a tool for
+        *exploring* that picture, not the centre of attention.
+        """
+    )
+    return
+
+
+# --- Tutor (BYO-key chat, from delib). Skeleton for now; chapter content
+# --- will fill in below as later beats are built.
 @app.cell
 def _(delib):
     key_bridge = delib.key_bridge_widget()
