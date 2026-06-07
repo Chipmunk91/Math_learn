@@ -125,8 +125,8 @@ def _(delib, go, mo, np):
               *order* of a method tells you how the error shrinks with
               step size.
             - **How to recognise when your walk is about to blow up** —
-              the stability story that haunts every real-world
-              simulator.
+              the stability story that every real-world simulator
+              has to handle.
 
             The figure below shows the basic idea. The slope field of
             $y' = y - x^2$ has its little tangent arrows everywhere;
@@ -283,15 +283,6 @@ def _(mo):
         Continue this for eight steps and you reproduce the red dots
         from the hook figure exactly. (You can flip back and verify
         the arithmetic.)
-
-        ### How small is small enough?
-
-        That's what the rest of this chapter answers. Next, an
-        animation walks Euler through the field step by step — same
-        equation, same $h$, but with the slope vector drawn at each
-        step so you can see the recipe in motion. After that you'll
-        get a slider for $h$ so you can shrink it yourself and watch
-        the red polyline collapse onto the smooth curve.
         """
     )
     return
@@ -306,16 +297,13 @@ def _(mo):
         r"""
         ## Watch the recipe in motion
 
-        Same equation as above, $y' = y - x^2$ with $y(0) = 1$, same
-        step size $h = 0.25$. The video below builds Euler's walk one
-        step at a time. At each step you see the slope vector the
-        equation gives at the current point, then the dot stepping
-        along that slope, and finally the segment laid down as part
-        of the polyline. After eight steps the exact solution comes
-        in as an overlay — the gap between the red polyline and the
-        smooth blue curve is the per-step error compounding.
-
-        This is the same picture as the hook figure, drawn live.
+        The video below brings the hook figure to life: same equation
+        $y' = y - x^2$ with $y(0) = 1$, same step $h = 0.25$. Each
+        frame shows the slope the equation gives at the current
+        point, then the dot stepping along that slope, then the
+        segment being laid down. After eight steps the exact
+        solution comes in as an overlay so the per-step error is
+        visible all at once.
         """
     )
     return
@@ -361,18 +349,18 @@ def _(mo):
 
         - **The gap doesn't blow up.** Even at $h = 0.5$, Euler still
           tracks the *shape* of the solution. It's wrong by a constant
-          amount, not catastrophically wrong. This will not be true
-          for every equation — Beat 9 shows one where it is.
+          amount, not catastrophically wrong. This won't always be the
+          case — the last section of the chapter shows an equation
+          where it fails dramatically.
         - **Halving $h$ roughly halves the error.** Try $h = 0.25$,
           then $h = 0.125$, then $h = 0.0625$, and eyeball the gap at
           $x = 2$. Each halving cuts the gap by about two. That ratio
           is what *first-order accurate* means, and the next section
           turns it into a formula.
         - **It costs you compute.** Halving $h$ doubles the number of
-          steps you have to take. In a physics engine running at
-          60 Hz over a 10-second simulation, that matters. The whole
-          art of numerical integration is buying accuracy *cheaply* —
-          which is exactly what RK4 (later in the chapter) is about.
+          steps you have to take. The whole art of numerical
+          integration is buying accuracy *cheaply* — which is the
+          motivation for the better methods we'll meet shortly.
         """
     )
     return
@@ -504,9 +492,9 @@ def _(mo):
         $\mathcal{O}(h^{p+1})$ has global error $\mathcal{O}(h^{p})$,
         because you take $L/h$ such steps. So matching higher-order
         Taylor terms in the local step buys you a steeper error
-        curve globally. **RK4** matches through $h^4$ locally, so its
-        global error is $\mathcal{O}(h^4)$ — quartic. We'll build it
-        in Beat 7.
+        curve globally. The well-known **RK4** method matches through
+        $h^4$ locally, so its global error is $\mathcal{O}(h^4)$ —
+        quartic. We'll build it later in the chapter.
 
         ### See it on a log-log plot
 
@@ -695,11 +683,11 @@ def _(delib, mo, np):
         "first-order rule $E \\approx C h$ is an **asymptotic** "
         "statement, true only in the small-$h$ limit. At $h = 0.5$ "
         "the higher-order Taylor terms (the $h^2$, $h^3$ bits Euler "
-        "threw away in Beat 6's derivation) still bend the curve, "
-        "and the constant $C$ hasn't even stabilised. The practical "
-        "lesson: don't trust the slope-1 cost model when $h$ is "
-        "big. Shrink $h$ until consecutive rows of the table give "
-        "matching ratios, *then* use the model to plan further "
+        "threw away when we derived the rule above) still bend the "
+        "curve, and the constant $C$ hasn't even stabilised. The "
+        "practical lesson: don't trust the slope-1 cost model when "
+        "$h$ is big. Shrink $h$ until consecutive rows of the table "
+        "give matching ratios, *then* use the model to plan further "
         "refinement.\n\n"
         f"{_table}\n\n"
         "**The trade-off, named.** Now we can answer the question we "
@@ -710,10 +698,9 @@ def _(delib, mo, np):
         "Want $100\\times$ better accuracy? $100\\times$ more compute. "
         "Want six digits where you currently have two? A million "
         "times more compute. That's fine when the equation is benign "
-        "and two digits are enough. It's brutal when you need real "
-        "precision, or when you're running a physics engine at 60 Hz "
-        "over a multi-hour simulation and *10× more compute* knocks "
-        "you out of real-time.\n\n"
+        "and two digits are enough. It's painful when you need real "
+        "precision, or when you're running a simulation in real time "
+        "and a $10\\times$ slowdown knocks you out of budget.\n\n"
         "The next section builds **RK4**, which changes the exchange "
         "rate. With RK4 you buy $10\\times$ more accuracy for only "
         "$10^{1/4} \\approx 1.8\\times$ more compute. A million times "
@@ -735,9 +722,9 @@ def _(mo):
         r"""
         ## A better walk: sample the slope more than once per step
 
-        Beat 6 named the trade-off Euler offers — one unit of compute
+        We've named the trade-off Euler offers — one unit of compute
         buys one unit of accuracy, forever. Now we ask whether a
-        cleverer recipe can change the exchange rate.
+        cleverer rule can change the exchange rate.
 
         Go back to what Euler actually does. At step $n$, it reads
         the slope $f(x_n, y_n)$ at the *start* of the interval, then
@@ -799,25 +786,13 @@ def _(mo):
 
         ### Watch one Heun's step assemble itself
 
-        Press **▶ Play** on the figure below (or step through with the
-        slider underneath it). It builds one Heun's step on the
-        anchor equation $y' = y - x^2$ from $(0, 1)$ in five
-        annotated stages:
-
-        1. **Read $k_1$** — the slope at the start.
-        2. **Take a tentative Euler step** using $k_1$ alone — that's
-           the dashed red line landing at the open circle.
-        3. **Read $k_2$** — the slope *at that tentative endpoint*.
-        4. **Take the real step** using the average $(k_1 + k_2)/2$ —
-           that's the solid red line landing at the filled circle.
-        5. **Compare** to where the true solution actually ends up
-           (the blue diamond).
-
-        Watch the solid red endpoint sit closer to the blue diamond
-        than the open circle does. That's the trapezoidal-rule
-        advantage made literal: by *also* reading the slope at the
-        far end of the interval and averaging, Heun captures the
-        curvature Euler missed.
+        Press **▶ Play** on the figure below — or step through with
+        the slider — to see the construction unfold on
+        $y' = y - x^2$ from $(0, 1)$ with $h = 0.5$. Each frame is
+        labelled, and the headline is at the end: the solid red
+        endpoint (Heun's) sits much closer to the blue diamond (the
+        true solution) than the open circle (Euler's tentative
+        endpoint) does.
         """
     )
     return
@@ -1014,7 +989,7 @@ def _(mo):
     # applied to the integral of g).
     mo.md(
         r"""
-        ### Move 2 — sample four times, weight Simpson-style
+        ### Move 2 — sample four times, weighted average
 
         Heun's already gave us order 2 for one extra slope read.
         What if we sample the slope **four times** within each step,
@@ -1055,45 +1030,17 @@ def _(mo):
         weight $1$, each midpoint sample gets weight $2$, divide by
         $6$ so the weights sum to $1$.
 
-        ### Why those weights? — Simpson's rule in disguise
+        ### Why those weights?
 
-        The weighting isn't arbitrary; it's stolen from a much older
-        result, **Simpson's rule** for numerical integration. To see
-        the connection, look at the special case where the equation
-        has no $y$-dependence: $y' = g(x)$. Then integrating gives
-        the exact answer
-
-        $$
-        y(x_n + h) - y(x_n) \;=\; \int_{x_n}^{x_n + h} g(s)\, ds.
-        $$
-
-        Simpson's rule approximates that integral as
-
-        $$
-        \int_{x_n}^{x_n + h} g(s)\, ds
-        \;\approx\; \frac{h}{6}\bigl(g(x_n) + 4\, g(x_n + \tfrac{h}{2}) + g(x_n + h)\bigr),
-        $$
-
-        and is **exact for any polynomial $g$ of degree $\le 3$**.
-        Now look at what the four RK4 slopes become in this no-$y$
-        case: $k_1 = g(x_n)$, $k_2 = g(x_n + h/2)$, $k_3 = g(x_n + h/2)$
-        (same as $k_2$ because no $y$-dependence), $k_4 = g(x_n + h)$.
-        The RK4 update is
-
-        $$
-        \frac{h}{6}(k_1 + 2 k_2 + 2 k_3 + k_4)
-        \;=\; \frac{h}{6}\bigl(g(x_n) + 4\, g(x_n + \tfrac{h}{2}) + g(x_n + h)\bigr).
-        $$
-
-        That's **exactly Simpson's rule**. So in the autonomous case
-        RK4 inherits Simpson's exactness-for-cubics property — local
-        error $\mathcal{O}(h^5)$, global error $\mathcal{O}(h^4)$.
-        For the general $y' = f(x, y)$ case, $k_2$ and $k_3$ aren't
-        equal (the $y$-dependence makes the two midpoint estimates
-        slightly different), but their average plays the same
-        Simpson-midpoint role, and the order-4 accuracy carries
-        through — that's the actual content of the original
-        Runge–Kutta derivation, which we won't grind through.
+        The weights $(1, 2, 2, 1)/6$ are chosen so that the Taylor
+        expansion of the RK4 update matches the true solution through
+        $h^4$. The full coefficient-matching argument is mostly
+        bookkeeping — numerical-methods textbooks work through it
+        carefully if you're curious. We'll skip the derivation and
+        just trust the result: by spending four slope evaluations per
+        step, the per-step error drops to $\mathcal{O}(h^5)$, which
+        gives global error $\mathcal{O}(h^4)$ — fourth-order
+        accurate, exactly as advertised.
 
         **What you've bought.** Four slope evaluations per step
         instead of one — i.e. $4\times$ the per-step cost. In
@@ -1111,62 +1058,6 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(delib, mo, np):
-    # Beat 7 — numerical comparison: error at x = 2 for Euler, Heun
-    # (RK2), and RK4 on the anchor equation, at six h values. Builds
-    # the table that makes the order-1 vs order-2 vs order-4 picture
-    # impossible to dismiss as theoretical.
-    _f = lambda x, y: y - x**2
-    _x_end = 2.0
-    _exact_end = 2 + 2 * _x_end + _x_end**2 - float(np.exp(_x_end))
-
-    _hs = [0.5, 0.2, 0.1, 0.05, 0.02, 0.01]
-    _rows = ["| h | n_steps | Euler \\|err\\| | Heun (RK2) \\|err\\| | RK4 \\|err\\| | RK4 better than Euler by |",
-             "|---|---|---|---|---|---|"]
-    for _h in _hs:
-        _n = max(1, int(round(_x_end / _h)))
-        _, _y_e = delib.euler_steps(_f, 0.0, 1.0, _h, _n)
-        _, _y_h = delib.heun_steps(_f, 0.0, 1.0, _h, _n)
-        _, _y_r = delib.rk4_steps(_f, 0.0, 1.0, _h, _n)
-        _e_eu = abs(float(_y_e[-1]) - _exact_end)
-        _e_he = abs(float(_y_h[-1]) - _exact_end)
-        _e_rk = abs(float(_y_r[-1]) - _exact_end)
-        _ratio = _e_eu / _e_rk
-        _rows.append(
-            f"| {_h:g} | {_n} | {_e_eu:.3e} | {_e_he:.3e} | {_e_rk:.3e} | {_ratio:,.0f}× |"
-        )
-    _table = "\n".join(_rows)
-
-    mo.md(
-        "### See the order in numbers\n\n"
-        "Same anchor equation as Beat 6 — $y' = y - x^2$ with "
-        "$y(0) = 1$, walk out to $x = 2$, compare to the exact value "
-        f"$y(2) \\approx 2.611$. For each $h$, run all three methods "
-        f"and tabulate the error.\n\n{_table}\n\n"
-        "**Read down each column.** Halve $h$ (e.g. $0.1 \\to 0.05$) "
-        "and watch the error column shrink:\n\n"
-        "- Euler shrinks by $\\approx 2\\times$ — first order.\n"
-        "- Heun shrinks by $\\approx 4\\times$ — second order.\n"
-        "- RK4 shrinks by $\\approx 16\\times$ — fourth order.\n\n"
-        "Each new order squares the previous error-reduction factor.\n\n"
-        "**Read across each row.** At $h = 0.1$ — a reasonable step "
-        "size — Euler is off by about $0.09$ (two-digit accuracy), "
-        "Heun by $0.0075$ (still two digits), and RK4 by $1.3 \\times "
-        "10^{-6}$ (six digits). RK4 is about **67,000× more accurate "
-        "than Euler at the same $h$**, for $4\\times$ the per-step "
-        "cost. That ratio is *astonishing*. It's why nobody actually "
-        "uses Euler when accuracy matters — RK4 dominates it on every "
-        "axis except raw simplicity.\n\n"
-        "The next section makes this concrete: a single hero figure "
-        "with all three methods walking the slope field side by side, "
-        "and a log-log convergence plot stacking the three power-law "
-        "lines (slope 1, slope 2, slope 4) so the orders are visible "
-        "at a glance."
-    )
-    return
-
-
-@app.cell(hide_code=True)
 def _(mo):
     # Beat 8 (intro) — frame the two hero figures: a coarse-h trajectory
     # picture so the order difference is *visible*, and a log-log
@@ -1174,27 +1065,23 @@ def _(mo):
     # legible as slopes.
     mo.md(
         r"""
-        ## Three methods, one picture
+        ## Three methods, side by side
 
-        Numbers in a table only convince you so far. The next two
-        figures make the order story visible.
+        Let's see the orders in action. The two figures below run
+        Euler, Heun, and RK4 on the same equation, $y' = y - x^2$
+        from $(0, 1)$.
 
         The **first** is a trajectory comparison at a deliberately
-        coarse step size, $h = 0.4$ — five steps to cross
-        $x \in [0, 2]$ on the anchor equation. Coarse enough that
-        Euler's polyline is dramatically off, Heun's tracks more
-        closely but is still visibly imperfect, and RK4's polyline is
-        nearly indistinguishable from the exact curve. With only five
-        steps in each polyline, the difference between *the order of
-        the method* is on screen, not buried in a number.
+        coarse step, $h = 0.4$ — five steps to cross $x \in [0, 2]$.
+        Coarse enough that Euler's polyline is visibly off, Heun's
+        tracks more closely but is still imperfect, and RK4's
+        polyline is nearly indistinguishable from the exact curve.
 
-        The **second** is the log-log convergence story from Beat 6,
-        now with all three methods stacked on the same axes. You'll
-        see three straight lines of different slopes — Euler at
-        slope $1$, Heun at slope $2$, RK4 at slope $4$. Reading them
-        is the headline result of the chapter: **the order of a
-        method is the steepness of its convergence line on log-log
-        axes**, and steeper is dramatically cheaper.
+        The **second** restates the log-log convergence picture from
+        before, now with all three methods on the same axes — three
+        straight lines of different slopes ($1$, $2$, $4$). The
+        steeper the line, the dramatically cheaper accuracy gets as
+        you shrink $h$.
         """
     )
     return
@@ -1383,49 +1270,31 @@ def _(delib, go, np):
 def _(mo):
     # Beat 8 — closing insight: the three slopes ARE the orders, and
     # the gap between them at small h is the practical case for higher
-    # order. Sets up Beat 9 (where the smooth-convergence story breaks).
+    # order. Sets up the stiffness section below.
     mo.md(
         r"""
-        Three straight lines, three different steepnesses. **The slope
-        of each line is the order of the method.** Euler hugs the
-        red dashed reference (slope $1$); Heun follows the orange
-        dashed reference (slope $2$); RK4 tracks the green dashed
-        reference (slope $4$). All three reach their asymptotic
-        slopes once $h$ is small enough — the slight bend in Heun
-        and Euler at large $h$ is the same higher-order-Taylor-terms
-        story from Beat 6.
+        Three straight lines, three different steepnesses. **The
+        slope of each line is the order of the method.** Euler hugs
+        the slope-$1$ reference; Heun follows slope $2$; RK4 tracks
+        slope $4$. (The slight bend at large $h$ is the same
+        higher-order-Taylor-terms effect we noticed earlier — the
+        asymptotic formula isn't tight until $h$ is small.)
 
-        The **practical** content of the picture is the vertical
-        separation between the lines at any chosen $h$. At
-        $h = 0.01$, Euler's error is $\sim\!10^{-2}$, Heun's is
-        $\sim\!10^{-4}$, RK4's is $\sim\!10^{-10}$. **Eight orders of
-        magnitude** separate Euler from RK4 at the same step size,
-        on the same equation. RK4 pays $4\times$ more per step; in
-        return it eats eight decimal digits of error that Euler can
-        only buy by taking *$10^{8}$ times more steps*.
+        The **practical** content is the vertical separation between
+        the lines. At $h = 0.01$, Euler's error is $\sim\!10^{-2}$,
+        Heun's is $\sim\!10^{-4}$, RK4's is $\sim\!10^{-10}$. **Eight
+        orders of magnitude** between Euler and RK4 at the same step
+        size on the same equation. RK4 pays $4\times$ more per step;
+        in return it eats eight decimal digits of error that Euler
+        could only buy by taking $10^{8}$ times more steps. That's
+        why production solvers default to an order-$4$ or order-$5$
+        method, not Euler.
 
-        That's why every serious numerical library — `scipy`,
-        `Sundials`, the integrators inside MuJoCo, the ones inside
-        every robotics simulator — defaults to an order-$4$ or
-        order-$5$ method, not Euler. Euler exists in the textbook to
-        explain the *idea* of walking the slope field; in production,
-        you almost always reach for something higher-order.
-
-        ### One catch, coming next
-
-        All of the above is a **smooth-convergence** story. The error
-        shrinks predictably with $h$, and "shrink $h$ further" always
-        works. That assumption is about to break.
-
-        Beat 9 introduces **stiffness**: a class of equations where
-        making $h$ smaller doesn't just give you slow convergence —
-        it gives you a numerical solution that **oscillates and
-        blows up** for any $h$ above some sharp threshold. The
-        threshold has nothing to do with accuracy and everything to
-        do with whether the recipe is *stable*. RK4 doesn't save
-        you from this either; it has its own threshold, just at a
-        different $h$. The fix turns out to require a different
-        family of methods entirely.
+        Everything above assumed that **shrinking $h$ always helps**.
+        The next section shows a kind of equation where that
+        assumption breaks sharply — and where neither RK4 nor any
+        amount of step shrinking saves you, until we change the
+        *family* of method entirely.
         """
     )
     return
@@ -1445,26 +1314,28 @@ def _(mo):
         r"""
         ## When more steps stops helping: stiffness
 
-        Everything in this chapter so far assumed that **shrinking
-        $h$ always helps**. The convergence plots in Beat 6 and
-        Beat 8 made the trade-off look smooth and tidy: each unit
-        of extra compute buys some predictable amount of accuracy,
-        and you can always pay for more by shrinking $h$ further.
+        The convergence story above was tidy: shrink $h$, get less
+        error, repeat. That tidy picture relied on the equation
+        being well-behaved. Let's try the method on a different kind
+        of equation — one where things go very differently.
 
-        That assumption is about to break, sharply, on a different
-        kind of equation. Switch from $y' = y - x^2$ to **radioactive
-        decay**:
+        Take
 
         $$
-        \frac{dN}{dt} \;=\; -\lambda\, N, \qquad N(0) = N_0.
+        \frac{dN}{dt} \;=\; -\lambda\, N, \qquad N(0) = N_0,
         $$
 
-        Real-world reading: $N(t)$ is the amount of a radioactive
-        substance at time $t$, and $\lambda > 0$ is the decay rate.
-        The bigger $\lambda$, the faster the substance disappears.
-        The exact solution is famously $N(t) = N_0\, e^{-\lambda t}$ —
-        a smooth, monotonic decay to zero, no oscillation, no surprises.
-        Any sane numerical method should reproduce that.
+        with some positive constant $\lambda$. This equation
+        describes any process where the **rate of decrease is
+        proportional to the current amount**: a radioactive sample
+        thinning out over time, a capacitor discharging through a
+        resistor, a drug clearing from your bloodstream, hot coffee
+        cooling toward room temperature (the Newton's-cooling
+        equation we met in Chapter 2 is the same shape). The bigger
+        $\lambda$, the faster the decay. The exact solution is the
+        familiar $N(t) = N_0\, e^{-\lambda t}$ — a smooth, monotonic
+        decay to zero. Any sane numerical method should reproduce
+        it.
 
         Apply Euler at step size $h$:
 
@@ -1606,39 +1477,22 @@ def _(mo):
         r"""
         ### Does RK4 save us? Only a little.
 
-        Higher-order methods have *more lenient* stability thresholds,
-        but the disease is the same. For RK4 on the same decay
-        equation, the amplification factor works out to
+        Higher-order methods have *more lenient* stability
+        thresholds, but the disease is the same. Working through the
+        same algebra for RK4 on this equation gives a stability
+        ceiling at $h\lambda \lesssim 2.785$ — about $40\%$ more
+        room than Euler, but still a ceiling forced on you by
+        stability rather than by accuracy.
 
-        $$
-        R(z) \;=\; 1 - z + \tfrac{z^2}{2} - \tfrac{z^3}{6} + \tfrac{z^4}{24},
-        \qquad z = h\lambda,
-        $$
-
-        and $|R(z)| < 1$ holds for $h\lambda \lesssim 2.785$. So RK4
-        buys you about $40\\%$ more $h$ before blowup compared with
-        Euler. Useful, but only marginally — for a problem with
-        $\lambda = 100$, Euler needs $h < 0.02$ and RK4 needs $h <
-        0.028$. Both microscopic, both forced on you by stability
-        rather than accuracy.
-
-        And on equations with even faster components (think
-        $\lambda = 10^6$), $h$ must drop to $\sim\!10^{-6}$ for either
-        method to remain stable. Even if you only care about three
-        digits of accuracy, you're forced to take a million tiny
-        steps. **The fast component nobody cares about dictates the
-        step size for the whole simulation.** This is the textbook
-        definition of a **stiff** problem.
-
-        Stiffness is endemic in:
-
-        - **Chemistry**: reaction networks with rate constants
-          spanning many orders of magnitude.
-        - **Electrical engineering**: circuits with widely separated
-          time constants (fast transistors next to slow capacitors).
-        - **Combustion**: fast chemistry coupled to slow fluid motion.
-        - **Population biology**: short-lived predators vs long-lived
-          prey.
+        And it gets painful when $\lambda$ is large. If
+        $\lambda = 10^6$, both methods need $h \lesssim 10^{-6}$ to
+        stay stable. Even if you only care about three digits of
+        accuracy, you're forced to take a million tiny steps. **A
+        fast component nobody cares about dictates the step size for
+        the whole simulation.** That's the textbook definition of a
+        **stiff** problem, and it shows up everywhere fast and slow
+        time-scales coexist — chemistry, circuits, fluid–chemistry
+        coupling, control systems.
 
         The fix isn't a better explicit method. It's a fundamentally
         different family.
@@ -1748,24 +1602,18 @@ def _(go, mo, np):
         _fig,
         mo.md(
             "All four trajectories *decay monotonically*, no matter how "
-            "big the step. The largest step ($h = 3.0$) is wildly "
-            "inaccurate — only three points to cover $t \\in [0, 8]$, "
-            "with the amplification of $0.25$ per step rather than the "
-            "true factor of $e^{-3} \\approx 0.05$ — but the solution "
-            "is **qualitatively correct**: positive, decreasing, "
-            "heading to zero. That's the *point* of implicit methods. "
-            "They trade per-step cost (you solve a small equation for "
-            "$N_{n+1}$ instead of computing it directly) for the "
-            "freedom to take a step size dictated by **accuracy**, "
-            "not by stability.\n\n"
-            "Production libraries reach for implicit methods the "
-            "moment they detect stiffness. `scipy.integrate.solve_ivp` "
-            "has the `BDF` and `Radau` options for exactly this; "
-            "`Sundials`'s `CVODE` switches between explicit and "
-            "implicit automatically based on a stiffness estimate. "
-            "Inside a physics engine, a contact-impact solver looks "
-            "stiff the instant a constraint becomes active — which is "
-            "why those solvers have whole subsystems for handling it."
+            "big the step. The largest one ($h = 3.0$) is wildly "
+            "inaccurate — three points to cover $t \\in [0, 8]$, with "
+            "an amplification of $0.25$ per step instead of the true "
+            "$e^{-3} \\approx 0.05$ — but the solution is "
+            "**qualitatively correct**: positive, decreasing, heading "
+            "to zero. That's the point. Implicit methods trade "
+            "per-step cost (you solve a small equation for $N_{n+1}$ "
+            "instead of computing it directly) for the freedom to "
+            "choose $h$ for **accuracy**, not stability. Production "
+            "solvers like `scipy.integrate.solve_ivp` switch to "
+            "implicit options (`BDF`, `Radau`) the moment they detect "
+            "stiffness."
         ),
     ])
     return
@@ -1782,45 +1630,32 @@ def _(mo):
         r"""
         ## Letting the solver pick the step size
 
-        Both halves of the chapter so far — accuracy on smooth
-        problems, and stability on stiff ones — assume you pick $h$
-        and live with the consequences. Real solvers don't work that
-        way. They **adjust $h$ on the fly**, taking big steps in
-        boring regions where the solution is slow and tame, and
-        shrinking $h$ in regions where it's wiggling fast or near
-        an event.
+        So far the chapter has assumed *you* pick $h$ and live with
+        the consequences. Real solvers don't work that way — they
+        **adjust $h$ on the fly**, taking big steps where the
+        solution is slow and tame and shrinking $h$ where it
+        wiggles fast.
 
         The trick is to estimate the per-step error cheaply, then
-        steer $h$ based on it. The most famous family is the
-        **embedded Runge–Kutta** methods. Here's the idea in one
-        sentence:
+        steer $h$ based on it. The standard idea is **embedded
+        Runge–Kutta** methods:
 
-        > Compute two RK steps at the *same* $h$ — one with order $4$
-        > and one with order $5$ — using mostly the same slope
-        > samples. The difference between the two answers is your
-        > estimate of the per-step error.
+        > Compute two RK steps at the same $h$ — one of order $4$,
+        > one of order $5$ — using mostly the same slope samples.
+        > The difference between the two answers is your estimate of
+        > the per-step error.
 
-        Why does it work? The order-$5$ result is *much* more
-        accurate than the order-$4$ result (by the order-of-accuracy
-        story you now know cold). So their difference is essentially
-        the error in the order-$4$ result. Use that estimate to
-        decide:
+        Because the order-$5$ result is much more accurate than the
+        order-$4$ one, their difference is essentially the error in
+        the cheaper estimate. If that error is bigger than your
+        tolerance, reject the step and try a smaller $h$; if it's
+        smaller, accept it and consider growing $h$.
 
-        - If the estimated error is *bigger* than your tolerance,
-          **reject this step**, halve $h$ (or smarter), and try
-          again.
-        - If the estimated error is *smaller* than your tolerance,
-          **accept this step** and consider growing $h$ for the next
-          one.
-
-        The specific method most libraries default to is **Dormand–
-        Prince (RK45)** — `scipy.integrate.solve_ivp` calls it
-        `'RK45'` and uses it as the default. Each step costs six
-        slope evaluations (instead of four for plain RK4), but in
-        exchange you get the order-$5$ answer *and* a free error
-        estimate. You stop choosing $h$ — you choose a tolerance
-        like $10^{-6}$ and the solver chooses $h$ for you, step by
-        step.
+        The default in most libraries is **Dormand–Prince**,
+        sometimes labelled `RK45`. Six slope evaluations per step
+        give you the order-$5$ answer *and* a free error estimate.
+        You stop choosing $h$ at all — you choose a tolerance, and
+        the solver chooses $h$ step by step:
 
         ```python
         from scipy.integrate import solve_ivp
@@ -1828,41 +1663,18 @@ def _(mo):
                         method="RK45", rtol=1e-8, atol=1e-10)
         ```
 
-        Behind that one line: the solver evaluates the slope a few
-        thousand times, automatically shrinks $h$ near features that
-        need it, automatically grows $h$ in calmer stretches, and
-        returns a trajectory good to eight digits. You never specify
-        a single step size.
+        For stiff problems the same machinery wraps an implicit
+        per-step solve instead (`Radau`, `BDF` in scipy).
 
-        For stiff problems the same idea applies, but with an
-        *implicit* embedded method (`'Radau'`, `'BDF'` in scipy).
-        Same adaptive-step machinery, different per-step solve.
+        ### Closing thought
 
-        ### How this chapter connects to the next
-
-        Two threads from this chapter feed directly into Chapter 5:
-
-        - **Numerical stability** (this chapter): is the *recipe*
-          well-behaved on a given equation at a given $h$? It's a
-          property of the method-plus-problem-plus-step-size combo.
-        - **Dynamical stability** (next chapter): is the *true
-          solution* of an ODE attracted to a particular point or
-          repelled from it? It's a property of the equation alone.
-
-        They're not the same thing, but they're related. The
-        eigenvalues of a linearised ODE govern both: where they sit
-        in the complex plane determines whether the true solution
-        decays or grows (dynamical stability), and that same location
-        determines what $h$ keeps a numerical method stable
-        (numerical stability — the $h\lambda < 2$ condition for
-        Euler is just the simplest case of this).
-
-        Chapter 5 turns this around. Instead of treating the ODE as
-        something to *simulate*, we'll treat it as something to
-        *understand*: fixed points, basins of attraction, the
-        long-term picture without ever solving the equation. The
-        numerical machinery from this chapter becomes a tool for
-        *exploring* that picture, not the centre of attention.
+        This chapter has been about **the methods that simulate** a
+        differential equation. The next chapter goes the other way:
+        instead of asking "what trajectory does the equation
+        produce?", it asks "what does the equation tell us about the
+        *long-term* behaviour without solving it at all?" The
+        numerical tools you just built become exploration aids, not
+        the main event.
         """
     )
     return
