@@ -42,9 +42,11 @@ def _caption(anchor, text):
 
 
 def _step_label(text):
-    """Step header in the top-left corner — clear of the centred title."""
-    t = Text(text, font_size=22, color=BLUE_D, weight=BOLD)
-    t.to_corner(UL, buff=0.4)
+    """Step header placed where the title sits (top-centre). The title
+    fades out as the first step's label fades in, so the header line is
+    occupied by exactly one thing at a time."""
+    t = Text(text, font_size=26, color=BLUE_D, weight=BOLD)
+    t.to_edge(UP, buff=0.25)
     return t
 
 
@@ -144,7 +146,11 @@ class SceneEulerWalksField(Scene):
             )
 
             if i == 0:
-                self.play(FadeIn(new_lbl), Transform(cap, new_cap),
+                # Title fades out as the first step label fades in at
+                # the same screen position, so the header line shows
+                # exactly one heading at a time.
+                self.play(FadeOut(title), FadeIn(new_lbl),
+                          Transform(cap, new_cap),
                           GrowArrow(slope_arrow), run_time=1.3)
                 step_lbl = new_lbl
             else:

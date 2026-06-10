@@ -42,9 +42,11 @@ def _caption(anchor, text):
 
 
 def _stage_label(text):
-    """Stage header in the top-left corner — clear of the centred title."""
-    t = Text(text, font_size=22, color=BLUE_D, weight=BOLD)
-    t.to_corner(UL, buff=0.4)
+    """Stage header placed where the title sits (top-centre). The title
+    fades out as the first stage label fades in, so the header line
+    shows exactly one heading at a time."""
+    t = Text(text, font_size=26, color=BLUE_D, weight=BOLD)
+    t.to_edge(UP, buff=0.25)
     return t
 
 
@@ -136,6 +138,8 @@ class SceneHeunStep(Scene):
             )
 
         # --- Stage 1: read k1 -------------------------------------------------
+        # Title fades out as stage label fades in at the same screen
+        # position, so the header line shows exactly one heading at a time.
         lbl = _stage_label("1 — read the slope at the start")
         k1_arrow = slope_arrow(x0, y0, k1)
         k1_tex = MathTex(r"k_1 = f(0, 1) = 1.000", font_size=30,
@@ -145,7 +149,7 @@ class SceneHeunStep(Scene):
             "The equation gives the slope at our current point: "
             "k1 = f(0, 1) = 1 − 0² = 1. This is all Euler ever uses."
         )
-        self.play(FadeIn(lbl), Transform(cap, new_cap),
+        self.play(FadeOut(title), FadeIn(lbl), Transform(cap, new_cap),
                   GrowArrow(k1_arrow), Write(k1_tex), run_time=1.2)
         self.wait(2.0)
 
@@ -189,10 +193,11 @@ class SceneHeunStep(Scene):
             color=RED_E, stroke_width=4.5,
         )
         heun_dot = Dot(axes.c2p(x_t, y_heun), color=RED_E, radius=0.09)
+        # Anchor below the stage label since the title is gone by now.
         avg_tex = MathTex(
             r"\tfrac{k_1 + k_2}{2} = 1.125,\quad y_1 = 1 + 0.5 \cdot 1.125 = 1.5625",
             font_size=30,
-        ).next_to(title, DOWN, buff=0.25)
+        ).next_to(lbl, DOWN, buff=0.25)
         new_cap = _caption(
             axes,
             "Take the actual step with the average slope 1.125. Land at "
