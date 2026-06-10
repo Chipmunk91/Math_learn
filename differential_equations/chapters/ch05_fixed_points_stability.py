@@ -193,18 +193,172 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
+def _(go, mo, np):
+    # Section 3 — build the model. Translate the switch story into sign
+    # requirements on the velocity rule f, then show the simplest
+    # polynomial that meets them is the cubic x - x^3. Figure: graph of
+    # f vs x with the four sign bands annotated ("x increases / x
+    # decreases") and the three zeros marked on the axis. Deliberately
+    # no arrows-on-a-line yet — that's the phase line, earned next
+    # section.
+    _xs = np.linspace(-1.5, 1.5, 300)
+    _fs = _xs - _xs**3
+
+    _fig = go.Figure()
+    # Sign bands: where f > 0 the motion goes right, where f < 0 left.
+    for _x0, _x1, _txt in [
+        (-1.5, -1.0, "f > 0:  x increases  →"),
+        (-1.0,  0.0, "←  f < 0:  x decreases"),
+        ( 0.0,  1.0, "f > 0:  x increases  →"),
+        ( 1.0,  1.5, "←  f < 0:  x decreases"),
+    ]:
+        _fig.add_vrect(
+            x0=_x0, x1=_x1,
+            fillcolor=("#eaf3fb" if "increases" in _txt else "#fdf3e7"),
+            line_width=0, layer="below",
+        )
+        _fig.add_annotation(
+            x=(_x0 + _x1) / 2, y=1.75, text=_txt, showarrow=False,
+            font=dict(size=11, color="#666"),
+        )
+    _fig.add_hline(y=0, line=dict(color="#9aa7b5", width=1))
+    _fig.add_trace(go.Scatter(
+        x=_xs, y=_fs, mode="lines",
+        line=dict(color="#5b7db1", width=3),
+        name="f(x) = x − x³",
+        hovertemplate="f(%{x:.2f}) = %{y:.3f}<extra></extra>",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=[-1, 0, 1], y=[0, 0, 0], mode="markers",
+        marker=dict(size=12, color="#d1495b",
+                    line=dict(color="#7a2a3a", width=1.5)),
+        name="zeros of f  (rest points)",
+        hovertemplate="f(%{x}) = 0<extra></extra>",
+    ))
+    _fig.update_layout(
+        template="plotly_white",
+        title=dict(text="The velocity rule:  f(x) = x − x³", x=0.02),
+        xaxis=dict(title="position  x", range=[-1.5, 1.5], zeroline=False),
+        yaxis=dict(title="velocity  f(x)", range=[-2.0, 2.0],
+                   zeroline=False),
+        height=420, showlegend=True,
+        legend=dict(x=0.02, y=0.02, bgcolor="rgba(255,255,255,0.85)"),
+        margin=dict(l=60, r=20, t=50, b=45),
+        paper_bgcolor="white", plot_bgcolor="white",
+    )
+
+    mo.vstack([
+        mo.md(
+            r"""
+            ## Building the switch equation
+
+            Time to write the equation behind the hook figure. We
+            want the *simplest* velocity rule $\dot x = f(x)$ that
+            behaves like the switch. Translate the story into
+            demands on $f$, one by one:
+
+            1. **Three resting places.** Motion can stop at the two
+               settled positions and at the balance point between
+               them. Choosing units so the settled positions sit at
+               $x = \pm 1$, we need
+               $f(-1) = f(0) = f(+1) = 0$, and no other zeros.
+            2. **The outer rests hold.** Just *below* $+1$ the
+               velocity must be positive (motion climbs back up
+               toward $+1$); just *above* $+1$ it must be negative
+               (motion falls back down). Same on both sides of $-1$,
+               mirrored.
+            3. **The middle rest breaks.** Just *above* $0$ the
+               velocity must be positive — away from $0$, toward
+               $+1$. Just *below* $0$, negative — away from $0$,
+               toward $-1$.
+
+            Put the three demands together and you've pinned down
+            the **sign** of $f$ everywhere on the line:
+
+            $$
+            \underbrace{f > 0}_{x < -1}
+            \qquad
+            \underbrace{f < 0}_{-1 < x < 0}
+            \qquad
+            \underbrace{f > 0}_{0 < x < 1}
+            \qquad
+            \underbrace{f < 0}_{x > 1}
+            $$
+
+            A function that crosses zero exactly at $-1, 0, +1$ and
+            alternates sign $+,-,+,-$ across the four intervals: the
+            simplest polynomial that does this is a **cubic** with
+            those three roots and a negative leading coefficient,
+
+            $$
+            f(x) \;=\; -\,x\,(x - 1)\,(x + 1) \;=\; x - x^3.
+            $$
+
+            That's the equation that generated every trajectory in
+            the hook figure: $\dot x = x - x^3$. Here is its graph,
+            with the sign structure made visible:
+            """
+        ),
+        _fig,
+        mo.md(
+            r"""
+            Check the demands against the picture. The curve crosses
+            zero at exactly three places — the red dots — and the
+            shaded bands alternate: blue means $f > 0$ (whatever is
+            at that position moves **right**), tan means $f < 0$
+            (moves **left**). Stand anywhere in the blue band between
+            $0$ and $1$: you drift right until you hit $+1$, where
+            the velocity hits zero and the drift stops. Stand
+            anywhere just left of $0$: tan band, you drift left,
+            away from $0$ and into $-1$'s grip.
+
+            Notice what we just did. **We read off the direction of
+            motion at every point on the line without solving the
+            differential equation** — no integration, no Chapter 4
+            machinery, nothing but the *sign* of $f$. The six
+            trajectories in the hook figure took a numerical solver
+            to draw; the sentence "everything between $0$ and $1$
+            drifts right into $+1$" took one glance at the graph.
+
+            One glance is still more ink than necessary. The next
+            section compresses this entire figure into a single
+            decorated line.
+            """
+        ),
+    ])
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo):
-    # Beat 3 — build the model: why x' = x - x^3.
+    # Section 4 (intro) — frame the phase line as the compression of
+    # everything seen so far, then hand off to the Manim that performs
+    # the compression on screen: trajectories -> endpoints -> a single
+    # decorated line.
     mo.md(
         r"""
-        ## Building the switch equation
+        ## The phase line — the whole story in one picture
 
-        *(placeholder — derive dot x = x - x^3 from "two attractive states with
-        an unstable middle"; the simplest cubic with that shape.)*
+        Let's assemble the compression we've been circling. Two
+        observations are on the table:
 
-        The cubic $\dot x = x - x^3$ has exactly three zeros — $x = -1, 0, +1$
-        — and a simple shape: positive between $-1$ and $0$, negative between
-        $0$ and $+1$, swapping sign at every zero. That's the right structure.
+        - From the hook: the **time axis is wasted ink** — each
+          trajectory's only payload is its destination.
+        - From the velocity graph: the **sign of $f$** tells you the
+          direction of motion at every point, no integration needed.
+
+        Combine them. Take the position line itself — just the
+        $x$-axis, nothing else. Mark the places where $f = 0$ with
+        dots: motion can rest there. In each interval between the
+        dots, draw one arrow: right where $f > 0$, left where
+        $f < 0$. Finally, make the dots tell the stability story at
+        a glance — **fill** the dots that hold (arrows point *into*
+        them from both sides) and leave **open** the ones that break
+        (arrows point *away*).
+
+        The result is called the **phase line**, and the video below
+        builds it from the raw material — watch the six trajectories
+        give up their time axis and collapse into it.
         """
     )
     return
@@ -212,19 +366,55 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(delib):
-    # Beat 4 — the phase line (FIRST hero visual).
+    # Section 4 — Manim hero: trajectories collapse into the phase line.
+    delib.video(
+        "phase_line_collapse.mp4",
+        caption="From six trajectories to one phase line  —  ẋ = x − x³",
+        fallback="The phase-line animation is being rendered "
+                 "(see manim/phase_line_collapse.py).",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    # Section 4 — the live phase line (FIRST hero visual).
     delib.phase_line(lambda x: x - x**3, (-2.0, 2.0),
-                     title="Phase line of  x' = x - x^3")
+                     title="Phase line of  ẋ = x − x³")
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
+    # Section 4 (reading guide) — how to read the phase line, and what
+    # it buys: every starting point's fate, read directly off one line.
     mo.md(
         r"""
-        *(placeholder — how to read the phase line: each circle is a fixed
-        point; filled = stable, open = unstable; the arrows show the flow on
-        each interval.)*
+        Reading the phase line takes three rules, all of which you
+        already know:
+
+        - **Dots** are the fixed points — the values where
+          $f(x) = 0$ and motion can rest.
+        - **Arrows** show the flow between the dots — right where
+          $f > 0$, left where $f < 0$.
+        - **Filled vs open** is stability: a filled dot has the
+          arrows on both sides pointing *in* (a nudge gets pushed
+          back — the rest holds); an open dot has them pointing
+          *out* (a nudge gets amplified — the rest breaks).
+
+        Now use it. Put your finger anywhere on the line and follow
+        the arrow you land on: from $x_0 = 0.1$, the arrow carries
+        you right, into $+1$, where you stop. From $x_0 = -1.6$,
+        right again, into $-1$. From *any* starting point, the
+        phase line hands you the destination by inspection.
+
+        Compare what went into the two pictures of this system. The
+        hook figure cost six numerical integrations and showed six
+        specific fates. The phase line cost one factoring
+        ($f = 0$ at $-1, 0, +1$) and four sign checks — and it
+        answers the fate question for **every** starting point at
+        once. That's the trade this chapter is about: stop following
+        individual journeys, and read the geography instead.
         """
     )
     return
