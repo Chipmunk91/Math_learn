@@ -74,6 +74,8 @@ jobs:
           find media -name 'bernoulli_substitution.mp4' -exec cp {} assets-rendered/ \; || true
           manim render -qm -o euler_walks_field manim/euler_walks_field.py SceneEulerWalksField || true
           find media -name 'euler_walks_field.mp4' -exec cp {} assets-rendered/ \; || true
+          manim render -qm -o heun_step manim/heun_step.py SceneHeunStep || true
+          find media -name 'heun_step.mp4' -exec cp {} assets-rendered/ \; || true
           ls -la assets-rendered || true
 
       - name: Upload rendered media

@@ -786,198 +786,27 @@ def _(mo):
 
         ### Watch one Heun's step assemble itself
 
-        Press **▶ Play** on the figure below — or step through with
-        the slider — to see the construction unfold on
-        $y' = y - x^2$ from $(0, 1)$ with $h = 0.5$. Each frame is
-        labelled, and the headline is at the end: the solid red
-        endpoint (Heun's) sits much closer to the blue diamond (the
-        true solution) than the open circle (Euler's tentative
-        endpoint) does.
+        The video below builds the construction in five labelled
+        stages on $y' = y - x^2$ from $(0, 1)$ with $h = 0.5$. The
+        headline comes at the end: Heun's endpoint lands $2.6\times$
+        closer to the true solution than Euler's tentative step did,
+        for one extra slope read.
         """
     )
     return
 
 
 @app.cell(hide_code=True)
-def _(delib, go, np):
-    # Beat 7 — animated Heun construction on y' = y - x² from (0, 1)
-    # with a fixed h = 0.5. Six frames, Play button + step slider:
-    #   0  setup
-    #   1  read k_1
-    #   2  tentative Euler step + open marker
-    #   3  read k_2
-    #   4  averaged-slope Heun step + filled marker
-    #   5  reveal true endpoint as blue diamond
-    _f = lambda x, y: y - x**2
-    _x0, _y0, _h = 0.0, 1.0, 0.5
-    _k1 = _f(_x0, _y0)
-    _x_t, _y_t = _x0 + _h, _y0 + _h * _k1
-    _k2 = _f(_x_t, _y_t)
-    _kavg = 0.5 * (_k1 + _k2)
-    _y_h = _y0 + _h * _kavg
-    _y_true = 2 + 2 * _x_t + _x_t**2 - float(np.exp(_x_t))
-
-    # Uniform-length slope direction-mark (in axes units), normalised so
-    # the arrow length reads the same regardless of how steep the slope.
-    def _arrow(x, y, slope, length=0.18):
-        n = (1 + slope * slope) ** 0.5
-        dx = length / n
-        return [x, x + dx], [y, y + slope * dx]
-
-    _k1_xs, _k1_ys = _arrow(_x0, _y0, _k1)
-    _k2_xs, _k2_ys = _arrow(_x_t, _y_t, _k2)
-
-    # Each animated trace: fixed data, only `visible` flips per frame.
-    _anim = [
-        dict(x=_k1_xs, y=_k1_ys, mode="lines",
-             line=dict(color="#2a9d8f", width=3),
-             name=f"① k₁ = {_k1:.3f}  (slope at start)"),
-        dict(x=[_x0, _x_t], y=[_y0, _y_t], mode="lines",
-             line=dict(color="#d1495b", width=2, dash="dash"),
-             name="② Euler tentative step (uses k₁ alone)"),
-        dict(x=[_x_t], y=[_y_t], mode="markers",
-             marker=dict(size=12, color="white", symbol="circle",
-                         line=dict(color="#d1495b", width=2)),
-             name="   Euler tentative endpoint"),
-        dict(x=_k2_xs, y=_k2_ys, mode="lines",
-             line=dict(color="#2a9d8f", width=3),
-             name=f"③ k₂ = {_k2:.3f}  (slope at that endpoint)"),
-        dict(x=[_x0, _x_t], y=[_y0, _y_h], mode="lines",
-             line=dict(color="#d1495b", width=3.5),
-             name=f"④ Heun's actual step  (avg slope = {_kavg:.3f})"),
-        dict(x=[_x_t], y=[_y_h], mode="markers",
-             marker=dict(size=12, color="#d1495b",
-                         line=dict(color="#7a2a3a", width=1.5)),
-             name="   Heun's endpoint"),
-        dict(x=[_x_t], y=[_y_true], mode="markers",
-             marker=dict(size=14, color="#5b7db1", symbol="diamond",
-                         line=dict(color="#395775", width=1.5)),
-             name=f"⑤ true solution endpoint  y = {_y_true:.3f}"),
-    ]
-
-    _vis = [
-        [False, False, False, False, False, False, False],
-        [True,  False, False, False, False, False, False],
-        [True,  True,  True,  False, False, False, False],
-        [True,  True,  True,  True,  False, False, False],
-        [True,  True,  True,  True,  True,  True,  False],
-        [True,  True,  True,  True,  True,  True,  True],
-    ]
-    _descs = [
-        "Setup — start at (0, 1), exact solution in blue.",
-        f"① Read the slope at the start. k₁ = f(0, 1) = 1 − 0² = {_k1:.3f}.",
-        f"② Take a tentative Euler step using k₁ alone. Land at "
-        f"({_x_t}, {_y_t:.3f}) — the open circle.",
-        f"③ Read the slope at the tentative endpoint. k₂ = f({_x_t}, "
-        f"{_y_t:.3f}) = {_y_t:.3f} − {_x_t}² = {_k2:.3f}.",
-        f"④ Average k₁ and k₂ → {_kavg:.3f}. Take the real step with "
-        f"that average. Land at ({_x_t}, {_y_h:.4f}).",
-        f"⑤ True solution at x = {_x_t} is y ≈ {_y_true:.3f} (the blue "
-        f"diamond). Heun's endpoint sits much closer to it than "
-        f"Euler's tentative did.",
-    ]
-
-    # Static background first: slope field + exact + start dot.
-    _fig = delib.slope_field_plotly(
-        _f, (-0.05, 0.95), (0.7, 2.3),
-        density=18,
-        title="Watch one Heun's step assemble itself  —  y' = y − x², h = 0.5",
+def _(delib):
+    # Manim hero: one Heun (RK2) step assembling itself on y' = y - x²
+    # from (0, 1) with h = 0.5 — k1 read, tentative Euler step, k2 read,
+    # averaged-slope real step, true-endpoint comparison.
+    delib.video(
+        "heun_step.mp4",
+        caption="One Heun (RK2) step on  y' = y − x²,   h = 0.5",
+        fallback="The Heun-step animation is being rendered "
+                 "(see manim/heun_step.py).",
     )
-    _xs_e = np.linspace(-0.04, 0.93, 200)
-    _ys_e = 2 + 2 * _xs_e + _xs_e**2 - np.exp(_xs_e)
-    _fig.add_trace(go.Scatter(
-        x=_xs_e, y=_ys_e, mode="lines",
-        line=dict(color="#5b7db1", width=2.5),
-        name="exact solution",
-    ))
-    _fig.add_trace(go.Scatter(
-        x=[_x0], y=[_y0], mode="markers",
-        marker=dict(size=11, color="#d1495b",
-                    line=dict(color="#7a2a3a", width=1.5)),
-        name="start (0, 1)",
-    ))
-
-    # Animated traces follow; record their indices for the frame `traces`.
-    _anim_start = len(_fig.data)
-    for _spec, _v0 in zip(_anim, _vis[0]):
-        _fig.add_trace(go.Scatter(**_spec, visible=_v0))
-    _anim_idx = list(range(_anim_start, len(_fig.data)))
-
-    # Frames update only the animated traces.
-    _frames = []
-    for _i, _vlist in enumerate(_vis):
-        _frame_data = [
-            go.Scatter(**_spec, visible=_v)
-            for _spec, _v in zip(_anim, _vlist)
-        ]
-        _frames.append(go.Frame(
-            name=str(_i),
-            data=_frame_data,
-            traces=_anim_idx,
-            layout=dict(annotations=[dict(
-                x=0.5, y=-0.22, xref="paper", yref="paper",
-                text=f"<b>Frame {_i + 1}/6.</b>  {_descs[_i]}",
-                showarrow=False,
-                font=dict(size=12, color="#333"),
-                align="center", xanchor="center",
-            )]),
-        ))
-    _fig.frames = _frames
-
-    _fig.update_layout(
-        height=600,
-        xaxis=dict(range=[-0.05, 0.95], title="x"),
-        yaxis=dict(range=[0.7, 2.3], title="y"),
-        showlegend=True,
-        legend=dict(x=0.02, y=0.98, bgcolor="rgba(255,255,255,0.92)",
-                    font=dict(size=10)),
-        margin=dict(l=60, r=20, t=60, b=140),
-        annotations=[dict(
-            x=0.5, y=-0.22, xref="paper", yref="paper",
-            text=f"<b>Frame 1/6.</b>  {_descs[0]}",
-            showarrow=False,
-            font=dict(size=12, color="#333"),
-            align="center", xanchor="center",
-        )],
-        updatemenus=[dict(
-            type="buttons",
-            showactive=False,
-            x=0.02, y=-0.13, xanchor="left", yanchor="top",
-            pad=dict(t=0, r=10),
-            buttons=[
-                dict(label="▶ Play",
-                     method="animate",
-                     args=[None,
-                           dict(frame=dict(duration=1800, redraw=True),
-                                fromcurrent=True,
-                                transition=dict(duration=200))]),
-                dict(label="⏸ Pause",
-                     method="animate",
-                     args=[[None],
-                           dict(frame=dict(duration=0, redraw=False),
-                                mode="immediate")]),
-                dict(label="↺ Reset",
-                     method="animate",
-                     args=[["0"],
-                           dict(frame=dict(duration=0, redraw=True),
-                                mode="immediate")]),
-            ],
-        )],
-        sliders=[dict(
-            active=0, x=0.22, y=-0.11, len=0.72,
-            currentvalue=dict(prefix="step  ", visible=True,
-                              xanchor="left"),
-            steps=[
-                dict(method="animate",
-                     label=str(_i + 1),
-                     args=[[str(_i)],
-                           dict(frame=dict(duration=0, redraw=True),
-                                mode="immediate")])
-                for _i in range(len(_frames))
-            ],
-        )],
-    )
-    _fig
     return
 
 
@@ -1300,8 +1129,6 @@ def _(mo):
     return
 
 
-# --- Tutor (BYO-key chat, from delib). Skeleton for now; chapter content
-# --- will fill in below as later beats are built.
 @app.cell(hide_code=True)
 def _(mo):
     # Beat 9 (intro) — switch anchor equation to radioactive decay
@@ -1680,8 +1507,292 @@ def _(mo):
     return
 
 
-# --- Tutor (BYO-key chat, from delib). Skeleton for now; chapter content
-# --- will fill in below as later beats are built.
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## Try it — in code
+
+        Three short challenges, one per big idea of the chapter:
+        take Euler steps yourself, measure an order of accuracy,
+        and find a stability ceiling. `delib.euler_steps`,
+        `delib.heun_steps`, and `delib.rk4_steps` are available,
+        and `print()` works if you want to inspect intermediate
+        values.
+        """
+    )
+    return
+
+
+# --- Challenge 1: two Euler steps by hand --------------------------------------
+@app.cell
+def _(mo):
+    e1_get, e1_set = mo.state(
+        "# For y' = y - x**2 with y(0) = 1 and h = 0.5, take TWO Euler\n"
+        "# steps and put the resulting y (at x = 1.0) in `answer`.\n"
+        "# Each step: y_new = y + h * (y - x**2), then x_new = x + h.\n"
+        "answer = ...\n"
+    )
+    return e1_get, e1_set
+
+
+@app.cell
+def _(delib, e1_get):
+    e1_ai, e1_gen, e1_code, e1_run = delib.exercise_inputs(e1_get())
+    return e1_ai, e1_code, e1_gen, e1_run
+
+
+@app.cell
+async def _(api_field, delib, e1_ai, e1_code, e1_gen, e1_set, key_bridge):
+    await delib.exercise_ai(
+        e1_gen, e1_ai, e1_code, e1_set,
+        api_field.value or (key_bridge.value or {}).get("key", ""),
+        context="y' = y - x^2, y(0)=1, h=0.5. Step 1: slope f(0,1)=1, "
+                "y=1+0.5*1=1.5 at x=0.5. Step 2: slope f(0.5,1.5)=1.5-0.25"
+                "=1.25, y=1.5+0.5*1.25=2.125 at x=1.0. Put 2.125 in "
+                "`answer`. (delib.euler_steps(f, 0, 1, 0.5, 2) also "
+                "works.)",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, e1_ai, e1_code, e1_gen, e1_run):
+    delib.exercise_view(
+        "**1.** For $y' = y - x^2$ with $y(0) = 1$ and $h = 0.5$, take "
+        "**two Euler steps** and put the resulting $y$ at $x = 1$ in "
+        "`answer`. (By hand or with `delib.euler_steps` — your choice.)",
+        e1_ai, e1_gen, e1_code, e1_run,
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, e1_code, e1_run):
+    delib.run_exercise(e1_code.value, e1_run.value, check=lambda ns: delib.check_number(
+        ns, target=2.125, tol=1e-3,
+        ok="Right — step 1 lands at $(0.5, 1.5)$, step 2 reads the slope "
+           "$1.25$ *at the dot* and lands at $(1.0, 2.125)$.",
+        hint="Step 1: slope $f(0,1) = 1$, so $y = 1 + 0.5 \\cdot 1 = 1.5$. "
+             "Step 2: read the slope at $(0.5, 1.5)$, not on the true curve.",
+    ))
+    return
+
+
+# --- Challenge 2: measure the order of accuracy --------------------------------
+@app.cell
+def _(mo):
+    e2_get, e2_set = mo.state(
+        "# Run Euler to x = 2 (y' = y - x**2, y(0) = 1) twice: once with\n"
+        "# h = 0.1 and once with h = 0.05. The exact value is\n"
+        "# y(2) = 2 + 2*2 + 2**2 - np.exp(2). Compute each |error| and\n"
+        "# put the RATIO error(h=0.1) / error(h=0.05) in `answer`.\n"
+        "answer = ...\n"
+    )
+    return e2_get, e2_set
+
+
+@app.cell
+def _(delib, e2_get):
+    e2_ai, e2_gen, e2_code, e2_run = delib.exercise_inputs(e2_get())
+    return e2_ai, e2_code, e2_gen, e2_run
+
+
+@app.cell
+async def _(api_field, delib, e2_ai, e2_code, e2_gen, e2_set, key_bridge):
+    await delib.exercise_ai(
+        e2_gen, e2_ai, e2_code, e2_set,
+        api_field.value or (key_bridge.value or {}).get("key", ""),
+        context="Use delib.euler_steps(lambda x, y: y - x**2, 0, 1, h, n) "
+                "with (h=0.1, n=20) and (h=0.05, n=40). exact = 2+4+4-"
+                "np.exp(2) ~ 2.611. error(0.1) ~ 0.0888, error(0.05) ~ "
+                "0.0471, ratio ~ 1.89. Halving h halved the error — "
+                "first-order. Put the ratio in `answer`.",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, e2_ai, e2_code, e2_gen, e2_run):
+    delib.exercise_view(
+        "**2.** Measure Euler's order yourself: run to $x = 2$ at "
+        "$h = 0.1$ and at $h = 0.05$, compute both errors against the "
+        "exact $y(2)$, and put the **ratio** "
+        "$\\text{error}(0.1) / \\text{error}(0.05)$ in `answer`. "
+        "What number should a first-order method give?",
+        e2_ai, e2_gen, e2_code, e2_run,
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, e2_code, e2_run):
+    delib.run_exercise(e2_code.value, e2_run.value, check=lambda ns: delib.check_number(
+        ns, target=1.887, tol=0.05,
+        ok="Right — about $1.89$, close to the theoretical $2$ for a "
+           "first-order method (it approaches exactly $2$ as $h \\to 0$).",
+        hint="`delib.euler_steps(f, 0, 1, 0.1, 20)` and "
+             "`delib.euler_steps(f, 0, 1, 0.05, 40)`; compare each final "
+             "$y$ against `2 + 4 + 4 - np.exp(2)`.",
+    ))
+    return
+
+
+# --- Challenge 3: the stability ceiling -----------------------------------------
+@app.cell
+def _(mo):
+    e3_get, e3_set = mo.state(
+        "# For dN/dt = -4*N, Euler's update multiplies N by (1 - 4*h)\n"
+        "# each step. What is the LARGEST step size h for which the\n"
+        "# numerical solution still decays instead of blowing up?\n"
+        "# Put it in `answer`.\n"
+        "answer = ...\n"
+    )
+    return e3_get, e3_set
+
+
+@app.cell
+def _(delib, e3_get):
+    e3_ai, e3_gen, e3_code, e3_run = delib.exercise_inputs(e3_get())
+    return e3_ai, e3_code, e3_gen, e3_run
+
+
+@app.cell
+async def _(api_field, delib, e3_ai, e3_code, e3_gen, e3_set, key_bridge):
+    await delib.exercise_ai(
+        e3_gen, e3_ai, e3_code, e3_set,
+        api_field.value or (key_bridge.value or {}).get("key", ""),
+        context="Stability needs |1 - h*lambda| < 1 with lambda = 4, i.e. "
+                "0 < 4h < 2, so h < 2/4 = 0.5. Put 0.5 in `answer`. "
+                "(Students can also verify empirically with "
+                "delib.euler_steps(lambda t, N: -4*N, 0, 1, h, 20).)",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, e3_ai, e3_code, e3_gen, e3_run):
+    delib.exercise_view(
+        "**3.** For $\\dot N = -4N$, what is the **largest** $h$ for which "
+        "Euler still decays instead of blowing up? Put it in `answer`. "
+        "(Derive it from the amplification factor, or hunt for it "
+        "numerically with `delib.euler_steps` — both work.)",
+        e3_ai, e3_gen, e3_code, e3_run,
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, e3_code, e3_run):
+    delib.run_exercise(e3_code.value, e3_run.value, check=lambda ns: delib.check_number(
+        ns, target=0.5, tol=0.02,
+        ok="Right — the ceiling is $h = 2/\\lambda = 2/4 = 0.5$. Above it "
+           "$|1 - 4h| > 1$ and every step amplifies the error.",
+        hint="Stability needs $|1 - h\\lambda| < 1$ with $\\lambda = 4$. "
+             "Solve for $h$.",
+    ))
+    return
+
+
+# --- Playground ----------------------------------------------------------------
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ---
+        ## Playground — free exploration
+
+        No task, no grading. Type any Python, or ask the tutor (✨) to
+        write it, then **Run** to see the result.
+        """
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    pg_get, pg_set = mo.state(
+        "f = lambda x, y: y - x**2\n"
+        "xs, ys = delib.euler_steps(f, 0.0, 1.0, 0.25, 8)\n"
+        "view = delib.slope_field_plotly(f, (-0.1, 2.2), (0.5, 3.3),\n"
+        "                                title='Try a different f, h, or method!')\n"
+        "view.add_scatter(x=list(xs), y=list(ys), mode='lines+markers',\n"
+        "                 name='Euler walk')\n"
+    )
+    return pg_get, pg_set
+
+
+@app.cell
+def _(delib, pg_get):
+    pg_ai, pg_gen, pg_code, pg_run = delib.exercise_inputs(pg_get(), run_label="Run")
+    return pg_ai, pg_code, pg_gen, pg_run
+
+
+@app.cell
+async def _(api_field, delib, key_bridge, pg_ai, pg_code, pg_gen, pg_set):
+    await delib.exercise_ai(
+        pg_gen, pg_ai, pg_code, pg_set,
+        api_field.value or (key_bridge.value or {}).get("key", ""),
+        coach=False,
+        context="Open sandbox for chapter 4 (numerical methods). Helpers: "
+                "delib.euler_steps(f, x0, y0, h, n), delib.heun_steps(...), "
+                "delib.rk4_steps(...) — each returns (xs, ys) arrays — plus "
+                "delib.slope_field_plotly(f, xlim, ylim). Write complete "
+                "runnable code; assign a Plotly figure to `view`.",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, pg_ai, pg_code, pg_gen, pg_run):
+    delib.exercise_view(None, pg_ai, pg_gen, pg_code, pg_run)
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, pg_code, pg_run):
+    delib.run_exercise(pg_code.value, pg_run.value)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ---
+        ## Recap & what's next
+
+        - A first-order ODE assigns a **slope** to every point;
+          when no formula exists, you can still **walk the field**:
+          step, re-read the slope, repeat. That's Euler's method —
+          and, at heart, every physics simulator ever shipped.
+        - The walk's error follows $E \approx C h^p$, where $p$ is
+          the method's **order of accuracy** — readable as the slope
+          of a line on a log-log plot. Euler is order 1; sampling
+          the slope twice per step (Heun) gives order 2; four
+          careful samples (RK4) give order 4.
+        - Higher order changes the **exchange rate** between compute
+          and accuracy: at the same step size, RK4 can be millions
+          of times more accurate than Euler for only $4\times$ the
+          per-step cost.
+        - On decaying equations, explicit methods have a **stability
+          ceiling** ($h < 2/\lambda$ for Euler): above it, the
+          numerical solution oscillates and blows up no matter how
+          accurate the method is. **Implicit** methods (backward
+          Euler) read the slope at the destination and have no such
+          ceiling — the cure for **stiff** problems.
+        - Production solvers pick $h$ for you, using an embedded
+          pair of estimates to keep a per-step error budget.
+
+        **Next:** instead of simulating an equation forward, we ask
+        what its long-term behaviour is — fixed points, stability,
+        and the phase line — without solving anything at all.
+        """
+    )
+    return
+
+
+# --- Tutor (BYO-key chat, from delib) -------------------------------------------
 @app.cell
 def _(delib):
     key_bridge = delib.key_bridge_widget()

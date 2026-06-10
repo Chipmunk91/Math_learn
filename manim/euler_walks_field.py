@@ -29,22 +29,22 @@ import numpy as np  # noqa: E402
 from derivation_kit import HIGHLIGHT  # noqa: E402
 
 
-def _caption(text):
-    """Small grey caption at the bottom edge, auto-wrapped to ~70 chars.
-    Smaller font (20) and tighter wrap than the other scenes' default to
-    leave clearance for the axes' x-tick labels above."""
+def _caption(anchor, text):
+    """Small grey caption directly below `anchor` (the axes group), wrapped.
+    Anchoring to the figure (not the frame's bottom edge) keeps the caption
+    visually attached to the graph instead of floating low in the frame."""
     wrapped = "\n".join(
         textwrap.fill(para, width=70) for para in text.split("\n")
     )
     t = Text(wrapped, font_size=20, color=GREY_B)
-    t.to_edge(DOWN, buff=0.35)
+    t.next_to(anchor, DOWN, buff=0.45)
     return t
 
 
 def _step_label(text):
-    """Step header above the stage."""
+    """Step header in the top-left corner — clear of the centred title."""
     t = Text(text, font_size=22, color=BLUE_D, weight=BOLD)
-    t.to_edge(UP, buff=0.5)
+    t.to_corner(UL, buff=0.4)
     return t
 
 
@@ -94,6 +94,7 @@ class SceneEulerWalksField(Scene):
         title = Text("Euler's method on  y' = y − x²,   h = 0.25",
                      font_size=26).to_edge(UP, buff=0.25)
         cap = _caption(
+            axes,
             "Slope field shows where the true solution heads at every "
             "point. Euler follows it in tiny straight-line steps."
         )
@@ -136,6 +137,7 @@ class SceneEulerWalksField(Scene):
             # Short per-step caption so it stays on at most two lines and
             # doesn't crowd the axes.
             new_cap = _caption(
+                axes,
                 f"At ({x:.2f}, {y:.2f}): slope {slope:+.3f}. "
                 f"Step h·slope = {h * slope:+.3f}. "
                 f"Land at ({x_new:.2f}, {y_new:.2f})."
@@ -167,6 +169,7 @@ class SceneEulerWalksField(Scene):
         # --- Reveal: exact solution overlay ---------------------------------
         new_lbl = _step_label("After 8 steps")
         new_cap = _caption(
+            axes,
             "Exact solution y = 2 + 2x + x² − eˣ overlaid in blue. The "
             "polyline tracks below until x ≈ 1.5, then crosses above — "
             "per-step error compounding over the walk."
