@@ -422,17 +422,90 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Beat 5 — the stability test from f'.
+    # Section 5 — the stability test from f'. Linearise at a fixed
+    # point; the nudge obeys Ch 4's decay/growth equation, so the sign
+    # of f'(x*) settles stability. Earns the derivative test rather
+    # than declaring it; Taylor is familiar from Ch 4.
     mo.md(
         r"""
-        ## Stability, formally — read it off $f'(x^*)$
+        ## Stability without pictures — read it off $f'$
 
-        *(placeholder — at a fixed point x*, linearise: small perturbations grow
-        like e^{f'(x*) t}. f' negative -> decay (stable); f' positive -> grow
-        (unstable). f' = 0 is the borderline case.)*
+        The phase line settles stability by looking at arrows. That
+        works beautifully when you can draw the picture — but it's
+        worth having a version of the test that's pure calculation,
+        both for speed and because in later chapters (two-dimensional
+        systems, where pictures get harder) the calculation is what
+        survives.
 
-        Edit the rate law below and watch the equilibria and their stability
-        re-solve symbolically, live.
+        Here's the question, sharpened. Stand at a fixed point $x^*$
+        and apply a small nudge: the state becomes
+        $x = x^* + \eta$, where $\eta$ (eta) is tiny — think of it
+        as the "error" between where you are and the rest point.
+        Does $\eta$ shrink back to zero, or grow?
+
+        Watch what the differential equation says about $\eta$.
+        Since $x^*$ is a constant, $\dot x = \dot\eta$, so
+
+        $$
+        \dot\eta \;=\; f(x^* + \eta).
+        $$
+
+        Now Taylor-expand $f$ around $x^*$ — the same move Chapter 4
+        used on the true solution, and we only need the first two
+        terms:
+
+        $$
+        f(x^* + \eta) \;=\; \underbrace{f(x^*)}_{=\,0}
+        \;+\; f'(x^*)\,\eta \;+\; \mathcal{O}(\eta^2).
+        $$
+
+        The first term vanishes — that's exactly what made $x^*$ a
+        fixed point. And while $\eta$ stays small, the $\eta^2$ term
+        is negligible next to the $\eta$ term. What's left is
+        startlingly simple:
+
+        $$
+        \dot\eta \;\approx\; f'(x^*)\,\eta.
+        $$
+
+        Look at the shape of that equation: *the rate of change of
+        $\eta$ is a constant times $\eta$.* You've met it twice
+        already — it's Chapter 2's exponential growth/decay, and it's
+        the very equation Chapter 4's stability story was built on,
+        with $f'(x^*)$ playing the role that $-\lambda$ played
+        there. Its solution is
+
+        $$
+        \eta(t) \;\approx\; \eta(0)\, e^{f'(x^*)\,t},
+        $$
+
+        and everything hangs on the **sign of the exponent**:
+
+        > - $f'(x^*) < 0$ — the nudge **decays exponentially**. The
+        >   rest holds: $x^*$ is **stable**.
+        > - $f'(x^*) > 0$ — the nudge **grows exponentially**. The
+        >   rest breaks: $x^*$ is **unstable**.
+        > - $f'(x^*) = 0$ — the linear term gives no verdict; the
+        >   discarded $\eta^2$ term decides, so you must look closer
+        >   (the phase-line arrows still work).
+
+        Run the test on the switch equation. With
+        $f(x) = x - x^3$ we get $f'(x) = 1 - 3x^2$, so:
+
+        - $f'(0) = 1 > 0$ — unstable. The middle rest breaks, just
+          as the hook showed.
+        - $f'(\pm 1) = 1 - 3 = -2 < 0$ — stable. The outer rests
+          hold.
+
+        Three derivative evaluations, and the entire phase line's
+        dot-filling is reproduced — no picture required. Even
+        better, the *magnitude* tells you something the picture
+        doesn't: near $\pm 1$ the nudge dies like $e^{-2t}$, so the
+        switch doesn't just return to its settled position, it
+        returns at a known exponential rate.
+
+        Try it yourself below: edit the rate law and the equilibria
+        and their classifications re-solve symbolically, live.
         """
     )
     return
@@ -453,19 +526,64 @@ def _(delib, eq_input):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Beat 6 — the potential landscape (SECOND hero visual).
+    # Section 6 — the potential landscape (SECOND hero visual). Make
+    # the marble-rolls-downhill metaphor precise: define V by f = -V',
+    # then stable = valley, unstable = hilltop, and the barrier height
+    # becomes a meaningful physical quantity (the effort to flip the
+    # switch).
     mo.md(
         r"""
-        ## Same picture, two ways — the potential well
+        ## Same dynamics, second picture — the landscape
 
-        *(placeholder — introduce V with f = -V'. Stable iff sitting in a
-        valley; unstable iff balanced on a hill. The barrier height between
-        valleys is the energy to flip the switch.)*
+        All chapter long we've been saying things like "the marble
+        rolls into the $+1$ valley" — borrowing the language of
+        hills and valleys without ever drawing the hill. Let's earn
+        the metaphor.
 
-        Define $V(x) = -\int_{x_0}^{x} f(s)\,ds$, so $f = -V'$. The dynamics
-        $\dot x = f(x) = -V'(x)$ is the rule a marble would follow rolling
-        downhill on the landscape $V$. **Valleys** are stable rest-states;
-        **hills** are unstable ones.
+        We want a landscape — a height function $V(x)$ — such that
+        a marble rolling downhill on $V$ moves exactly the way our
+        equation says. "Rolling downhill" means: velocity points
+        opposite to the slope of the ground. Steep downhill to the
+        right → move right; steep downhill to the left → move left;
+        flat ground → no motion. As an equation, that's
+
+        $$
+        \dot x \;=\; -\,V'(x).
+        $$
+
+        Match it against our system $\dot x = f(x)$ and the
+        landscape is pinned down:
+
+        $$
+        f(x) = -V'(x)
+        \qquad\Longleftrightarrow\qquad
+        V(x) \;=\; -\int_0^{x} f(s)\,ds.
+        $$
+
+        For the switch equation $f(x) = x - x^3$, integrate:
+
+        $$
+        V(x) \;=\; -\frac{x^2}{2} + \frac{x^4}{4}.
+        $$
+
+        Every fact we've established now has a terrain reading:
+
+        - **Fixed points** ($f = 0$) are where the ground is flat
+          ($V' = 0$): the bottoms of valleys and the tops of hills.
+        - **Stable** fixed points ($f' < 0$) are **valley bottoms** —
+          a nudged marble rolls back down.
+        - **Unstable** fixed points ($f' > 0$) are **hilltops** — a
+          nudged marble rolls away, accelerating.
+        - And one genuinely new quantity appears: the **barrier
+          height**, the climb from a valley floor up to the hilltop
+          that separates it from the neighbouring valley. That climb
+          is the effort needed to *flip the switch* — to kick the
+          system from one settled state into the other. A shallow
+          barrier means an easy flip (a twitchy switch); a deep one
+          means the state is locked in.
+
+        Here's the landscape for the switch, with the same
+        colour-coding as the phase line:
         """
     )
     return
@@ -493,11 +611,26 @@ def _(controls, mo):
     mo.vstack([
         mo.md(
             r"""
-            ## Make it your switch — drop the marble
+            ## Drop the marble yourself
 
-            *(placeholder — drag $x_0$; the phase line shows where it starts,
-            the potential well shows the same point on the landscape, and a
-            short time-trace below shows which valley it falls into.)*
+            One slider, three synchronized views. Drag the starting
+            position $x_0$ and watch the same experiment from three
+            angles at once: the **phase line** shows which arrow the
+            marble lands on, the **landscape** shows where it sits on
+            the terrain, and the **time-trace** below shows the
+            journey it actually takes.
+
+            Two experiments worth running:
+
+            - Sweep $x_0$ slowly across $0$, say from $-0.10$ to
+              $+0.10$. The marble's *position* barely changes, but
+              its *fate* flips completely — from the $-1$ valley to
+              the $+1$ valley. The watershed is razor-thin.
+            - Park the marble far out at $x_0 = 1.8$ and compare its
+              time-trace with one from $x_0 = 0.2$. Both end at
+              $+1$, but the approaches differ — the far marble rides
+              a steep slope in fast, the near one crawls out of the
+              flat neighbourhood of $0$ before committing.
             """
         ),
         controls,
@@ -540,12 +673,109 @@ def _(delib, go, np, x0):
 
 
 @app.cell(hide_code=True)
+def _(go, mo):
+    # Section 7 — basins of attraction. The unstable point as the
+    # watershed dividing the line into two catchments. Small dedicated
+    # figure: the position line with the two basins shaded, fixed
+    # points marked. Ends with the two-sentence bifurcation teaser
+    # (next-chapter pointer, deliberately not opened here).
+    _fig = go.Figure()
+    _fig.add_vrect(x0=-2, x1=0, fillcolor="#f7ead9", line_width=0,
+                   layer="below")
+    _fig.add_vrect(x0=0, x1=2, fillcolor="#e3edf8", line_width=0,
+                   layer="below")
+    _fig.add_annotation(x=-1, y=0.6, text="basin of −1<br>every start here ends at −1",
+                        showarrow=False, font=dict(size=12, color="#8a5c2e"))
+    _fig.add_annotation(x=1, y=0.6, text="basin of +1<br>every start here ends at +1",
+                        showarrow=False, font=dict(size=12, color="#2e5d8a"))
+    _fig.add_trace(go.Scatter(
+        x=[-2, 2], y=[0, 0], mode="lines",
+        line=dict(color="#7c8aa0", width=1.5),
+        hoverinfo="skip", showlegend=False,
+    ))
+    _fig.add_trace(go.Scatter(
+        x=[-1, 1], y=[0, 0], mode="markers",
+        marker=dict(color="#2a9d8f", size=15,
+                    line=dict(color="#2a9d8f", width=2)),
+        name="stable", hovertemplate="stable: x = %{x}<extra></extra>",
+    ))
+    _fig.add_trace(go.Scatter(
+        x=[0], y=[0], mode="markers",
+        marker=dict(color="white", size=15,
+                    line=dict(color="#d1495b", width=2.5)),
+        name="unstable (the divide)",
+        hovertemplate="unstable: x = 0<extra></extra>",
+    ))
+    _fig.update_layout(
+        template="plotly_white",
+        title=dict(text="Two basins, one divide", x=0.02),
+        xaxis=dict(title="x", range=[-2, 2], zeroline=False),
+        yaxis=dict(visible=False, range=[-0.5, 1.0]),
+        height=240, showlegend=True,
+        legend=dict(x=0.01, y=-0.35, orientation="h"),
+        margin=dict(l=30, r=20, t=46, b=30),
+        paper_bgcolor="white", plot_bgcolor="white",
+    )
+
+    mo.vstack([
+        mo.md(
+            r"""
+            ## Who ends up where — basins of attraction
+
+            The marble experiment showed it: every starting point is
+            already committed. Start anywhere left of $0$ and you end
+            at $-1$; start anywhere right of $0$ and you end at $+1$.
+            The set of starting points that flow to a given stable
+            fixed point is called its **basin of attraction** — the
+            word picture is rainfall: every drop that lands in a
+            river's catchment basin ends up in that river.
+
+            For the switch, the unstable point at $0$ is the
+            **divide** — the ridgeline between catchments:
+            """
+        ),
+        _fig,
+        mo.md(
+            r"""
+            This gives the unstable fixed point a real job. It never
+            *collects* anything — no trajectory ends there — but it
+            **organises** everything: it is the boundary that decides
+            which fate each starting point gets. Two marbles released
+            at $x_0 = -0.01$ and $x_0 = +0.01$ are nearly identical,
+            yet they part ways forever. When a system has multiple
+            settled states, the question "which one will I get?" is
+            answered entirely by *which side of the divide you start
+            on* — and near the divide, tiny causes pick between very
+            different effects.
+
+            One loose end, deliberately left loose. Our switch's
+            landscape was fixed. But many real systems carry a
+            **knob** — a temperature, a voltage, a drug dose — and
+            turning the knob *tilts the landscape*. Tilt it far
+            enough and a valley can become shallow, then flatten,
+            then vanish entirely — and a system that had two settled
+            states suddenly has one. What happens to a marble that
+            was sitting in the valley that disappeared? That story
+            — equations with a parameter, and the sudden
+            rearrangements of their fixed points — is the
+            *bifurcations* chapter, later in the course.
+            """
+        ),
+    ])
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
         ## Try it — in code
 
-        *(placeholder — short intro to the 3 challenges.)*
+        Three challenges, one per skill the chapter built: classify
+        fixed points with the derivative test, predict a fate from
+        the basin picture, and measure a barrier height on the
+        landscape. SymPy is pre-loaded as `sp`, and `print()` works
+        for inspecting intermediate values.
         """
     )
     return
@@ -757,9 +987,37 @@ def _(mo):
         r"""
         ## Recap & what's next
 
-        *(placeholder — recap fixed points / stability test / potential view /
-        basin of attraction. Next: Ch 06 bifurcations — what happens if we
-        morph the equation's parameters and a fixed point appears or vanishes?)*
+        - A **fixed point** of $\dot x = f(x)$ is any $x^*$ with
+          $f(x^*) = 0$ — a place where motion can rest. Whether the
+          rest *holds* is a separate question, and it's answered by
+          what the flow does just next door.
+        - The **phase line** packs the answer for every starting
+          point into one picture: dots where $f = 0$, arrows
+          following the sign of $f$, filled dots collecting their
+          arrows (stable), open dots shedding them (unstable). No
+          integration required — that's the chapter's trade: stop
+          following individual journeys, read the geography.
+        - The **derivative test** is the picture-free version: a
+          small nudge $\eta$ off a fixed point obeys
+          $\dot\eta \approx f'(x^*)\,\eta$, the exponential
+          growth/decay equation. $f'(x^*) < 0$ — stable;
+          $f'(x^*) > 0$ — unstable; $f'(x^*) = 0$ — look closer.
+        - The **potential landscape** $V$ (with $f = -V'$) retells
+          everything in terrain: valleys are stable, hilltops
+          unstable, and the **barrier height** between valleys is
+          the effort needed to flip the system from one settled
+          state to the other.
+        - Each stable point owns a **basin of attraction** — the
+          set of starts that flow to it — and the unstable points
+          are the **divides** between basins: they collect nothing
+          but decide everything.
+
+        **Next:** so far each chapter's equations had one state
+        variable. Next we meet systems that need **two** — a
+        position *and* a velocity, a predator *and* its prey — where
+        solutions become curves in a plane rather than points on a
+        line, and a new cast of behaviours (spirals, orbits, saddle
+        points) becomes possible.
         """
     )
     return
@@ -788,11 +1046,19 @@ def _(api_field, delib, key_bridge):
 def _(api_field, delib, key_bridge):
     chatbox = delib.tutor_chat(
         api_field, key_bridge,
-        "This is Chapter 3 of a differential-equations course: 1-D fixed points "
-        "and stability, worked through the bistable equation x' = x - x^3 (the "
-        "wall-light-switch story). Key visuals: phase line (filled = stable, "
-        "open = unstable, arrows = flow direction) and potential V(x) with "
-        "f = -V'. Stability test: f'(x*) < 0 means stable.",
+        "This is Chapter 5 of a differential-equations course: 1-D fixed "
+        "points and stability, worked through the bistable equation "
+        "x' = x - x^3 (the wall-light-switch story: two settled states, "
+        "one balance point that doesn't hold). Key ideas: fixed points "
+        "where f(x) = 0; stability via the linearisation eta' ~ f'(x*) eta "
+        "(f' < 0 stable, f' > 0 unstable, f' = 0 inconclusive); the phase "
+        "line (filled dot = stable, open = unstable, arrows = sign of f); "
+        "the potential V with f = -V' (valley = stable, hilltop = "
+        "unstable, barrier height = effort to flip states); basins of "
+        "attraction with unstable points as divides. Earlier chapters: "
+        "slope fields (Ch 1), separable/linear + integrating factor "
+        "(Ch 2), exact equations (Ch 3a/3b), numerical methods — Euler, "
+        "RK4, order of accuracy, stiffness (Ch 4).",
         prompts=[
             "explain this chapter in a paragraph",
             "show another bistable system and its phase line",
