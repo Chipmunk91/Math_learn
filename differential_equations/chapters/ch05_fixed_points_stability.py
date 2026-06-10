@@ -19,18 +19,24 @@ def _():
 def _(mo):
     mo.md(
         r"""
-        # Chapter 3 — Fixed points & stability (the phase line)
+        # Chapter 5 — Fixed points & stability (the phase line)
 
         **Where does motion stop, and does the stop hold?**
 
         By the end of this chapter you should be able to:
 
-        - Find the **fixed points** of $\dot x = f(x)$ and classify each as
-          **stable** or **unstable** from the sign of $f'(x^*)$.
-        - Read a **phase line** as a picture of the flow on a 1-D state space.
-        - See the same dynamics as a **potential landscape** $V(x)$ with
-          $f = -V'$: stable = valley, unstable = hill.
-        - Identify the **basin of attraction** of each stable fixed point.
+        - Find every **fixed point** of $\dot x = f(x)$ — every place
+          on the line where motion can rest — and classify each as
+          **stable** (a small nudge dies away) or **unstable** (a
+          small nudge runs away).
+        - Draw and read a **phase line**: a single picture that
+          captures the long-term fate of every starting point on the
+          1-D real line, without integrating anything.
+        - See the same dynamics as a **potential landscape** $V(x)$:
+          stable fixed points are valleys, unstable ones are hills, a
+          marble rolls downhill.
+        - Identify the **basin of attraction** of each stable
+          point — which starting positions end up there.
         """
     )
     return
@@ -38,8 +44,12 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(delib, go, mo, np):
-    # Beat 1 — hook: a wall light switch. Several "marbles" released from
-    # different starts sort themselves into one of two destinations.
+    # Section 1 — hook: bistable switches. Six trajectories of a 1-D ODE
+    # released from different starts, all converging to +1 or -1. The
+    # middle position is technically a place where motion can stop, but
+    # nothing settles there — that's the gap the chapter will explain.
+    # Annotations are deliberately *descriptive* ("none settle here")
+    # rather than interpretive ("hill") so the metaphor isn't pre-spoiled.
     _starts = [-1.6, -0.8, -0.1, 0.1, 0.8, 1.6]
     _t = np.linspace(0, 6, 120)
     _fig = go.Figure()
@@ -51,50 +61,132 @@ def _(delib, go, mo, np):
             hoverinfo="skip", showlegend=False,
         ))
     _fig.add_hline(y=1, line=dict(color="#2a9d8f", dash="dash", width=1.5),
-                   annotation_text="up", annotation_position="top right")
+                   annotation_text="rest height  +1",
+                   annotation_position="top right")
     _fig.add_hline(y=-1, line=dict(color="#2a9d8f", dash="dash", width=1.5),
-                   annotation_text="down", annotation_position="bottom right")
+                   annotation_text="rest height  −1",
+                   annotation_position="bottom right")
     _fig.add_hline(y=0, line=dict(color="#d1495b", dash="dot", width=1),
-                   annotation_text="hill (no rest here)", annotation_position="top right")
+                   annotation_text="0  (none settle here)",
+                   annotation_position="top right")
     _fig.update_layout(
         template="plotly_white",
-        title=dict(text="Six marbles, two destinations", x=0.02),
-        xaxis=dict(title="time"), yaxis=dict(title="x(t)"),
-        height=340, margin=dict(l=60, r=20, t=46, b=42),
+        title=dict(text="Six starting positions, two destinations", x=0.02),
+        xaxis=dict(title="time  t"),
+        yaxis=dict(title="x(t)"),
+        height=360, margin=dict(l=60, r=20, t=46, b=42),
         paper_bgcolor="white", plot_bgcolor="white",
     )
     mo.vstack([
         mo.md(
             r"""
-            ## A story about two stable rest-states
+            ## Where motion comes to rest
 
-            *(placeholder — wall light switch story, bistability hook)*
+            Flick a wall light switch halfway and let go. It doesn't
+            sit halfway — it snaps decisively to *on* or *off* and
+            stays put. You can run the same experiment with a clicky
+            pen, a tipping kayak, a relay: anything with two settled
+            positions and a balance point between them. The middle is
+            technically a place where the object *could* rest if you
+            placed it there perfectly, but in practice the slightest
+            bias picks a side and the system commits.
 
-            Six marbles, six different starting positions. By the end every one is
-            stuck at either $x = +1$ or $x = -1$. None of them ever settles on
-            $x = 0$ — that middle option is on the menu of "places where motion
-            stops," but as you can see, it doesn't *hold*.
+            Now imagine sliding six identical objects along the same
+            one-dimensional rail, releasing each from a different
+            starting position, and recording their motion in time:
             """
         ),
         _fig,
+        mo.md(
+            r"""
+            Six different starts, three possible heights at which the
+            velocity is zero ($-1$, $0$, $+1$), but only **two**
+            destinations actually used. Every trajectory ends parked
+            at $+1$ or $-1$, and none — not even the one that started
+            at $x = 0.1$, just a hair away from the middle — settles
+            at $x = 0$. The middle is on the list of places where
+            motion could stop, but in practice nothing stays there.
+
+            That observation is the whole chapter in miniature. We're
+            going to learn how to answer, for any 1-D system
+            $\dot x = f(x)$:
+
+            1. *Where can motion stop?* — the **fixed points** of the
+               equation.
+            2. *Which stops actually hold?* — the **stable** ones.
+
+            The punchline is that you can answer both questions
+            **without computing a single full trajectory**. The
+            figure above used Chapter 4's machinery to integrate six
+            initial conditions forward in time, but that was the long
+            way around. Once you know what to look for, the equation
+            itself — the formula $f(x)$ — tells you the long-term
+            fate of every starting point on the line, no simulation
+            required. That's the trade Chapter 4 ended by promising,
+            and Chapter 5 cashes it in.
+            """
+        ),
     ])
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Beat 2 — concept bridge.
+    # Section 2 — concept bridge. Earn the terms 'fixed point' and
+    # 'stable / unstable' from the hook figure rather than declaring
+    # them. The big move: notice that the time axis was wasted ink —
+    # every trajectory's *destination* is the only thing that mattered.
+    # That sets up the phase line (next section, Manim) as the picture
+    # that keeps the information and throws away the rest.
     mo.md(
         r"""
-        ## Where the motion stops — and whether it sticks
+        ## What the picture is really telling us
 
-        *(placeholder — concept bridge: define "fixed point" as where dx/dt = 0,
-        and "stable / unstable" by whether a small nudge is undone.)*
+        Look at those six trajectories again. The time axis stretches
+        all the way across the figure, but ask honestly: how much of
+        that horizontal width do you actually need?
 
-        The hook above asked two separate questions, and a 1-D differential
-        equation $\dot x = f(x)$ answers both in one shot. *Where does motion
-        stop?* Wherever $f(x) = 0$. *Does the stop hold?* That depends on what
-        the flow does **just next to** the resting point.
+        For each trajectory, the *destination* — the height it
+        converges to — is the only thing the picture is conveying.
+        The wiggle in the middle of the figure is just the system
+        "deciding," and given a starting position, it always decides
+        the same thing. Most of the figure's ink is showing the
+        *route*, but the chapter's question only cares about the
+        *endpoint*.
+
+        Strip the time axis away and the entire figure collapses to
+        just three numbers — the heights where motion ends up:
+        $-1$, $0$, $+1$. Those are exactly the heights where the
+        velocity $\dot x = x - x^3$ happens to be zero. *(For
+        $\dot x = x - x^3 = x(1 - x)(1 + x)$, the velocity vanishes
+        precisely at $x \in \{-1, 0, +1\}$ — solve $f(x) = 0$.)* At
+        those three values, the equation says "no motion here."
+
+        But the hook also showed something stronger: not all three
+        zeros are equal. The two outer ones, $\pm 1$, **hold** —
+        every trajectory that gets near them stays near them. The
+        middle one, $0$, **does not** — even the trajectory that
+        started at $x = 0.1$ ran away from it.
+
+        Two ideas have just done all the work, and they're worth
+        naming:
+
+        > A **fixed point** of $\dot x = f(x)$ is any value $x^*$
+        > with $f(x^*) = 0$ — a place where the velocity vanishes,
+        > so a system starting exactly there doesn't move.
+
+        > A fixed point $x^*$ is **stable** if a small nudge away
+        > from it is *undone* (the flow pulls back toward $x^*$),
+        > and **unstable** if a small nudge is *amplified* (the
+        > flow pushes farther away).
+
+        For our equation, three fixed points $\{-1, 0, +1\}$, two
+        stable ($\pm 1$), one unstable ($0$). The rest of the
+        chapter is about how to spot fixed points without solving
+        anything, how to tell stable from unstable at a glance
+        rather than by integrating six trajectories, and how to
+        pack all of this into a single picture that contains
+        everything we just spent six time-traces to see.
         """
     )
     return
