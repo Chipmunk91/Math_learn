@@ -92,7 +92,7 @@ intuition still carries.
 
 | Ch  | Title                                      | Story / hook                                | Math content                                                              | Primary visuals                                            | Status |
 |-----|--------------------------------------------|---------------------------------------------|---------------------------------------------------------------------------|------------------------------------------------------------|--------|
-| 06  | Second-order linear ODEs                   | A mass on a spring (no damping yet)         | Characteristic equation; real / repeated / complex roots; general solution | Real-vs-complex-roots demo; trajectory animator            | TBD    |
+| 06  | Second-order linear ODEs                   | A mass on a spring (no damping yet)         | Characteristic equation; real / repeated / complex roots; general solution | Roots-in-complex-plane ↔ response hero; characteristic-equation Manim | ✅      |
 | 07  | Damping, forcing, resonance                | A car suspension; Tacoma Narrows            | $m\ddot x + c\dot x + kx = F(t)$; under/over/critical damping; resonance peak | Damped-spring animation; frequency-response (Bode-style) plot | TBD    |
 | 08  | Non-homogeneous equations                  | The driven RLC circuit                      | Undetermined coefficients; variation of parameters; superposition         | Particular + homogeneous decomposition slider              | TBD    |
 | 09  | Laplace transforms                         | A switch flips on at $t = 1$ second         | $\mathcal L\{f\}$, inverse, derivatives, convolution; impulse / step inputs | Pole-zero plot ↔ time-domain response                      | TBD    |
@@ -218,8 +218,20 @@ content in frames).
   (RK2) construction animation; RK4 + Simpson connection; convergence hero;
   stiffness on $N' = -\lambda N$; backward Euler; adaptive-step closer.
   *(Try-it challenges, playground, recap pending.)*
-- **Ch 05** — Gene-switch hook → phase line; stability via $f'(x^*)$;
-  potential well; exercises; tutor.
+- **Ch 05** — Wall-light-switch hook → six-trajectory figure; the cubic
+  $\dot x = x - x^3$ derived from sign requirements; phase-line-collapse
+  Manim; stability via linearisation $\dot\eta \approx f'(x^*)\eta$
+  (pays off Ch 4's decay equation); potential landscape with barrier
+  height; basins of attraction + bifurcation teaser; 3 exercises;
+  playground; recap; tutor.
+- **Ch 06** — Mass-on-spring hook (oscillation impossible in 1-D) →
+  Newton + Hooke → guess-and-check $\cos$, $\omega = \sqrt{k/m}$ with
+  sliders; exponential ansatz Manim → characteristic equation; three
+  cases by $b^2 - 4c$ with one-figure gallery + Euler's-formula
+  accordion; roots-in-complex-plane ↔ response hero (b, c sliders);
+  worked initial-conditions example; 3 exercises; playground; recap;
+  tutor. (`oscillator_animate` helper deferred to Ch 7 where forcing
+  makes it earn its keep — Ch 6's figures are plain in-chapter Plotly.)
 
 ### Cross-cutting infrastructure built
 
@@ -235,11 +247,9 @@ content in frames).
 
 ### Immediate backlog
 
-- **Ch 04 polish**: 3 Try-it challenges (Euler by hand, order verification,
-  stability criterion), playground, recap.
-- **Ch 05 update**: title says "Chapter 3" internally — bring header in
-  line with file slot.
-- **Ch 06 onward**: Part II + Part III chapters in order.
+- **Ch 07**: damping/forcing/resonance (car-suspension story); build
+  `oscillator_animate` + `frequency_response` helpers here.
+- **Ch 08 onward**: Part II + Part III chapters in order.
 
 The pattern is now well-established — each new chapter is mostly math
 content + choosing the right visual from the `delib` table + a hook story
