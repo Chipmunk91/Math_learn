@@ -318,11 +318,38 @@ def exercise_inputs(default_code, *, run_label="Run & check"):
 
 
 async def exercise_ai(gen, ai, code, set_code, key, *, context="", coach=True):
-    """Glue for the ✨ button — call in an async cell. Stops until pressed, then
-    writes the AI's code into the editor state. ``coach=True`` scaffolds without
-    filling in the graded ``answer``."""
-    mo.stop(not gen.value)
-    set_code(await ai_code(ai.value, code.value, key, context=context, coach=coach))
+    """Glue for the ✨ button — call in an async cell. Writes the AI's code
+    into the editor state. ``coach=True`` scaffolds without filling in the
+    graded ``answer``.
+
+    Three gates, in order, prevent the "code reverts while I'm typing" bug:
+
+    1. ``gen.value`` must be truthy — the button must have been clicked
+       (this is the obvious one).
+    2. ``ai.value`` must be a non-empty prompt. Without this, a spurious
+       cell re-entry while ``gen.value`` is still ``True`` (e.g., a sibling
+       dep changed mid-await and marimo invalidated us) would call
+       ``ai_code`` with an empty instruction; ``ai_code`` returns the
+       editor unchanged but ``set_code`` still fires, and any user
+       keystrokes between when ``code.value`` was sampled and when
+       ``set_code`` writes are wiped when the editor widget is recreated.
+    3. ``(prompt, code.value)`` must differ from the last signature we
+       acted on. Stamped on the ``gen`` widget itself, so a brand-new
+       widget (after a real state update) has no stamp and proceeds.
+       This catches the case where marimo cancels and restarts the cell
+       mid-await with ``gen.value`` still ``True`` — without the
+       de-dupe, the AI would fire twice for one click.
+    """
+    if not gen.value:
+        mo.stop(True)
+    prompt = (ai.value or "").strip()
+    if not prompt:
+        mo.stop(True)
+    sig = (prompt, code.value)
+    if getattr(gen, "_delib_last_sig", None) == sig:
+        mo.stop(True)
+    gen._delib_last_sig = sig
+    set_code(await ai_code(prompt, code.value, key, context=context, coach=coach))
 
 
 def exercise_view(prompt, ai, gen, code, run, *, with_ai=True):
