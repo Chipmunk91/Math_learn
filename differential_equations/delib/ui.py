@@ -787,19 +787,19 @@ def tutor_chat(api_field, key_bridge, context, *, prompts=None,
 
 
 def tutor_sidebar(api_field, key_bridge, chatbox, *, title="Tutor", picker=None):
-    """Render the tutor inline at the bottom of the chapter: title, key
-    field, optional cell picker, and (once a key is set) the chat. The
-    name is kept for backward compatibility — every chapter already calls
-    ``delib.tutor_sidebar(...)`` as its last cell — but it returns a
-    plain :func:`mo.vstack` now (no sidebar collapse arrow).
+    """Render the tutor as a left sidebar: title, key field, optional
+    cell picker, and (once a key is set) the chat; otherwise a prompt
+    to add a key.
+
+    Note on the collapse arrow: ``mo.sidebar`` has no flag to suppress
+    the built-in ``<`` button at the top-right of the rail. That arrow
+    collapses the sidebar to a thin edge; clicking the edge expands it.
+    We tried rendering inline (no sidebar, no arrow) but the reader
+    preferred the always-visible left-rail layout, so we accept the
+    arrow as the cost of that affordance.
     """
     key_ok = bool(api_field.value or (key_bridge.value or {}).get("key"))
-    items = [
-        mo.md("---"),
-        mo.md(f"## {title}"),
-        key_bridge,
-        api_field,
-    ]
+    items = [mo.md(f"### {title}"), key_bridge, api_field]
     if picker is not None:
         items.append(picker)
     if key_ok:
@@ -810,4 +810,4 @@ def tutor_sidebar(api_field, key_bridge, chatbox, *, title="Tutor", picker=None)
             "Create one at [console.anthropic.com/settings/keys]"
             "(https://console.anthropic.com/settings/keys). It is stored only in this "
             "browser and sent only to Anthropic — never to this site."), kind="info"))
-    return mo.vstack(items)
+    return mo.sidebar(items, width="420px")
