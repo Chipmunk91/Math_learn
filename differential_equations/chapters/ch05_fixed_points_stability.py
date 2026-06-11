@@ -981,48 +981,6 @@ def _(delib, pg_code, pg_run):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ## Recap & what's next
-
-        - A **fixed point** of $\dot x = f(x)$ is any $x^*$ with
-          $f(x^*) = 0$ — a place where motion can rest. Whether the
-          rest *holds* is a separate question, and it's answered by
-          what the flow does just next door.
-        - The **phase line** packs the answer for every starting
-          point into one picture: dots where $f = 0$, arrows
-          following the sign of $f$, filled dots collecting their
-          arrows (stable), open dots shedding them (unstable). No
-          integration required — that's the chapter's trade: stop
-          following individual journeys, read the geography.
-        - The **derivative test** is the picture-free version: a
-          small nudge $\eta$ off a fixed point obeys
-          $\dot\eta \approx f'(x^*)\,\eta$, the exponential
-          growth/decay equation. $f'(x^*) < 0$ — stable;
-          $f'(x^*) > 0$ — unstable; $f'(x^*) = 0$ — look closer.
-        - The **potential landscape** $V$ (with $f = -V'$) retells
-          everything in terrain: valleys are stable, hilltops
-          unstable, and the **barrier height** between valleys is
-          the effort needed to flip the system from one settled
-          state to the other.
-        - Each stable point owns a **basin of attraction** — the
-          set of starts that flow to it — and the unstable points
-          are the **divides** between basins: they collect nothing
-          but decide everything.
-
-        **Next:** so far each chapter's equations had one state
-        variable. Next we meet systems that need **two** — a
-        position *and* a velocity, a predator *and* its prey — where
-        solutions become curves in a plane rather than points on a
-        line, and a new cast of behaviours (spirals, orbits, saddle
-        points) becomes possible.
-        """
-    )
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) ------------------------------------------
 @app.cell
 def _(delib):
@@ -1100,5 +1058,49 @@ def _(api_field, delib, key_bridge, picked_get):
 def _(api_field, chatbox, delib, key_bridge, picker):
     delib.tutor_sidebar(api_field, key_bridge, chatbox, picker=picker)
     return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## Recap & what's next
+
+        - A **fixed point** of $\dot x = f(x)$ is any $x^*$ with
+          $f(x^*) = 0$ — a place where motion can rest. Whether the
+          rest *holds* is a separate question, and it's answered by
+          what the flow does just next door.
+        - The **phase line** packs the answer for every starting
+          point into one picture: dots where $f = 0$, arrows
+          following the sign of $f$, filled dots collecting their
+          arrows (stable), open dots shedding them (unstable). No
+          integration required — that's the chapter's trade: stop
+          following individual journeys, read the geography.
+        - The **derivative test** is the picture-free version: a
+          small nudge $\eta$ off a fixed point obeys
+          $\dot\eta \approx f'(x^*)\,\eta$, the exponential
+          growth/decay equation. $f'(x^*) < 0$ — stable;
+          $f'(x^*) > 0$ — unstable; $f'(x^*) = 0$ — look closer.
+        - The **potential landscape** $V$ (with $f = -V'$) retells
+          everything in terrain: valleys are stable, hilltops
+          unstable, and the **barrier height** between valleys is
+          the effort needed to flip the system from one settled
+          state to the other.
+        - Each stable point owns a **basin of attraction** — the
+          set of starts that flow to it — and the unstable points
+          are the **divides** between basins: they collect nothing
+          but decide everything.
+
+        **Next:** so far each chapter's equations had one state
+        variable. Next we meet systems that need **two** — a
+        position *and* a velocity, a predator *and* its prey — where
+        solutions become curves in a plane rather than points on a
+        line, and a new cast of behaviours (spirals, orbits, saddle
+        points) becomes possible.
+        """
+    )
+    return
+
+
 if __name__ == "__main__":
     app.run()

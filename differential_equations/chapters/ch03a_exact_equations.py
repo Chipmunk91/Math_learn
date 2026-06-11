@@ -974,45 +974,6 @@ def _(delib, pg_code, pg_run):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ## Recap & what's next
-
-        **Recap.** *Exact* equations are the ones where the path you take
-        from one point to another doesn't change anything — and that
-        deep property is captured by a simple one-line test, the boxed
-        $M_y = N_x$. When the test passes, there's a hidden two-variable
-        function $F$ behind the equation; the equation's solutions are
-        the contours of that landscape, and the slope field is just the
-        same picture viewed twice. The recipe to recover $F$ — partial-
-        integrate $M$ in $x$, match against $N$ to pin down what depends
-        on $y$ alone — turns a problem into three SymPy calls (or a
-        slim derivation by hand).
-
-        Reading the picture: the conic-quadratic toy $x^2 + a\,xy + y^2$
-        flips through three shapes as $a$ crosses $\pm 2$, with the
-        contour map flipping right along with it — closed loops giving
-        way to parallel lines giving way to hyperbolas. The discriminant
-        $B^2 - 4AC$ is the one-line test for which regime you're in
-        (positive definite, the boundary trough, or saddle).
-
-        **What's next.** This whole part assumed the test passed. But
-        most equations you'll meet in the wild *don't* — most slope
-        fields don't come from a conserved $F$. **Part 2** picks up
-        right there, with an equation that fails the test, and asks:
-        can we still rescue it? The answer turns out to be yes, twice
-        over — multiply through by a clever factor (the **integrating
-        factor**), or change variables until the equation becomes
-        something we already know how to solve (a **substitution**).
-        Part 2's punchline ties Chapter 2's linear-equation formula
-        back to Part 1's exactness condition.
-        """
-    )
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) ------------------------------------------
 @app.cell
 def _(delib):
@@ -1090,5 +1051,46 @@ def _(api_field, delib, key_bridge, picked_get):
 def _(api_field, chatbox, delib, key_bridge, picker):
     delib.tutor_sidebar(api_field, key_bridge, chatbox, picker=picker)
     return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## Recap & what's next
+
+        **Recap.** *Exact* equations are the ones where the path you take
+        from one point to another doesn't change anything — and that
+        deep property is captured by a simple one-line test, the boxed
+        $M_y = N_x$. When the test passes, there's a hidden two-variable
+        function $F$ behind the equation; the equation's solutions are
+        the contours of that landscape, and the slope field is just the
+        same picture viewed twice. The recipe to recover $F$ — partial-
+        integrate $M$ in $x$, match against $N$ to pin down what depends
+        on $y$ alone — turns a problem into three SymPy calls (or a
+        slim derivation by hand).
+
+        Reading the picture: the conic-quadratic toy $x^2 + a\,xy + y^2$
+        flips through three shapes as $a$ crosses $\pm 2$, with the
+        contour map flipping right along with it — closed loops giving
+        way to parallel lines giving way to hyperbolas. The discriminant
+        $B^2 - 4AC$ is the one-line test for which regime you're in
+        (positive definite, the boundary trough, or saddle).
+
+        **What's next.** This whole part assumed the test passed. But
+        most equations you'll meet in the wild *don't* — most slope
+        fields don't come from a conserved $F$. **Part 2** picks up
+        right there, with an equation that fails the test, and asks:
+        can we still rescue it? The answer turns out to be yes, twice
+        over — multiply through by a clever factor (the **integrating
+        factor**), or change variables until the equation becomes
+        something we already know how to solve (a **substitution**).
+        Part 2's punchline ties Chapter 2's linear-equation formula
+        back to Part 1's exactness condition.
+        """
+    )
+    return
+
+
 if __name__ == "__main__":
     app.run()

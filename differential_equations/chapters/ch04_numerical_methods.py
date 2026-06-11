@@ -1762,43 +1762,6 @@ def _(delib, pg_code, pg_run):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ---
-        ## Recap & what's next
-
-        - A first-order ODE assigns a **slope** to every point;
-          when no formula exists, you can still **walk the field**:
-          step, re-read the slope, repeat. That's Euler's method —
-          and, at heart, every physics simulator ever shipped.
-        - The walk's error follows $E \approx C h^p$, where $p$ is
-          the method's **order of accuracy** — readable as the slope
-          of a line on a log-log plot. Euler is order 1; sampling
-          the slope twice per step (Heun) gives order 2; four
-          careful samples (RK4) give order 4.
-        - Higher order changes the **exchange rate** between compute
-          and accuracy: at the same step size, RK4 can be millions
-          of times more accurate than Euler for only $4\times$ the
-          per-step cost.
-        - On decaying equations, explicit methods have a **stability
-          ceiling** ($h < 2/\lambda$ for Euler): above it, the
-          numerical solution oscillates and blows up no matter how
-          accurate the method is. **Implicit** methods (backward
-          Euler) read the slope at the destination and have no such
-          ceiling — the cure for **stiff** problems.
-        - Production solvers pick $h$ for you, using an embedded
-          pair of estimates to keep a per-step error budget.
-
-        **Next:** instead of simulating an equation forward, we ask
-        what its long-term behaviour is — fixed points, stability,
-        and the phase line — without solving anything at all.
-        """
-    )
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) -------------------------------------------
 @app.cell
 def _(delib):
@@ -1876,5 +1839,44 @@ def _(api_field, delib, key_bridge, picked_get):
 def _(api_field, chatbox, delib, key_bridge, picker):
     delib.tutor_sidebar(api_field, key_bridge, chatbox, picker=picker)
     return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ---
+        ## Recap & what's next
+
+        - A first-order ODE assigns a **slope** to every point;
+          when no formula exists, you can still **walk the field**:
+          step, re-read the slope, repeat. That's Euler's method —
+          and, at heart, every physics simulator ever shipped.
+        - The walk's error follows $E \approx C h^p$, where $p$ is
+          the method's **order of accuracy** — readable as the slope
+          of a line on a log-log plot. Euler is order 1; sampling
+          the slope twice per step (Heun) gives order 2; four
+          careful samples (RK4) give order 4.
+        - Higher order changes the **exchange rate** between compute
+          and accuracy: at the same step size, RK4 can be millions
+          of times more accurate than Euler for only $4\times$ the
+          per-step cost.
+        - On decaying equations, explicit methods have a **stability
+          ceiling** ($h < 2/\lambda$ for Euler): above it, the
+          numerical solution oscillates and blows up no matter how
+          accurate the method is. **Implicit** methods (backward
+          Euler) read the slope at the destination and have no such
+          ceiling — the cure for **stiff** problems.
+        - Production solvers pick $h$ for you, using an embedded
+          pair of estimates to keep a per-step error budget.
+
+        **Next:** instead of simulating an equation forward, we ask
+        what its long-term behaviour is — fixed points, stability,
+        and the phase line — without solving anything at all.
+        """
+    )
+    return
+
+
 if __name__ == "__main__":
     app.run()

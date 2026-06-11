@@ -623,24 +623,6 @@ def _(delib, pg_code, pg_run):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ## Recap & what's next
-
-        A separable or linear first-order equation hands you a real formula — and it
-        threads exactly through the slope field, with every solution sliding onto the
-        equilibrium $T = T_r$.
-
-        **Next:** *Fixed points & stability* — we'll stop tracking one curve and ask
-        which equilibria **attract** and which **repel**, reading stability straight off
-        the rate.
-        """
-    )
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) ------------------------------------------
 @app.cell
 def _(delib):
@@ -709,5 +691,25 @@ def _(api_field, delib, key_bridge, picked_get):
 def _(api_field, chatbox, delib, key_bridge, picker):
     delib.tutor_sidebar(api_field, key_bridge, chatbox, picker=picker)
     return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## Recap & what's next
+
+        A separable or linear first-order equation hands you a real formula — and it
+        threads exactly through the slope field, with every solution sliding onto the
+        equilibrium $T = T_r$.
+
+        **Next:** *Fixed points & stability* — we'll stop tracking one curve and ask
+        which equilibria **attract** and which **repel**, reading stability straight off
+        the rate.
+        """
+    )
+    return
+
+
 if __name__ == "__main__":
     app.run()

@@ -1253,42 +1253,6 @@ def _(delib, pg_code, pg_run):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ## Recap & what's next
-
-        **Recap.** When the $M_y = N_x$ test fails, two tactics buy
-        back our ability to solve:
-
-        - **Integrating factor.** Multiply the original equation
-          through by a function $\mu(x, y)$, chosen so the rescaled
-          equation passes the test. The **diagnostic ratio**
-          $(M_y - N_x)/N$ does double duty: it tells you (a) whether a
-          $\mu(x)$ works, and (b) if so, what $\mu$ is. The mirror
-          $(N_x - M_y)/M$ handles the $\mu(y)$ case. The recipe
-          specialised to $N = 1$ *is* the Chapter 2 linear-equation
-          formula — one mechanism with two appearances.
-        - **Substitution.** Change variables until the equation becomes
-          something you already know how to solve. Bernoulli's
-          $v = y^{1-n}$ turns $y' + p\,y = q\,y^n$ into a linear
-          equation; the homogeneous trick $v = y/x$ makes
-          $y' = F(y/x)$ separable. Chapter 1's logistic S-curve turned
-          out to be Bernoulli with $n = 2$ — closed-form solved here.
-
-        **What's next.** Sometimes no clever rewriting saves you — the
-        equation is exact in no coordinates and substitutes to nothing
-        nice. **Chapter 4** is what you do then: walk the slope field
-        one tiny step at a time and *simulate*. The same field picture
-        from Chapter 1 returns as actual simulator steps you can step
-        too big and watch blow up — which is exactly what happens to
-        MuJoCo or PyBullet when you pick the wrong $\Delta t$.
-        """
-    )
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) ------------------------------------------
 @app.cell
 def _(delib):
@@ -1368,5 +1332,43 @@ def _(api_field, delib, key_bridge, picked_get):
 def _(api_field, chatbox, delib, key_bridge, picker):
     delib.tutor_sidebar(api_field, key_bridge, chatbox, picker=picker)
     return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## Recap & what's next
+
+        **Recap.** When the $M_y = N_x$ test fails, two tactics buy
+        back our ability to solve:
+
+        - **Integrating factor.** Multiply the original equation
+          through by a function $\mu(x, y)$, chosen so the rescaled
+          equation passes the test. The **diagnostic ratio**
+          $(M_y - N_x)/N$ does double duty: it tells you (a) whether a
+          $\mu(x)$ works, and (b) if so, what $\mu$ is. The mirror
+          $(N_x - M_y)/M$ handles the $\mu(y)$ case. The recipe
+          specialised to $N = 1$ *is* the Chapter 2 linear-equation
+          formula — one mechanism with two appearances.
+        - **Substitution.** Change variables until the equation becomes
+          something you already know how to solve. Bernoulli's
+          $v = y^{1-n}$ turns $y' + p\,y = q\,y^n$ into a linear
+          equation; the homogeneous trick $v = y/x$ makes
+          $y' = F(y/x)$ separable. Chapter 1's logistic S-curve turned
+          out to be Bernoulli with $n = 2$ — closed-form solved here.
+
+        **What's next.** Sometimes no clever rewriting saves you — the
+        equation is exact in no coordinates and substitutes to nothing
+        nice. **Chapter 4** is what you do then: walk the slope field
+        one tiny step at a time and *simulate*. The same field picture
+        from Chapter 1 returns as actual simulator steps you can step
+        too big and watch blow up — which is exactly what happens to
+        MuJoCo or PyBullet when you pick the wrong $\Delta t$.
+        """
+    )
+    return
+
+
 if __name__ == "__main__":
     app.run()

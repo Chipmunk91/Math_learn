@@ -1008,46 +1008,6 @@ def _(delib, pg_code, pg_run):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ---
-        ## Recap & what's next
-
-        - **Oscillation needs two numbers.** A 1-D flow
-          $\dot x = f(x)$ can only drift monotonically — it cannot
-          come back. The spring's state is (position, velocity), and
-          tracking both is what makes bobbing describable.
-        - **Force laws give second-order equations.** Newton's
-          $m\ddot x = F$ plus the spring's $F = -kx$ gives
-          $\ddot x = -(k/m)x$, with frequency $\omega = \sqrt{k/m}$
-          falling out of a guess-and-check with $\cos(\omega t)$.
-        - **The exponential guess is the method.** For
-          $\ddot x + b\dot x + cx = 0$, substituting $x = e^{rt}$
-          collapses the calculus into the **characteristic
-          equation** $r^2 + br + c = 0$.
-        - **Three signs of $b^2 - 4c$, three motions**: two real
-          roots — pure decay; a repeated root — fastest clean decay
-          (the door-closer borderline); a complex pair $a \pm
-          i\beta$ — oscillation at frequency $\beta$ inside an
-          $e^{at}$ envelope, courtesy of Euler's formula.
-        - **Roots are a map.** Horizontal position in the complex
-          plane = decay rate; vertical = oscillation frequency. Two
-          **initial conditions** pin the two free constants — the
-          position condition feeds $x$, the velocity condition feeds
-          $\dot x$.
-
-        **Next:** we kept the forcing at zero — nobody pushes the
-        mass after launch. The next chapter turns on pushing:
-        periodic forcing, the full damping story in physical units,
-        and the phenomenon every engineer fears and every swing-set
-        child exploits — **resonance**.
-        """
-    )
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) -------------------------------------------
 @app.cell
 def _(delib):
@@ -1126,5 +1086,47 @@ def _(api_field, delib, key_bridge, picked_get):
 def _(api_field, chatbox, delib, key_bridge, picker):
     delib.tutor_sidebar(api_field, key_bridge, chatbox, picker=picker)
     return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ---
+        ## Recap & what's next
+
+        - **Oscillation needs two numbers.** A 1-D flow
+          $\dot x = f(x)$ can only drift monotonically — it cannot
+          come back. The spring's state is (position, velocity), and
+          tracking both is what makes bobbing describable.
+        - **Force laws give second-order equations.** Newton's
+          $m\ddot x = F$ plus the spring's $F = -kx$ gives
+          $\ddot x = -(k/m)x$, with frequency $\omega = \sqrt{k/m}$
+          falling out of a guess-and-check with $\cos(\omega t)$.
+        - **The exponential guess is the method.** For
+          $\ddot x + b\dot x + cx = 0$, substituting $x = e^{rt}$
+          collapses the calculus into the **characteristic
+          equation** $r^2 + br + c = 0$.
+        - **Three signs of $b^2 - 4c$, three motions**: two real
+          roots — pure decay; a repeated root — fastest clean decay
+          (the door-closer borderline); a complex pair $a \pm
+          i\beta$ — oscillation at frequency $\beta$ inside an
+          $e^{at}$ envelope, courtesy of Euler's formula.
+        - **Roots are a map.** Horizontal position in the complex
+          plane = decay rate; vertical = oscillation frequency. Two
+          **initial conditions** pin the two free constants — the
+          position condition feeds $x$, the velocity condition feeds
+          $\dot x$.
+
+        **Next:** we kept the forcing at zero — nobody pushes the
+        mass after launch. The next chapter turns on pushing:
+        periodic forcing, the full damping story in physical units,
+        and the phenomenon every engineer fears and every swing-set
+        child exploits — **resonance**.
+        """
+    )
+    return
+
+
 if __name__ == "__main__":
     app.run()
