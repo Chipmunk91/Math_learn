@@ -421,10 +421,21 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(go, mo, np):
-    # Section 5 — the three cases, each earned from its roots, with a
-    # one-figure gallery (three example solutions, one per case). The
-    # complex case states Euler's formula and pushes the wherefrom
-    # into a collapsed accordion so the main flow keeps moving.
+    # Section 5 — the three cases, each earned from its roots, with
+    # one animated x(t) panel per case so the SHAPE of the motion is
+    # visible (not just asserted from algebra), and the closing
+    # gallery showing all three overlaid. New material vs the prior
+    # version:
+    #   - 'What the root tells about the motion' bridge added BEFORE
+    #     Case 1 — the student kept asking why real -1, -2 doesn't
+    #     oscillate; answer is that x(t) is built out of e^{rt} and
+    #     the character of e^{rt} (monotone vs periodic) is decided
+    #     entirely by what kind of number r is.
+    #   - Three animated figures, one per case, with Play/Pause/Reset.
+    #   - The Euler-series block in the accordion is now ONE line so
+    #     markdown doesn't see a leading '+' as a list bullet (the
+    #     previous version rendered the second half as a bullet item
+    #     and dropped out of math mode).
     def _xt(b, c, t):
         # Closed-form solution of x'' + b x' + c x = 0, x(0)=1, x'(0)=0,
         # via complex roots (handles all three cases; tiny eps splits
@@ -439,6 +450,82 @@ def _(go, mo, np):
         c2 = r1 / (r1 - r2)
         return np.real(c1 * np.exp(r1 * t) + c2 * np.exp(r2 * t))
 
+    def _anim(b, c, color, *, title, ylim=(-0.7, 1.15), height=260):
+        # Animated x(t) panel: full curve faded behind, a marker moves
+        # along it. Play / Pause / Reset buttons; ~5 s of motion.
+        t = np.linspace(0, 10, 200)
+        x = _xt(b, c, t)
+        full = go.Scatter(
+            x=t, y=x, mode="lines",
+            line=dict(color=color, width=2.5),
+            opacity=0.30, hoverinfo="skip", showlegend=False,
+        )
+        marker0 = go.Scatter(
+            x=[t[0]], y=[x[0]], mode="markers",
+            marker=dict(size=13, color=color,
+                        line=dict(color="#333", width=1.4)),
+            hoverinfo="skip", showlegend=False,
+        )
+        step = 2
+        frames = [
+            go.Frame(
+                name=str(i),
+                data=[go.Scatter(
+                    x=[float(t[i])], y=[float(x[i])], mode="markers",
+                    marker=dict(size=13, color=color,
+                                line=dict(color="#333", width=1.4)),
+                )],
+                traces=[1],
+            )
+            for i in range(0, len(t), step)
+        ]
+        fig = go.Figure(data=[full, marker0], frames=frames)
+        fig.add_hline(y=0, line=dict(color="#9aa7b5", width=1))
+        fig.update_layout(
+            template="plotly_white",
+            title=dict(text=title, x=0.02, font=dict(size=13)),
+            xaxis=dict(title="time  t", range=[0, 10]),
+            yaxis=dict(title="x(t)", range=list(ylim)),
+            height=height, showlegend=False,
+            margin=dict(l=55, r=20, t=46, b=70),
+            paper_bgcolor="white", plot_bgcolor="white",
+            updatemenus=[dict(
+                type="buttons", showactive=False,
+                x=0.02, y=-0.30, xanchor="left", yanchor="top",
+                pad=dict(t=0, r=8),
+                buttons=[
+                    dict(label="▶ Play", method="animate",
+                         args=[None,
+                               dict(frame=dict(duration=40, redraw=True),
+                                    fromcurrent=True,
+                                    transition=dict(duration=0))]),
+                    dict(label="⏸ Pause", method="animate",
+                         args=[[None],
+                               dict(frame=dict(duration=0, redraw=False),
+                                    mode="immediate")]),
+                    dict(label="↺ Reset", method="animate",
+                         args=[["0"],
+                               dict(frame=dict(duration=0, redraw=True),
+                                    mode="immediate")]),
+                ],
+            )],
+        )
+        return fig
+
+    _anim_case1 = _anim(
+        3.0, 2.0, "#b5651d",
+        title="Case 1 — ẍ + 3ẋ + 2x = 0,   roots −1 and −2",
+    )
+    _anim_case2 = _anim(
+        2.0, 1.0, "#7c8aa0",
+        title="Case 2 — ẍ + 2ẋ + x = 0,   root −1 (repeated)",
+    )
+    _anim_case3 = _anim(
+        0.5, 4.0, "#5b7db1",
+        title="Case 3 — ẍ + 0.5ẋ + 4x = 0,   roots −0.25 ± 1.98 i",
+    )
+
+    # Comparison figure (the three traces overlaid).
     _t = np.linspace(0, 10, 500)
     _fig = go.Figure()
     for _b, _c, _name, _color in [
@@ -455,8 +542,7 @@ def _(go, mo, np):
     _fig.add_hline(y=0, line=dict(color="#9aa7b5", width=1))
     _fig.update_layout(
         template="plotly_white",
-        title=dict(text="Three signs of b² − 4c, three motions  "
-                        "(all from x(0) = 1, ẋ(0) = 0)", x=0.02),
+        title=dict(text="All three together  (x(0) = 1, ẋ(0) = 0)", x=0.02),
         xaxis=dict(title="time  t"),
         yaxis=dict(title="x(t)", range=[-0.8, 1.2]),
         height=400, showlegend=True,
@@ -471,77 +557,135 @@ def _(go, mo, np):
             r"""
             ## Three signs, three motions
 
+            Before we sort by sign, look at what the roots *mean* for
+            the motion. The general solution
+
+            $$
+            x(t) \;=\; C_1\, e^{r_1 t} + C_2\, e^{r_2 t}
+            $$
+
+            is built out of **exponentials** of the roots. So
+            whatever $e^{rt}$ looks like as a function of time, the
+            motion inherits it. And the shape of $e^{rt}$ is
+            decided entirely by what kind of number $r$ is:
+
+            - **If $r$ is a real number**, $e^{rt}$ is *monotonic* —
+              a clean decay if $r < 0$, a clean runaway if $r > 0$.
+              It moves in **one direction only**, never reversing.
+              A sum of two such pieces inherits that property: it
+              can sweep through zero at most once, but it can never
+              come **back** to a value it already left. **No
+              oscillation is even available.** This is why the
+              example coming up — roots $-1$ and $-2$ — doesn't
+              wiggle.
+            - **If $r$ has an imaginary part**, $r = a \pm i\beta$,
+              then Euler's formula (right below) reads
+              $e^{rt} = e^{at}\bigl(\cos\beta t + i\sin\beta t\bigr)$.
+              The cosine and sine are *periodic by construction*:
+              the mass revisits every old position every $2\pi/\beta$
+              in time. The real part $a$ scales the wiggle's
+              amplitude. **Oscillation always.**
+
+            So $b^2 - 4c$ isn't a bookkeeping number; it answers a
+            single physical question — *does this system oscillate?*
+            Positive: real roots, no. Negative: complex roots, yes.
+            Zero: the borderline where the roots collide on the
+            real axis.
+
             ### Case 1 — $b^2 - 4c > 0$: two real roots
 
             The square root is an honest real number, and we get two
-            distinct real roots $r_1 \neq r_2$. The solution is a sum
-            of two plain exponentials:
+            distinct real roots $r_1 \neq r_2$. The solution is a
+            sum of two plain exponentials:
 
             $$
-            x(t) = C_1 e^{r_1 t} + C_2 e^{r_2 t}.
+            x(t) \;=\; C_1\, e^{r_1 t} + C_2\, e^{r_2 t}.
             $$
 
             Example: $\ddot x + 3\dot x + 2x = 0$ has characteristic
-            equation $r^2 + 3r + 2 = (r+1)(r+2) = 0$, roots $-1$
-            and $-2$. Both negative, so both pieces decay and the
-            solution slumps to zero **without ever oscillating** —
-            think of releasing a spring submerged in honey. Friction
-            so dominates that the mass oozes home and stops.
+            equation $r^2 + 3r + 2 = (r+1)(r+2) = 0$, roots $-1$ and
+            $-2$. Both negative real numbers — so each piece
+            $e^{-t}$ and $e^{-2t}$ is a clean exponential decay,
+            and their sum slumps monotonically to zero **without
+            ever turning back**. Think of releasing a spring
+            submerged in honey: friction so dominates that the mass
+            oozes home and stops, never overshooting.
 
+            Press ▶ to watch:
+            """
+        ),
+        _anim_case1,
+        mo.md(
+            r"""
             ### Case 2 — $b^2 - 4c = 0$: one repeated root
 
             The square root vanishes and both roots collapse onto
             $r = -b/2$ — one root, but the equation still owes us
-            *two* independent solutions. The second one turns out to
-            be $t\,e^{rt}$ (check it: substitute and watch the terms
+            *two* independent solutions. The second one turns out
+            to be $t\,e^{rt}$ (substitute and watch the terms
             cancel — it works precisely *because* the root is
-            repeated), giving
+            repeated):
 
             $$
-            x(t) = (C_1 + C_2\,t)\,e^{rt}.
+            x(t) \;=\; (C_1 + C_2\,t)\,e^{rt}.
             $$
 
-            This knife-edge case is the **fastest decay without
-            overshoot** — which is why engineers tune for it: a door
-            closer that neither slams nor crawls is sitting on this
-            exact borderline.
-
+            Example: $\ddot x + 2\dot x + x = 0$ has root $r = -1$
+            repeated, so $x(t) = (C_1 + C_2 t)e^{-t}$. The root is
+            still a real negative number, so the motion is still
+            **monotonic** — and in fact this is the *fastest* decay
+            you can get without overshoot. Push the friction any
+            lower and the system starts to ring (Case 3); push it
+            any higher and the slower of two real roots takes over
+            and the decay drags out (Case 1). Engineers tune for
+            this knife-edge: a door closer that neither slams nor
+            crawls is sitting on exactly this borderline.
+            """
+        ),
+        _anim_case2,
+        mo.md(
+            r"""
             ### Case 3 — $b^2 - 4c < 0$: complex roots
 
             Now the square root holds a negative number, and the
             roots come out as a complex pair $r = a \pm i\,\beta$
-            with $a = -b/2$ and $\beta = \sqrt{4c - b^2}/2$. An
-            exponential with an *imaginary* number upstairs has a
-            beautiful meaning, given by **Euler's formula**:
+            with $a = -b/2$ and $\beta = \sqrt{4c - b^2}/2$. The
+            imaginary part is the new ingredient — and per the
+            bridge above, it's the *only* way the motion ever gets
+            to oscillate. **Euler's formula** makes it precise:
 
             $$
-            e^{i\beta t} \;=\; \cos(\beta t) + i \sin(\beta t)
+            e^{i\beta t} \;=\; \cos(\beta t) + i \sin(\beta t).
             $$
 
-            — a complex exponential doesn't blow up or die; it
-            **circles**, and its real-world shadow is a pure
-            oscillation. (Where the formula comes from is a lovely
-            story — see the fold-out below.) Carrying it through and
-            collecting real parts gives the real solution
+            A complex exponential doesn't blow up or die; it
+            **circles**, and its real shadow is a pure oscillation.
+            (Where the formula comes from is a lovely story — see
+            the fold-out below.) Carrying it through and collecting
+            real parts gives the real solution
 
             $$
-            x(t) \;=\; e^{a t}\bigl(C_1 \cos \beta t + C_2 \sin \beta t\bigr):
+            x(t) \;=\; e^{a t}\bigl(C_1 \cos \beta t + C_2 \sin \beta t\bigr).
             $$
 
-            an oscillation at frequency $\beta$, inside an
-            exponential envelope $e^{at}$. For a damped spring
-            $a < 0$: the bobbing persists but its amplitude dies
-            away — exactly what a real spring does.
+            An oscillation at frequency $\beta$, sitting inside an
+            exponential envelope $e^{at}$. Example:
+            $\ddot x + 0.5\dot x + 4x = 0$ has roots
+            $-0.25 \pm i\,1.98$ — so $a = -0.25$ (gentle decay),
+            $\beta \approx 1.98$ (the bobbing frequency). The
+            envelope $e^{-0.25\,t}$ slowly squeezes the wiggle
+            toward zero. That's exactly what a real spring does.
 
             And run the frictionless spring through this case as a
             check: $\ddot x + \omega^2 x = 0$ means $b = 0$,
             $c = \omega^2$, roots $\pm i\omega$, so $a = 0$ (no
             envelope) and $\beta = \omega$ — recovering precisely
-            the $\cos / \sin$ solutions we guessed earlier. The trig
-            guess wasn't a separate trick; it was the complex case
-            in disguise.
+            the $\cos / \sin$ solutions we guessed earlier. The
+            trig guess wasn't a separate trick; it was the complex
+            case in disguise.
             """
         ),
+        _anim_case3,
         mo.accordion({
             "Where Euler's formula comes from (optional)": mo.md(
                 r"""
@@ -549,33 +693,29 @@ def _(go, mo, np):
                 Chapter 4 used — for the three functions involved:
 
                 $$
-                e^{u} = 1 + u + \frac{u^2}{2!} + \frac{u^3}{3!} + \frac{u^4}{4!} + \cdots
+                e^{u} \;=\; 1 + u + \frac{u^2}{2!} + \frac{u^3}{3!} + \frac{u^4}{4!} + \cdots
                 $$
 
                 $$
-                \cos\theta = 1 - \frac{\theta^2}{2!} + \frac{\theta^4}{4!} - \cdots
+                \cos\theta \;=\; 1 - \frac{\theta^2}{2!} + \frac{\theta^4}{4!} - \cdots
                 \qquad
-                \sin\theta = \theta - \frac{\theta^3}{3!} + \frac{\theta^5}{5!} - \cdots
+                \sin\theta \;=\; \theta - \frac{\theta^3}{3!} + \frac{\theta^5}{5!} - \cdots
                 $$
 
                 Now substitute $u = i\theta$ into the first series,
                 using $i^2 = -1$, $i^3 = -i$, $i^4 = +1$, repeating:
 
-                $$
-                e^{i\theta}
-                = 1 + i\theta - \frac{\theta^2}{2!} - i\frac{\theta^3}{3!}
-                + \frac{\theta^4}{4!} + i\frac{\theta^5}{5!} - \cdots
-                $$
+                $$ e^{i\theta} \;=\; 1 + i\theta - \tfrac{\theta^2}{2!} - i\tfrac{\theta^3}{3!} + \tfrac{\theta^4}{4!} + i\tfrac{\theta^5}{5!} - \cdots $$
 
-                Collect the terms without $i$ and the terms with $i$:
-                the first group is exactly the cosine series, the
-                second is exactly $i$ times the sine series. Hence
-                $e^{i\theta} = \cos\theta + i\sin\theta$.
+                Collect the terms without $i$ and the terms with
+                $i$: the first group is exactly the cosine series,
+                the second is exactly $i$ times the sine series.
+                Hence $e^{i\theta} = \cos\theta + i\sin\theta$.
                 """
             ),
         }),
-        mo.md("One picture with all three cases, same starting "
-              "condition, so the shapes are directly comparable:"),
+        mo.md("**All three together**, same starting condition, so "
+              "the shapes are directly comparable:"),
         _fig,
     ])
     return
