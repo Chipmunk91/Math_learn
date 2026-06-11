@@ -680,16 +680,23 @@ def persist_key(api_field, key_bridge):
 
 
 def tutor_chat(api_field, key_bridge, context, *, prompts=None,
-               model="claude-sonnet-4-6"):
+               picked_get=None, model="claude-sonnet-4-6"):
     """A BYO-key chat tutor (``mo.ui.chat``) wired to Claude client-side, with the
     chapter ``context`` folded into the system prompt.
 
-    The previous ``picker`` argument (cell-picker widget) was removed because
-    it caused the tutor_chat cell to re-execute every time the picker's value
-    changed, recreating the chat widget and leaking previous draft input back
-    into the new chat box (reader-reported bug: "previous query revives at
-    next chat"). The "ask about this cell" affordance is gone; the student
-    can paste cell content into the chat directly if they want to reference it.
+    The optional ``picked_get`` is a state getter — a callable returning
+    a dict ``{"text": ..., "title": ...}`` written by the cell-picker
+    widget. The previous architecture passed the picker widget itself,
+    which made the tutor_chat cell *depend* on the picker; every click
+    recreated the chat widget and either wiped the history or leaked
+    stale draft input into the fresh input box.
+
+    The fix here is the state-indirection pattern: ``picked_get`` is a
+    stable function reference, and the call to ``picked_get()`` lives
+    inside the async ``chat_model`` closure (which marimo does not track
+    as a cell-level dependency). The chat widget is created once at
+    notebook load and persists across cell picks; clicking a cell merely
+    updates the state that ``chat_model`` reads at send-time.
 
     Default model is Claude Sonnet 4.6 — the previous Haiku-4.5 default was
     too eager and chatbot-bright for the Socratic style we want here (and
@@ -722,6 +729,10 @@ def tutor_chat(api_field, key_bridge, context, *, prompts=None,
         "write 'Compute $\\mu = \\exp(\\int p\\,dx)$.'\n\n"
         "5. **Keep responses focused.** Quality over length. Three short "
         "diagnostic questions beat one long explanation.\n\n"
+        "6. **When the student has pinned a cell** (you'll see a 'Context "
+        "from cell ...' block in their message), refer to it specifically "
+        "rather than answering in the abstract — the pin says 'I am "
+        "stuck here, look at this'.\n\n"
         "Chapter context:\n" + context + "\n\n"
         + _DELIB_API
     )
@@ -730,6 +741,25 @@ def tutor_chat(api_field, key_bridge, context, *, prompts=None,
         key = api_field.value or (key_bridge.value or {}).get("key", "")
         msgs = [{"role": m.role, "content": m.content} for m in messages
                 if m.role in ("user", "assistant") and m.content]
+
+        # Fold the picked-cell context into the most recent user message
+        # at send-time. Reading picked_get() here (inside the closure)
+        # is invisible to marimo's reactive dep graph, so this never
+        # triggers a chat-widget recreate.
+        if picked_get is not None and msgs and msgs[-1]["role"] == "user":
+            try:
+                pick = picked_get() or {}
+            except Exception:
+                pick = {}
+            picked_text = (pick.get("text") or "").strip()
+            picked_title = (pick.get("title") or "").strip() or "selected cell"
+            if picked_text:
+                msgs[-1]["content"] = (
+                    f"[Context from cell — {picked_title}]\n\n"
+                    f"{picked_text}\n\n"
+                    f"---\n\n[Student's question]\n\n{msgs[-1]['content']}"
+                )
+
         body = json.dumps({"model": model, "max_tokens": 800, "system": system, "messages": msgs})
         headers = {"content-type": "application/json", "x-api-key": key,
                    "anthropic-version": "2023-06-01",
@@ -756,21 +786,12 @@ def tutor_chat(api_field, key_bridge, context, *, prompts=None,
     return mo.ui.chat(chat_model, prompts=prompts or [])
 
 
-def tutor_sidebar(api_field, key_bridge, chatbox, *, title="Tutor"):
+def tutor_sidebar(api_field, key_bridge, chatbox, *, title="Tutor", picker=None):
     """Render the tutor inline at the bottom of the chapter: title, key
-    field, and (once a key is set) the chat; otherwise a prompt to add a
-    key. Returns a plain :func:`mo.vstack` so the tutor sits underneath
-    the recap, right next to the Try-it challenges where students
-    actually want it.
-
-    The name is kept for backward compatibility — every chapter already
-    calls ``delib.tutor_sidebar(...)`` as its last cell, so a rename
-    would touch every chapter file. The function is no longer a sidebar:
-    the previous ``mo.sidebar(...)`` rendering put the tutor in a
-    permanently-visible left rail, which carried a built-in collapse
-    arrow (the small ``<`` at the top-right of the rail) that students
-    found confusing and unused. ``mo.sidebar`` has no flag to suppress
-    that arrow; rendering inline removes it cleanly.
+    field, optional cell picker, and (once a key is set) the chat. The
+    name is kept for backward compatibility — every chapter already calls
+    ``delib.tutor_sidebar(...)`` as its last cell — but it returns a
+    plain :func:`mo.vstack` now (no sidebar collapse arrow).
     """
     key_ok = bool(api_field.value or (key_bridge.value or {}).get("key"))
     items = [
@@ -779,6 +800,8 @@ def tutor_sidebar(api_field, key_bridge, chatbox, *, title="Tutor"):
         key_bridge,
         api_field,
     ]
+    if picker is not None:
+        items.append(picker)
     if key_ok:
         items += [mo.md("key set ✓"), chatbox]
     else:

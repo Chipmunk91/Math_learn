@@ -1041,9 +1041,36 @@ def _(api_field, delib, key_bridge):
     delib.persist_key(api_field, key_bridge)
     return
 
+@app.cell
+def _(delib):
+    picker = delib.cell_picker_widget()
+    return (picker,)
+
 
 @app.cell
-def _(api_field, delib, key_bridge):
+def _(mo):
+    # State indirection so the chat widget never re-runs on cell pick.
+    # The tutor_chat cell depends on picked_get (a stable function ref);
+    # the sync cell below writes the picker's value into the state; the
+    # chat_model closure inside tutor_chat calls picked_get() at send-
+    # time, which marimo does not track as a cell-level dependency.
+    picked_get, picked_set = mo.state({"text": "", "title": ""})
+    return picked_get, picked_set
+
+
+@app.cell
+def _(picked_set, picker):
+    # picker.value changing re-runs this cell only; it creates no
+    # widgets, so a re-run is harmless and just refreshes the state.
+    _val = picker.value or {}
+    picked_set({"text": _val.get("picked_text", ""),
+                "title": _val.get("picked_title", "")})
+    return
+
+
+
+@app.cell
+def _(api_field, delib, key_bridge, picked_get):
     chatbox = delib.tutor_chat(
         api_field, key_bridge,
         "This is Chapter 5 of a differential-equations course: 1-D fixed "
@@ -1064,15 +1091,14 @@ def _(api_field, delib, key_bridge):
             "show another bistable system and its phase line",
             "plot the potential for x' = sin(x)",
         ],
+        picked_get=picked_get,
     )
     return (chatbox,)
 
 
 @app.cell(hide_code=True)
-def _(api_field, chatbox, delib, key_bridge):
-    delib.tutor_sidebar(api_field, key_bridge, chatbox)
+def _(api_field, chatbox, delib, key_bridge, picker):
+    delib.tutor_sidebar(api_field, key_bridge, chatbox, picker=picker)
     return
-
-
 if __name__ == "__main__":
     app.run()
