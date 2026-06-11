@@ -93,7 +93,7 @@ intuition still carries.
 | Ch  | Title                                      | Story / hook                                | Math content                                                              | Primary visuals                                            | Status |
 |-----|--------------------------------------------|---------------------------------------------|---------------------------------------------------------------------------|------------------------------------------------------------|--------|
 | 06  | Second-order linear ODEs                   | A mass on a spring (no damping yet)         | Characteristic equation; real / repeated / complex roots; general solution | Roots-in-complex-plane ↔ response hero; characteristic-equation Manim | ✅      |
-| 07  | Damping, forcing, resonance                | A car suspension; Tacoma Narrows            | $m\ddot x + c\dot x + kx = F(t)$; under/over/critical damping; resonance peak | Damped-spring animation; frequency-response (Bode-style) plot | TBD    |
+| 07  | Damping, forcing, resonance                | A child on a swing                          | $\ddot x + 2\gamma\dot x + \omega_0^2 x = F_0\cos(\omega t)$; transient + steady state; amplitude and phase response | Two-panel A(ω) / φ(ω) hero with sliders; side-by-side drive-vs-response animations; steady-state Manim | ✅      |
 | 08  | Non-homogeneous equations                  | The driven RLC circuit                      | Undetermined coefficients; variation of parameters; superposition         | Particular + homogeneous decomposition slider              | TBD    |
 | 09  | Laplace transforms                         | A switch flips on at $t = 1$ second         | $\mathcal L\{f\}$, inverse, derivatives, convolution; impulse / step inputs | Pole-zero plot ↔ time-domain response                      | TBD    |
 
@@ -153,6 +153,8 @@ Anything chapters 1–5 use. Live in `differential_equations/delib/`.
   `phase_line`, `potential_plot`, `level_curves`, `overlay_solution`.
 - **Solvers:** `solve_ode`, `solve_system` (scipy-backed).
 - **Numerical-methods walks (Ch 4):** `euler_steps`, `heun_steps`, `rk4_steps`.
+- **Forced oscillators (Ch 7):** `oscillator_animate`, `frequency_response`,
+  `steady_state_amplitude`, `steady_state_phase`, `peak_frequency`.
 - **Animation:** `animate_plotly`, `animate_time`, `flow_field`,
   `solution_surface`, `frame_index`.
 - **UI / interaction:** `param_slider`, `param_panel`, `run_exercise`,
@@ -168,11 +170,6 @@ Each helper is light-theme Plotly, self-contained (no cross-module imports,
 for WASM inlining), and animation-safe (static content in base, moving
 content in frames).
 
-- **`oscillator_animate(m, c, k, F=None, ic, t_span)`** — animated mass on
-  spring with optional forcing; trajectory + side-by-side $x(t)$ plot.
-  *(Ch 6, 7)*
-- **`frequency_response(transfer)`** — Bode-style magnitude / phase plot.
-  *(Ch 7, 9)*
 - **`pole_zero_plot(num, den)`** — complex-plane poles + zeros, with the
   unit circle / imaginary axis as visual references. *(Ch 9)*
 - **`laplace_table()`** — interactive lookup pairing $f(t)$ ↔ $F(s)$ with
@@ -227,11 +224,21 @@ content in frames).
 - **Ch 06** — Mass-on-spring hook (oscillation impossible in 1-D) →
   Newton + Hooke → guess-and-check $\cos$, $\omega = \sqrt{k/m}$ with
   sliders; exponential ansatz Manim → characteristic equation; three
-  cases by $b^2 - 4c$ with one-figure gallery + Euler's-formula
+  cases by $b^2 - 4c$ with three animated case panels + Euler's-formula
   accordion; roots-in-complex-plane ↔ response hero (b, c sliders);
-  worked initial-conditions example; 3 exercises; playground; recap;
-  tutor. (`oscillator_animate` helper deferred to Ch 7 where forcing
-  makes it earn its keep — Ch 6's figures are plain in-chapter Plotly.)
+  worked initial-conditions example; 3 exercises; playground; recap
+  (now with a forward-looking pointer to Ch 9 / Ch 12 explaining the
+  "guessed" exponential as a principled identity); tutor.
+- **Ch 07** — Child-on-a-swing hook (right-rhythm vs wrong-rhythm
+  side-by-side animations) → transient + steady-state decomposition;
+  canonical $\ddot x + 2\gamma\dot x + \omega_0^2 x = F_0\cos(\omega t)$;
+  Manim derivation of $A(\omega)$ and $\varphi(\omega)$ by
+  ansatz-substitute-and-match; two-panel amplitude/phase frequency-
+  response hero with $\omega_0, \gamma$ sliders; side-by-side drive-
+  vs-response animations showing the phase regimes; $\gamma = 0$
+  resonance-disaster note (Tacoma Narrows); 3 exercises; playground;
+  recap. New delib helpers (`oscillator_animate`,
+  `frequency_response`, plus the three scalar steady-state shortcuts).
 
 ### Cross-cutting infrastructure built
 
@@ -247,9 +254,10 @@ content in frames).
 
 ### Immediate backlog
 
-- **Ch 07**: damping/forcing/resonance (car-suspension story); build
-  `oscillator_animate` + `frequency_response` helpers here.
-- **Ch 08 onward**: Part II + Part III chapters in order.
+- **Ch 08**: non-homogeneous equations (undetermined coefficients,
+  variation of parameters, the driven RLC circuit angle).
+- **Ch 09 onward**: Laplace transforms (and the principled rederivation
+  of the Ch 6 ansatz), then Part III.
 
 The pattern is now well-established — each new chapter is mostly math
 content + choosing the right visual from the `delib` table + a hook story

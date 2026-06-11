@@ -1258,6 +1258,21 @@ def _(mo):
           position condition feeds $x$, the velocity condition feeds
           $\dot x$.
 
+        **About that "guess".** We arrived at $e^{rt}$ by trying it
+        and watching the calculus collapse, which is honest but
+        leaves a fair question hanging: was that a *guess*, or is
+        there a reason it had to work? It's the latter. Two later
+        chapters give principled derivations: **Ch 9 (Laplace
+        transforms)** turns the ODE into an algebraic equation in
+        $s$ whose denominator is the characteristic equation by
+        construction; **Ch 12 (linear 2-D systems)** rewrites the
+        scalar equation as a vector equation $\dot{\mathbf y} =
+        A\mathbf y$, whose solutions $e^{At}\mathbf y_0$ resolve
+        into ordinary exponentials of the **eigenvalues of $A$** —
+        and those eigenvalues are exactly the roots of $r^2 + br
+        + c$. The "guess" is what the principled story looks like
+        from the scalar side.
+
         **Next:** we kept the forcing at zero — nobody pushes the
         mass after launch. The next chapter turns on pushing:
         periodic forcing, the full damping story in physical units,

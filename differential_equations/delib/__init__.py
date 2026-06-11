@@ -22,6 +22,13 @@ from delib.fields import (
     heun_steps,
     rk4_steps,
 )
+from delib.oscillators import (
+    oscillator_animate,
+    frequency_response,
+    steady_state_amplitude,
+    steady_state_phase,
+    peak_frequency,
+)
 from delib.animate import (
     animate_time,
     animate_plotly,
@@ -67,6 +74,11 @@ __all__ = [
     "euler_steps",
     "heun_steps",
     "rk4_steps",
+    "oscillator_animate",
+    "frequency_response",
+    "steady_state_amplitude",
+    "steady_state_phase",
+    "peak_frequency",
     "animate_time",
     "animate_plotly",
     "flow_field",

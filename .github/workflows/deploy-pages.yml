@@ -80,6 +80,8 @@ jobs:
           find media -name 'phase_line_collapse.mp4' -exec cp {} assets-rendered/ \; || true
           manim render -qm -o characteristic_equation manim/characteristic_equation.py SceneCharacteristicEquation || true
           find media -name 'characteristic_equation.mp4' -exec cp {} assets-rendered/ \; || true
+          manim render -qm -o forced_oscillator_steady_state manim/forced_oscillator_steady_state.py SceneForcedOscillatorSteadyState || true
+          find media -name 'forced_oscillator_steady_state.mp4' -exec cp {} assets-rendered/ \; || true
           ls -la assets-rendered || true
 
       - name: Upload rendered media
