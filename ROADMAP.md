@@ -242,6 +242,15 @@ content in frames).
 
 ### Cross-cutting infrastructure built
 
+- **Animation lab** (`ch99_animation_lab.py`): a test-ground page for
+  game-style interactive tech beyond Plotly/Manim — Canvas 60 fps
+  direct manipulation (grabbable spring-mass), Web Audio (audible
+  resonance curve), Three.js/WebGL (orbitable Lorenz attractor),
+  Canvas particle advection (touchable pendulum phase flow), and
+  Matter.js (rigid-body playground). Each demo integrates its ODE
+  client-side in JS via anywidget; graduation criteria into real
+  chapters documented on the page.
+
 - BYO-key tutor: claude-sonnet-4-6, Socratic system prompt, persistent key
   via `key_bridge_widget` + `persist_key`.
 - Manim CI: `.github/workflows/deploy-pages.yml` renders hero scenes,
