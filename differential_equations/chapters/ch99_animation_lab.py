@@ -28,13 +28,19 @@ def _(mo):
         integrating a differential equation from this course, in
         JavaScript, at 60 frames per second, right in your browser.
 
-        | # | Demo | Technology | The equation underneath |
-        |---|------|-----------|--------------------------|
-        | 1 | Grab the mass | Canvas 2D + pointer capture | $\ddot x = -\omega_0^2 x - 2\gamma\dot x$ (Ch 6) |
-        | 2 | Hear resonance | Web Audio API | $A(\omega)$ from Ch 7 |
-        | 3 | The Lorenz butterfly | Three.js / WebGL | $\dot x = \sigma(y{-}x),\ \dot y = x(\rho{-}z){-}y,\ \dot z = xy - \beta z$ (Ch 20) |
-        | 4 | Flow you can touch | Canvas particle advection | $\ddot\theta = -\sin\theta - 0.15\,\dot\theta$ (Ch 13) |
-        | 5 | A tiny game engine | Matter.js rigid bodies | Newton's $m\ddot{\mathbf x} = \mathbf F$, stepped Ch 4-style |
+        | # | Demo | Tech stack | Underlying DE |
+        |---|------|-----------|---------------|
+        | 1 | Grab the mass | Canvas 2D + Pointer Events, RK4 in JS | $\ddot x = -\omega_0^2 x - 2\gamma\dot x$ — damped oscillator (Ch 6) |
+        | 2 | Hear resonance | Web Audio (OscillatorNode + GainNode) | $\ddot x + 2\gamma\dot x + \omega_0^2 x = F_0\cos(\omega t)$; loudness $\propto A(\omega)$ (Ch 7) |
+        | 3 | Lorenz butterfly | Three.js + WebGL + OrbitControls | $\dot x = \sigma(y-x),\ \dot y = x(\rho-z)-y,\ \dot z = xy - \beta z$ (Ch 20) |
+        | 4 | Flow you can touch | Canvas 2D + RK2 particle advection | $\ddot\theta = -\sin\theta - 0.15\,\dot\theta$ — damped pendulum (Ch 13) |
+        | 5 | A tiny game engine | Matter.js rigid-body engine | $m\ddot{\mathbf x} = \mathbf F$ per body + collision constraints (Ch 4) |
+        | 6 | Field, GPU-rendered | WebGL2 + GLSL fragment shader (per-pixel) | $\dot x = y,\ \dot y = \mu(1-x^2)\,y - x$ — Van der Pol (Ch 14) |
+        | 7 | Smooth bifurcation | D3.js + SVG `d3.transition()` | $\dot x = r x - x^3$ — pitchfork (Ch 10) |
+        | 8 | Sync you can hear | Tone.js (PolySynth) + Canvas 2D | $\dot\theta_i = \omega_i + (K/N)\sum_j \sin(\theta_j - \theta_i)$ — Kuramoto (Ch 14) |
+        | 9 | Anatomy of a solution | GSAP 3 timeline + SVG | $x(t) = x_h(t) + x_p(t)$, choreographed (Ch 7) |
+        | 10 | Drawn vs solved | lottie-web (keyframes) + Canvas 2D (integrated) | $\ddot y = -g$, restitution $e = 0.75$ — Ch 4 parable |
+        | 11 | 120,000 particles | WebGPU + WGSL compute shader | Same damped pendulum as #4, RK2 dispatched GPU-side (Ch 13) |
 
         If a demo earns its keep, it graduates into a real chapter as a
         `delib` widget. If it doesn't, it dies here, cheaply.
