@@ -725,6 +725,582 @@ def _(matter_playground, mo):
     return
 
 
+# ============================================================================
+# Demo 6 — Slope field on the GPU (WebGL2 fragment shader)
+# ============================================================================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## 6 · The field, rendered by the GPU
+
+        The Van der Pol oscillator's phase plane,
+        $\dot x = y,\ \dot y = \mu(1 - x^2)\,y - x$ — but instead of
+        drawing a sparse arrow at each grid point, this version
+        evaluates $(\dot x, \dot y)$ at **every single pixel** via a
+        fragment shader running on your graphics card. Hue tracks
+        the direction of the flow; brightness tracks the speed.
+        Scrub $\mu$ and the entire field recolors instantly.
+
+        On top, ~300 test particles ride the flow — RK4 in
+        JavaScript on the CPU, drawn over the GPU-rendered field
+        each frame. At $\mu = 0$ they orbit; ramp $\mu$ up and you
+        see them get pulled onto a limit cycle.
+
+        *Why it matters:* a Plotly slope-field is a fixed grid of
+        arrows; a shader is *the entire plane*, continuous, at
+        millions of samples per second. This is the technique
+        scientific-visualization apps use for fluid sim, wind
+        fields, and electromagnetic vectors.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    import anywidget as _aw
+
+    class _ShaderField(_aw.AnyWidget):
+        _esm = r"""
+        function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <div data-r style="position:relative;width:100%;max-width:680px;height:420px;border:1px solid #dde4ec;border-radius:8px;overflow:hidden;background:#0c1118">
+                <canvas data-gl style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+                <canvas data-px style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+              </div>
+              <div style="display:flex;gap:18px;margin-top:6px;flex-wrap:wrap">
+                <label>μ (vdP) <input type="range" min="0" max="3.5" step="0.05" value="0.6" data-k="mu"> <span data-v="mu">0.60</span></label>
+                <span style="color:#8a96a5">  hue = direction · brightness = speed</span>
+              </div>
+            </div>`;
+          var host = el.querySelector('[data-r]');
+          var W = host.clientWidth || 680, H = 420;
+          var glC = el.querySelector('[data-gl]'), pxC = el.querySelector('[data-px]');
+          var dpr = window.devicePixelRatio || 1;
+          [glC, pxC].forEach(function (c) { c.width = W * dpr; c.height = H * dpr; });
+          var ctx = pxC.getContext('2d'); ctx.scale(dpr, dpr);
+          var gl = glC.getContext('webgl2');
+          if (!gl) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = '#333'; ctx.font = '14px sans-serif';
+            ctx.fillText('WebGL2 not available — try a recent browser', 20, 30);
+            return function () {}; }
+
+          var mu = 0.6;
+          var XR = 3.2, YR = 3.2;       // half-ranges
+
+          var vs = `#version 300 es
+            in vec2 a_pos;
+            out vec2 v_p;
+            uniform vec2 u_range;
+            void main() {
+              v_p = a_pos * u_range;
+              gl_Position = vec4(a_pos, 0.0, 1.0);
+            }`;
+          var fs = `#version 300 es
+            precision highp float;
+            in vec2 v_p;
+            uniform float u_mu;
+            out vec4 outColor;
+            vec3 hsv2rgb(vec3 c) {
+              vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+              vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+              return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+            }
+            void main() {
+              float fx = v_p.y;
+              float fy = u_mu * (1.0 - v_p.x * v_p.x) * v_p.y - v_p.x;
+              float mag = length(vec2(fx, fy));
+              float ang = atan(fy, fx);
+              float hue = ang / 6.283185 + 0.5;
+              float bright = 0.18 + 0.72 * (mag / (mag + 1.6));
+              outColor = vec4(hsv2rgb(vec3(hue, 0.85, bright)), 1.0);
+            }`;
+          function shader(type, src) {
+            var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+            if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+              console.error(gl.getShaderInfoLog(s));
+            return s;
+          }
+          var prog = gl.createProgram();
+          gl.attachShader(prog, shader(gl.VERTEX_SHADER, vs));
+          gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, fs));
+          gl.linkProgram(prog); gl.useProgram(prog);
+          var quad = new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]);
+          var vbo = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+          gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
+          var loc = gl.getAttribLocation(prog, 'a_pos');
+          gl.enableVertexAttribArray(loc);
+          gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+          var uMu = gl.getUniformLocation(prog, 'u_mu');
+          var uRange = gl.getUniformLocation(prog, 'u_range');
+          gl.uniform2f(uRange, XR, YR);
+          gl.viewport(0, 0, glC.width, glC.height);
+
+          function renderField() {
+            gl.uniform1f(uMu, mu);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+          }
+
+          el.querySelector('input').addEventListener('input', function () {
+            mu = parseFloat(this.value);
+            el.querySelector('[data-v="mu"]').textContent = mu.toFixed(2);
+            renderField();
+          });
+          renderField();
+
+          // CPU particle layer
+          function rhs(x, y) {
+            return [y, mu * (1.0 - x * x) * y - x];
+          }
+          function step(p, dt) {
+            var k1 = rhs(p.x, p.y);
+            var k2 = rhs(p.x + dt/2 * k1[0], p.y + dt/2 * k1[1]);
+            var k3 = rhs(p.x + dt/2 * k2[0], p.y + dt/2 * k2[1]);
+            var k4 = rhs(p.x + dt * k3[0], p.y + dt * k3[1]);
+            p.x += dt/6 * (k1[0]+2*k2[0]+2*k3[0]+k4[0]);
+            p.y += dt/6 * (k1[1]+2*k2[1]+2*k3[1]+k4[1]);
+            p.life--;
+          }
+          var parts = [];
+          function spawn() {
+            parts.push({ x: (Math.random()-0.5) * 2 * XR,
+                         y: (Math.random()-0.5) * 2 * YR,
+                         life: 200 + Math.random() * 300 });
+          }
+          for (var i = 0; i < 320; i++) spawn();
+          function toPx(x, y) {
+            return [W/2 + x / XR * (W/2), H/2 - y / YR * (H/2)];
+          }
+          ctx.fillStyle = 'rgba(0,0,0,0)'; ctx.fillRect(0,0,W,H);
+
+          var raf, running = true;
+          function frame() {
+            if (!running) return;
+            ctx.fillStyle = 'rgba(12,17,24,0.18)';
+            ctx.fillRect(0, 0, W, H);
+            for (var i = parts.length - 1; i >= 0; i--) {
+              var p = parts[i];
+              step(p, 0.025);
+              if (p.life <= 0 || Math.abs(p.x) > XR * 1.1 || Math.abs(p.y) > YR * 1.1) {
+                parts.splice(i, 1); spawn(); continue;
+              }
+              var q = toPx(p.x, p.y);
+              ctx.fillStyle = 'rgba(255,255,255,0.85)';
+              ctx.beginPath(); ctx.arc(q[0], q[1], 1.4, 0, 6.2832); ctx.fill();
+            }
+            raf = requestAnimationFrame(frame);
+          }
+          frame();
+          return function () { running = false; cancelAnimationFrame(raf); };
+        }
+        export default { render };
+        """
+
+    shader_field = _ShaderField()
+    return (shader_field,)
+
+
+@app.cell(hide_code=True)
+def _(mo, shader_field):
+    mo.ui.anywidget(shader_field)
+    return
+
+
+# ============================================================================
+# Demo 7 — Smooth bifurcation (D3 SVG transitions)
+# ============================================================================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## 7 · The bifurcation, animated by D3
+
+        The pitchfork bifurcation $\dot x = rx - x^3$ — Chapter 10's
+        bread and butter. The equilibria are at $x^* = 0$ (always)
+        and $x^* = \pm\sqrt{r}$ (only when $r > 0$). Stability: the
+        centre point is stable when $r < 0$, unstable when $r > 0$;
+        the side points (when they exist) are always stable.
+
+        Drag the $r$ slider. The phase-line dots **smoothly slide**
+        into place — that's the signature D3 move, *data-driven
+        transitions on SVG*. As $r$ crosses zero, the centre dot
+        switches from filled (stable) to open (unstable), and two
+        new stable dots **emerge from it** and slide outward. Pull
+        $r$ back and they slide home and merge.
+
+        *Why it matters:* D3 is what the New York Times, FiveThirty
+        Eight, and the Financial Times use. Plotly redraws on every
+        update; D3 *interpolates*, so transitions are smooth and
+        narratively legible. The choreography itself communicates
+        what's happening — dots emerging from a point *is* the
+        bifurcation.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    import anywidget as _aw
+
+    class _BifurcationD3(_aw.AnyWidget):
+        _esm = r"""
+        import * as d3 from "https://esm.sh/d3@7.8.5";
+
+        function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <div data-r style="width:100%;max-width:680px;border:1px solid #dde4ec;border-radius:8px;background:#fff"></div>
+              <div style="display:flex;gap:18px;margin-top:6px;align-items:center;flex-wrap:wrap">
+                <label>r <input type="range" min="-2" max="2" step="0.02" value="-1.0" style="width:280px" data-k="r"> <span data-v="r">−1.00</span></label>
+                <span style="color:#8a96a5">  drag to move through the bifurcation</span>
+              </div>
+            </div>`;
+          var host = el.querySelector('[data-r]');
+          var W = host.clientWidth || 680, H = 320;
+          var svg = d3.select(host).append('svg')
+            .attr('width', W).attr('height', H)
+            .style('display', 'block');
+
+          var R_MIN = -2, R_MAX = 2;
+          var X_MIN = -1.6, X_MAX = 1.6;
+          var pad = { l: 50, r: 30, t: 25, b: 40 };
+          // Right panel: bifurcation diagram (r horizontal, x* vertical).
+          var bw = 280;
+          var rScale = d3.scaleLinear().domain([R_MIN, R_MAX])
+            .range([W - bw - pad.r, W - pad.r]);
+          var xScale = d3.scaleLinear().domain([X_MIN, X_MAX])
+            .range([H - pad.b, pad.t]);
+          // Left panel: phase line (x* on a horizontal axis).
+          var plScale = d3.scaleLinear().domain([X_MIN, X_MAX])
+            .range([pad.l, W - bw - pad.r - 30]);
+          var plY = H / 2;
+
+          // Axes / labels
+          svg.append('g').attr('transform', 'translate(0,' + (H - pad.b) + ')')
+            .call(d3.axisBottom(rScale).ticks(5)).attr('color', '#7c8aa0');
+          svg.append('g').attr('transform', 'translate(' + (W - bw - pad.r) + ',0)')
+            .call(d3.axisLeft(xScale).ticks(5)).attr('color', '#7c8aa0');
+          svg.append('text').attr('x', W - bw/2 - pad.r).attr('y', H - 6)
+            .attr('fill', '#666').attr('font-size', 11).attr('text-anchor', 'middle')
+            .text('parameter r');
+          svg.append('text').attr('x', W - bw - pad.r - 28).attr('y', pad.t - 8)
+            .attr('fill', '#666').attr('font-size', 11).attr('text-anchor', 'end')
+            .text('x*');
+          svg.append('text').attr('x', plScale(0)).attr('y', plY - 26)
+            .attr('fill', '#666').attr('font-size', 11).attr('text-anchor', 'middle')
+            .text('phase line of  ẋ = r x − x³');
+          svg.append('line').attr('x1', plScale(X_MIN)).attr('x2', plScale(X_MAX))
+            .attr('y1', plY).attr('y2', plY)
+            .attr('stroke', '#9aa7b5').attr('stroke-width', 1.2);
+          svg.append('text').attr('x', plScale(X_MIN)).attr('y', plY + 22)
+            .attr('fill', '#7c8aa0').attr('font-size', 11).text(X_MIN.toFixed(1));
+          svg.append('text').attr('x', plScale(X_MAX)).attr('y', plY + 22)
+            .attr('fill', '#7c8aa0').attr('font-size', 11).attr('text-anchor', 'end')
+            .text(X_MAX.toFixed(1));
+
+          // Static bifurcation curves on the right panel.
+          var rs = d3.range(0, 2.001, 0.02);
+          var lineUp = d3.line().x(function (r) { return rScale(r); })
+            .y(function (r) { return xScale(Math.sqrt(r)); });
+          var lineDown = d3.line().x(function (r) { return rScale(r); })
+            .y(function (r) { return xScale(-Math.sqrt(r)); });
+          svg.append('path').attr('d', lineUp(rs))
+            .attr('stroke', '#2a9d8f').attr('stroke-width', 2.5).attr('fill', 'none');
+          svg.append('path').attr('d', lineDown(rs))
+            .attr('stroke', '#2a9d8f').attr('stroke-width', 2.5).attr('fill', 'none');
+          svg.append('line').attr('x1', rScale(R_MIN)).attr('x2', rScale(0))
+            .attr('y1', xScale(0)).attr('y2', xScale(0))
+            .attr('stroke', '#2a9d8f').attr('stroke-width', 2.5);
+          svg.append('line').attr('x1', rScale(0)).attr('x2', rScale(R_MAX))
+            .attr('y1', xScale(0)).attr('y2', xScale(0))
+            .attr('stroke', '#d1495b').attr('stroke-width', 2).attr('stroke-dasharray', '4,3');
+
+          // Cursor and dot groups.
+          var cursor = svg.append('line')
+            .attr('stroke', '#9aa7b5').attr('stroke-width', 1.4).attr('stroke-dasharray', '3,3');
+          var plDots = svg.append('g');
+          var bdDots = svg.append('g');
+
+          function eqs(r) {
+            // Always three slots so D3 has stable keys for transitions.
+            var center = { id: 'c', x: 0, stable: r < 0, exists: true };
+            var plus  = { id: 'p', x: r > 0 ? Math.sqrt(r) : 0,
+                          stable: true, exists: r > 0 };
+            var minus = { id: 'm', x: r > 0 ? -Math.sqrt(r) : 0,
+                          stable: true, exists: r > 0 };
+            return [center, plus, minus];
+          }
+
+          function update(r, immediate) {
+            var data = eqs(r);
+            var T = immediate ? 0 : 360;
+
+            // Cursor line on right panel
+            cursor.transition().duration(T)
+              .attr('x1', rScale(r)).attr('x2', rScale(r))
+              .attr('y1', pad.t).attr('y2', H - pad.b);
+
+            // Phase-line dots (left panel)
+            var sel = plDots.selectAll('circle').data(data, function (d) { return d.id; });
+            sel.enter().append('circle')
+              .attr('cx', function (d) { return plScale(d.x); })
+              .attr('cy', plY)
+              .attr('r', 9)
+              .attr('fill', function (d) { return d.stable ? '#2a9d8f' : 'white'; })
+              .attr('stroke', function (d) { return d.stable ? '#2a9d8f' : '#d1495b'; })
+              .attr('stroke-width', 2.5)
+              .attr('opacity', function (d) { return d.exists ? 1 : 0; })
+              .merge(sel)
+              .transition().duration(T)
+              .attr('cx', function (d) { return plScale(d.x); })
+              .attr('opacity', function (d) { return d.exists ? 1 : 0; })
+              .attr('fill', function (d) { return d.stable ? '#2a9d8f' : 'white'; })
+              .attr('stroke', function (d) { return d.stable ? '#2a9d8f' : '#d1495b'; });
+
+            // Bifurcation-diagram dots (right panel, dressed-down)
+            var bs = bdDots.selectAll('circle').data(data, function (d) { return d.id; });
+            bs.enter().append('circle')
+              .attr('cx', rScale(r))
+              .attr('cy', function (d) { return xScale(d.x); })
+              .attr('r', 5.5)
+              .attr('fill', function (d) { return d.stable ? '#2a9d8f' : 'white'; })
+              .attr('stroke', function (d) { return d.stable ? '#2a9d8f' : '#d1495b'; })
+              .attr('stroke-width', 2)
+              .attr('opacity', function (d) { return d.exists ? 1 : 0; })
+              .merge(bs)
+              .transition().duration(T)
+              .attr('cx', rScale(r))
+              .attr('cy', function (d) { return xScale(d.x); })
+              .attr('opacity', function (d) { return d.exists ? 1 : 0; })
+              .attr('fill', function (d) { return d.stable ? '#2a9d8f' : 'white'; })
+              .attr('stroke', function (d) { return d.stable ? '#2a9d8f' : '#d1495b'; });
+          }
+          update(-1.0, true);
+
+          el.querySelector('input').addEventListener('input', function () {
+            var r = parseFloat(this.value);
+            el.querySelector('[data-v="r"]').textContent =
+              (r < 0 ? '−' : '') + Math.abs(r).toFixed(2);
+            update(r, false);
+          });
+          return function () { svg.remove(); };
+        }
+        export default { render };
+        """
+
+    bifurcation_d3 = _BifurcationD3()
+    return (bifurcation_d3,)
+
+
+@app.cell(hide_code=True)
+def _(bifurcation_d3, mo):
+    mo.ui.anywidget(bifurcation_d3)
+    return
+
+
+# ============================================================================
+# Demo 8 — Coupled oscillators that synchronize (Tone.js)
+# ============================================================================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## 8 · Synchronization you can hear
+
+        Five Kuramoto phase oscillators on the unit circle:
+
+        $$
+        \dot\theta_i \;=\; \omega_i \;+\; \frac{K}{N}\sum_j \sin(\theta_j - \theta_i).
+        $$
+
+        Each oscillator has a slightly different natural frequency
+        $\omega_i$ — left to themselves they drift apart and never
+        agree. **Each one plays a different pentatonic note as it
+        passes the top of the circle.** With coupling $K = 0$ the
+        notes scatter randomly; turn $K$ up and watch (and listen
+        to) the dots **pull each other into a single cluster** —
+        the chord turns into a unified rhythm. The big red arrow is
+        the **order parameter**, the centroid; its length is how
+        synchronized the population is.
+
+        *Why it matters:* this is the central phenomenon in Chapter
+        14 territory (coupled oscillators, fireflies, neurons,
+        Tacoma Narrows again — different mechanism but the same
+        word), and it is *much* clearer through your ears than
+        through your eyes. Tone.js is the abstraction over Web
+        Audio that makes scheduling musical events painless.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    import anywidget as _aw
+
+    class _KuramotoSync(_aw.AnyWidget):
+        _esm = r"""
+        import * as Tone from "https://esm.sh/tone@14.8.49";
+
+        function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <canvas style="width:100%;max-width:680px;border:1px solid #dde4ec;border-radius:8px;background:#fff;display:block"></canvas>
+              <div style="display:flex;gap:18px;margin-top:6px;align-items:center;flex-wrap:wrap">
+                <button data-b="snd" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">🔊 enable sound</button>
+                <label>coupling K <input type="range" min="0" max="2" step="0.02" value="0" data-k="K"> <span data-v="K">0.00</span></label>
+                <button data-b="reset" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">↺ reseed</button>
+              </div>
+            </div>`;
+          var canvas = el.querySelector('canvas');
+          var W = 680, H = 380, dpr = window.devicePixelRatio || 1;
+          canvas.width = W * dpr; canvas.height = H * dpr;
+          var ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+
+          var N = 5, K = 0;
+          var palette = ['#5b7db1', '#d1495b', '#2a9d8f', '#e9a23b', '#7c8aa0'];
+          var pentatonic = ['C4', 'D4', 'E4', 'G4', 'A4'];
+          var omega, theta, prevSin;
+          function reseed() {
+            omega = []; theta = []; prevSin = [];
+            for (var i = 0; i < N; i++) {
+              omega.push(0.85 + 0.3 * i / (N - 1));
+              theta.push(Math.random() * 6.2832);
+              prevSin.push(Math.sin(theta[i]));
+            }
+          }
+          reseed();
+
+          var synth = null, sndOn = false;
+          el.querySelector('[data-b="snd"]').addEventListener('click', async function () {
+            if (!sndOn) {
+              await Tone.start();
+              synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.004, decay: 0.18, sustain: 0.0, release: 0.18 },
+              }).toDestination();
+              synth.volume.value = -10;
+              sndOn = true;
+              this.textContent = '🔇 mute';
+            } else {
+              if (synth) synth.dispose();
+              synth = null; sndOn = false;
+              this.textContent = '🔊 enable sound';
+            }
+          });
+          el.querySelector('[data-b="reset"]').addEventListener('click', reseed);
+          el.querySelector('input').addEventListener('input', function () {
+            K = parseFloat(this.value);
+            el.querySelector('[data-v="K"]').textContent = K.toFixed(2);
+          });
+
+          var cx = 220, cy = H / 2, R = 130;
+          var lastNote = [0, 0, 0, 0, 0];
+
+          function step(dt) {
+            // Standard Kuramoto with mean-field coupling
+            var dtheta = new Array(N).fill(0);
+            for (var i = 0; i < N; i++) {
+              var s = 0;
+              for (var j = 0; j < N; j++) s += Math.sin(theta[j] - theta[i]);
+              dtheta[i] = omega[i] + (K / N) * s;
+            }
+            for (var i = 0; i < N; i++) {
+              var ps = prevSin[i];
+              theta[i] = (theta[i] + dtheta[i] * dt) % (2 * Math.PI);
+              if (theta[i] < 0) theta[i] += 2 * Math.PI;
+              var ns = Math.sin(theta[i]);
+              // Trigger note at top crossing (theta passing through pi/2 upward)
+              var now = performance.now();
+              if (ps < 1 && Math.cos(theta[i]) > 0 && Math.sin(theta[i]) > 0.98
+                  && now - lastNote[i] > 120) {
+                if (sndOn && synth) {
+                  try { synth.triggerAttackRelease(pentatonic[i], '16n'); } catch (e) {}
+                }
+                lastNote[i] = now;
+              }
+              prevSin[i] = ns;
+            }
+          }
+
+          function order() {
+            var sx = 0, sy = 0;
+            for (var i = 0; i < N; i++) { sx += Math.cos(theta[i]); sy += Math.sin(theta[i]); }
+            return { r: Math.hypot(sx, sy) / N, psi: Math.atan2(sy, sx) };
+          }
+
+          function draw() {
+            ctx.clearRect(0, 0, W, H);
+            // Unit circle
+            ctx.strokeStyle = '#c9d4e0'; ctx.lineWidth = 1.4;
+            ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.stroke();
+            // ghost notes at the top
+            ctx.fillStyle = '#9aa7b5'; ctx.font = '11px sans-serif';
+            ctx.fillText('▴ note triggers when an oscillator passes here', cx - 100, cy - R - 8);
+            // Oscillator dots
+            for (var i = 0; i < N; i++) {
+              var x = cx + R * Math.cos(theta[i] - Math.PI / 2);
+              var y = cy - R * Math.sin(theta[i] - Math.PI / 2);
+              ctx.fillStyle = palette[i];
+              ctx.beginPath(); ctx.arc(x, y, 9, 0, 6.2832); ctx.fill();
+            }
+            // Order parameter
+            var o = order();
+            var ox = cx + R * o.r * Math.cos(o.psi - Math.PI / 2);
+            var oy = cy - R * o.r * Math.sin(o.psi - Math.PI / 2);
+            ctx.strokeStyle = '#d1495b'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ox, oy); ctx.stroke();
+            ctx.fillStyle = '#d1495b';
+            ctx.beginPath(); ctx.arc(ox, oy, 5, 0, 6.2832); ctx.fill();
+
+            // Sidebar text
+            ctx.fillStyle = '#333'; ctx.font = '13px sans-serif';
+            ctx.fillText('order parameter  r = ' + o.r.toFixed(2),
+                         cx + R + 50, cy - 60);
+            ctx.font = '11px sans-serif'; ctx.fillStyle = '#7c8aa0';
+            ctx.fillText('(1 = fully sync, 0 = scattered)', cx + R + 50, cy - 40);
+            // Mini bar
+            ctx.fillStyle = '#e3e9f0';
+            ctx.fillRect(cx + R + 50, cy - 20, 180, 14);
+            ctx.fillStyle = '#d1495b';
+            ctx.fillRect(cx + R + 50, cy - 20, 180 * o.r, 14);
+
+            ctx.fillStyle = '#333'; ctx.font = '13px sans-serif';
+            ctx.fillText('K = ' + K.toFixed(2), cx + R + 50, cy + 20);
+            ctx.font = '11px sans-serif'; ctx.fillStyle = '#7c8aa0';
+            ctx.fillText('critical coupling  K_c ≈ 0.06', cx + R + 50, cy + 40);
+          }
+
+          var raf, running = true;
+          function frame() {
+            if (!running) return;
+            step(1 / 60);
+            draw();
+            raf = requestAnimationFrame(frame);
+          }
+          frame();
+          return function () {
+            running = false; cancelAnimationFrame(raf);
+            if (synth) synth.dispose();
+          };
+        }
+        export default { render };
+        """
+
+    kuramoto_sync = _KuramotoSync()
+    return (kuramoto_sync,)
+
+
+@app.cell(hide_code=True)
+def _(kuramoto_sync, mo):
+    mo.ui.anywidget(kuramoto_sync)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
@@ -732,29 +1308,48 @@ def _(mo):
         ---
         ## What's deliberately *not* here, and what happens next
 
-        Two technologies from the original list didn't make the page:
-        **GSAP / Motion One** (timeline animation — superb for
-        choreographed UI and narrative transitions, but our motion
-        comes from integrating equations, not from keyframes) and
-        **Lottie** (designer-authored After Effects animations — needs
-        an asset pipeline we don't have yet; the natural fit would be
-        decorative chapter-opener art, not the math itself).
+        Two technologies from the original list still didn't make the
+        page: **GSAP / Motion One** (timeline keyframe animation —
+        superb for choreographed UI and narrative transitions, but
+        Demo 7's D3 transitions cover the same ground for our SVG
+        needs) and **Lottie** (designer-authored After Effects
+        animations — needs an asset pipeline we don't have yet; the
+        natural fit would be decorative chapter-opener art, not the
+        math itself).
 
-        Everything on this page runs **client-side at 60 fps** with no
-        Python in the loop — the JS integrates the ODEs itself. That's
-        the architectural lesson: for *feel* (drag, fling, orbit,
-        hear), put the integrator in the browser; for *analysis*
-        (convergence plots, parameter sweeps, symbolic work), keep
-        Python and Plotly. The two coexist in one notebook because each
-        widget is just a cell.
+        Two more capabilities we *could* bring in if a chapter earns
+        them: **WebGPU compute shaders** (think a swarm of 100,000
+        particles riding a flow with GPU-side integration — overkill
+        for any current chapter, exciting for a future "fluid"
+        chapter), and **CodeMirror 6 embedded code editing** (let
+        the student type $f(x, y)$ directly into the field and see
+        it update — slick, but marimo already provides this at the
+        cell level).
+
+        Everything on this page runs **client-side at 60 fps** with
+        no Python in the loop — the JS integrates the ODEs itself.
+        That's the architectural lesson: for *feel* (drag, fling,
+        orbit, hear), put the integrator in the browser; for
+        *analysis* (convergence plots, parameter sweeps, symbolic
+        work), keep Python and Plotly. The two coexist in one
+        notebook because each widget is just a cell.
 
         **Graduation criteria** — a demo gets promoted into a real
-        chapter as a `delib` widget when (1) the chapter's core idea is
-        about *feel* (initial conditions, basins, resonance, chaos
-        sensitivity), and (2) the static alternative demonstrably
-        fails. Current candidates: the grabbable mass → Ch 6/7, the
-        audible resonance → Ch 7, the touchable flow → Ch 12/13, the
-        butterfly → Ch 20.
+        chapter as a `delib` widget when (1) the chapter's core idea
+        is about *feel* (initial conditions, basins, resonance,
+        bifurcation, sync, chaos sensitivity), and (2) the static
+        alternative demonstrably fails. Current ranked candidates:
+
+        | Demo | Earns its keep in | Replaces |
+        |------|-------------------|----------|
+        | 1 · grab the mass | Ch 6 / Ch 7 | "imagine pulling it down…" prose |
+        | 2 · hear resonance | Ch 7 | the $A(\omega)$ peak as a visual abstraction |
+        | 6 · shader slope field | Ch 12 / Ch 13 | sparse arrow grids |
+        | 7 · D3 bifurcation | Ch 10 | static bifurcation diagrams without a slider |
+        | 8 · Kuramoto sync | Ch 14 (coupled oscillators) | "they synchronize" stated, never shown |
+        | 4 · touchable flow | Ch 12 / Ch 13 | a phase plane you can't seed by hand |
+        | 3 · Lorenz butterfly | Ch 20 | a static 2-D projection of a 3-D attractor |
+        | 5 · tiny game engine | nowhere — it's the *thesis*, not a chapter | |
         """
     )
     return
