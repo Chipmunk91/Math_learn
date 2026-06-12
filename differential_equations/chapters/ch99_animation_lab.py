@@ -1301,38 +1301,591 @@ def _(kuramoto_sync, mo):
     return
 
 
+# ============================================================================
+# Demo 9 — Anatomy of a solution (GSAP timeline choreography)
+# ============================================================================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## 9 · Anatomy of a solution, choreographed
+
+        Chapter 7 says every driven solution is a sum:
+        $x(t) = x_h(t) + x_p(t)$ — a transient that dies plus a
+        steady state that lives. This demo *performs* that sentence
+        as a four-act story, choreographed with **GSAP**, the
+        animation library behind most award-winning marketing sites:
+
+        1. the full solution draws itself in,
+        2. it **splits** into its two components, which slide apart,
+        3. the transient visibly **fades to nothing** while a time
+           cursor sweeps,
+        4. the steady state slides back up — it alone remains.
+
+        Press ▶, or drag the scrubber to any point in the story.
+
+        *Why it matters:* unlike every other demo here, nothing is
+        being integrated during the animation — the curves are
+        precomputed, and GSAP choreographs *narrative emphasis*:
+        what appears when, what fades, what moves where. That's a
+        different tool for a different job: storytelling beats.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    import anywidget as _aw
+
+    class _GsapAnatomy(_aw.AnyWidget):
+        _esm = r"""
+        import { gsap } from "https://esm.sh/gsap@3.12.5";
+
+        function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <div data-r style="width:100%;max-width:680px;border:1px solid #dde4ec;border-radius:8px;background:#fff;overflow:hidden"></div>
+              <div style="display:flex;gap:14px;margin-top:6px;align-items:center;flex-wrap:wrap">
+                <button data-b style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">▶ play the story</button>
+                <input type="range" min="0" max="1" step="0.001" value="0" style="flex:1;min-width:200px" data-k="scrub">
+                <span data-v="act" style="color:#7c8aa0;min-width:150px"></span>
+              </div>
+            </div>`;
+          var host = el.querySelector('[data-r]');
+          var W = host.clientWidth || 680, H = 380;
+
+          // --- precompute the three curves (RK4; omega0=2, gamma=0.25,
+          //     omega=1.2, F0=1, from rest) --------------------------------
+          var w0 = 2, g = 0.25, om = 1.2, F0 = 1;
+          var T = 22, N = 440, dt = T / N;
+          var den = Math.sqrt(Math.pow(w0*w0 - om*om, 2) + Math.pow(2*g*om, 2));
+          var A = F0 / den, phi = Math.atan2(2*g*om, w0*w0 - om*om);
+          var xs = [], hs = [], ps = [];
+          var x = 0, v = 0;
+          function acc(t, x_, v_) {
+            return F0 * Math.cos(om * t) - 2*g*v_ - w0*w0*x_;
+          }
+          for (var i = 0; i <= N; i++) {
+            var t = i * dt;
+            var p = A * Math.cos(om * t - phi);
+            xs.push(x); ps.push(p); hs.push(x - p);
+            var k1x = v,            k1v = acc(t, x, v);
+            var k2x = v + dt/2*k1v, k2v = acc(t + dt/2, x + dt/2*k1x, v + dt/2*k1v);
+            var k3x = v + dt/2*k2v, k3v = acc(t + dt/2, x + dt/2*k2x, v + dt/2*k2v);
+            var k4x = v + dt*k3v,   k4v = acc(t + dt, x + dt*k3x, v + dt*k3v);
+            x += dt/6*(k1x + 2*k2x + 2*k3x + k4x);
+            v += dt/6*(k1v + 2*k2v + 2*k3v + k4v);
+          }
+          function path(arr, y0, sc) {
+            var d = '';
+            for (var i = 0; i <= N; i++) {
+              var px = 40 + (W - 80) * i / N;
+              var py = y0 - arr[i] * sc;
+              d += (i === 0 ? 'M' : 'L') + px.toFixed(1) + ',' + py.toFixed(1);
+            }
+            return d;
+          }
+
+          var NS = 'http://www.w3.org/2000/svg';
+          var svg = document.createElementNS(NS, 'svg');
+          svg.setAttribute('width', W); svg.setAttribute('height', H);
+          host.appendChild(svg);
+          function mkPath(d, color, width) {
+            var p = document.createElementNS(NS, 'path');
+            p.setAttribute('d', d); p.setAttribute('stroke', color);
+            p.setAttribute('stroke-width', width); p.setAttribute('fill', 'none');
+            svg.appendChild(p); return p;
+          }
+          function mkText(s, x_, y_, color) {
+            var t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', x_); t.setAttribute('y', y_);
+            t.setAttribute('fill', color); t.setAttribute('font-size', '13');
+            t.textContent = s; t.setAttribute('opacity', 0);
+            svg.appendChild(t); return t;
+          }
+
+          var mid = H / 2, sc = 95;
+          var fullP  = mkPath(path(xs, mid, sc), '#5b7db1', 3);
+          var transP = mkPath(path(hs, mid, sc), '#b5651d', 2.2);
+          var stdyP  = mkPath(path(ps, mid, sc), '#2a9d8f', 2.2);
+          var fullL  = mkText('x(t) — the full solution', 44, 34, '#5b7db1');
+          var transL = mkText('x_h — transient (Ch 6, dies)', 44, 34, '#b5651d');
+          var stdyL  = mkText('x_p — steady state (locked to the drive)', 44, 34, '#2a9d8f');
+          var cursor = document.createElementNS(NS, 'line');
+          cursor.setAttribute('y1', 24); cursor.setAttribute('y2', H - 16);
+          cursor.setAttribute('x1', 40); cursor.setAttribute('x2', 40);
+          cursor.setAttribute('stroke', '#9aa7b5'); cursor.setAttribute('stroke-width', 1.4);
+          cursor.setAttribute('opacity', 0);
+          svg.appendChild(cursor);
+
+          // Initial state: components hidden, full curve undrawn.
+          var len = fullP.getTotalLength();
+          gsap.set(fullP, { strokeDasharray: len, strokeDashoffset: len });
+          gsap.set([transP, stdyP], { opacity: 0 });
+          gsap.set(fullL, { opacity: 0 });
+
+          var actEl = el.querySelector('[data-v="act"]');
+          function act(s) { return function () { actEl.textContent = s; }; }
+
+          var tl = gsap.timeline({ paused: true });
+          // Act 1 — draw the full solution
+          tl.call(act('act 1 · the full solution'))
+            .to(fullP, { strokeDashoffset: 0, duration: 2.2, ease: 'power1.inOut' })
+            .to(fullL, { opacity: 1, duration: 0.4 }, '<0.8')
+            .to({}, { duration: 0.6 });
+          // Act 2 — split into components
+          tl.call(act('act 2 · split into x_h + x_p'))
+            .to([transP, stdyP], { opacity: 1, duration: 0.5 })
+            .to(transP, { y: -105, duration: 1.1, ease: 'power2.inOut' }, '<')
+            .to(stdyP,  { y: 105, duration: 1.1, ease: 'power2.inOut' }, '<')
+            .to(fullP,  { opacity: 0.22, duration: 0.8 }, '<')
+            .to(fullL,  { opacity: 0.25, duration: 0.8 }, '<')
+            .to(transL, { opacity: 1, y: -105, duration: 0.6 }, '<0.3')
+            .to(stdyL,  { opacity: 1, y: 105, duration: 0.6 }, '<')
+            .to({}, { duration: 0.6 });
+          // Act 3 — the transient dies as time sweeps
+          tl.call(act('act 3 · the transient dies'))
+            .to(cursor, { opacity: 1, duration: 0.3 })
+            .to(cursor, { attr: { x1: W - 40, x2: W - 40 },
+                          duration: 2.6, ease: 'none' })
+            .to(transP, { opacity: 0.06, duration: 2.2, ease: 'power1.in' }, '<0.4')
+            .to(transL, { opacity: 0.15, duration: 2.2 }, '<')
+            .to(cursor, { opacity: 0, duration: 0.3 });
+          // Act 4 — the steady state alone remains
+          tl.call(act('act 4 · only the steady state remains'))
+            .to(stdyP, { y: 0, duration: 1.2, ease: 'power2.inOut' })
+            .to(stdyL, { y: 0, duration: 1.2, ease: 'power2.inOut' }, '<')
+            .to([fullP, fullL], { opacity: 0, duration: 0.7 }, '<')
+            .to(stdyP, { strokeWidth: 3.2, duration: 0.5 }, '<0.5');
+
+          var scrub = el.querySelector('[data-k="scrub"]');
+          var btn = el.querySelector('[data-b]');
+          btn.addEventListener('click', function () {
+            if (tl.progress() >= 1) tl.progress(0);
+            if (tl.paused()) { tl.play(); btn.textContent = '⏸ pause'; }
+            else { tl.pause(); btn.textContent = '▶ play the story'; }
+          });
+          tl.eventCallback('onUpdate', function () {
+            scrub.value = tl.progress();
+          });
+          tl.eventCallback('onComplete', function () {
+            btn.textContent = '▶ replay';
+          });
+          scrub.addEventListener('input', function () {
+            tl.pause(); btn.textContent = '▶ play the story';
+            tl.progress(parseFloat(this.value));
+          });
+
+          return function () { tl.kill(); svg.remove(); };
+        }
+        export default { render };
+        """
+
+    gsap_anatomy = _GsapAnatomy()
+    return (gsap_anatomy,)
+
+
+@app.cell(hide_code=True)
+def _(gsap_anatomy, mo):
+    mo.ui.anywidget(gsap_anatomy)
+    return
+
+
+# ============================================================================
+# Demo 10 — Drawn vs solved (Lottie keyframes next to a real integrator)
+# ============================================================================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## 10 · Drawn vs solved — spot the imposter
+
+        Two bouncing balls. The **left one is a Lottie animation** —
+        the After Effects-style keyframe format that powers most
+        animated icons and loading spinners on the modern web. A
+        designer (here: a JSON literal written by hand) *chose*
+        where the ball is at each keyframe and let the player
+        interpolate. The **right one is solved**: the browser is
+        integrating $\ddot y = -g$ with a coefficient-of-restitution
+        bounce, every frame.
+
+        Watch a few loops and the difference surfaces. The solved
+        ball's bounce heights decay *geometrically* — each apex is
+        $e^2 = 0.56$ times the previous, because the physics says
+        so. The drawn ball's heights are whatever the designer
+        picked, and its rhythm subtly fails the physics test
+        (real ballistic flight spends *more* time near the apex
+        than keyframe easing tends to give it).
+
+        *Why it matters:* Lottie is the right tool for chapter-
+        opener art, icons, and decorative motion — and exactly the
+        wrong tool for the math itself. This demo is the
+        distinction made visible.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    import anywidget as _aw
+
+    class _LottieVsSolved(_aw.AnyWidget):
+        _esm = r"""
+        import lottie from "https://esm.sh/lottie-web@5.12.2";
+
+        function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <div style="flex:1;min-width:280px">
+                  <div data-l style="width:100%;height:300px;border:1px solid #dde4ec;border-radius:8px;background:#fff"></div>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">drawn — Lottie keyframes</div>
+                </div>
+                <div style="flex:1;min-width:280px">
+                  <canvas data-c style="width:100%;height:300px;border:1px solid #dde4ec;border-radius:8px;background:#fff;display:block"></canvas>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">solved — ÿ = −g, bounce e = 0.75</div>
+                </div>
+              </div>
+            </div>`;
+
+          // ---- Left: hand-authored Lottie JSON (a designer's bounce) ----
+          var anim = lottie.loadAnimation({
+            container: el.querySelector('[data-l]'),
+            renderer: 'svg', loop: true, autoplay: true,
+            animationData: {
+              v: '5.7.4', fr: 60, ip: 0, op: 150, w: 340, h: 300,
+              nm: 'bounce', ddd: 0, assets: [],
+              layers: [
+                { ddd: 0, ind: 1, ty: 4, nm: 'ball', sr: 1,
+                  ks: {
+                    o: { a: 0, k: 100 }, r: { a: 0, k: 0 },
+                    p: { a: 1, k: [
+                      { t: 0,   s: [170, 50],  o: { x: [0.55], y: [0] }, i: { x: [1],    y: [1] } },
+                      { t: 40,  s: [170, 252], o: { x: [0],    y: [0] }, i: { x: [0.45], y: [1] } },
+                      { t: 75,  s: [170, 120], o: { x: [0.55], y: [0] }, i: { x: [1],    y: [1] } },
+                      { t: 105, s: [170, 252], o: { x: [0],    y: [0] }, i: { x: [0.45], y: [1] } },
+                      { t: 130, s: [170, 185], o: { x: [0.55], y: [0] }, i: { x: [1],    y: [1] } },
+                      { t: 150, s: [170, 252] }
+                    ] },
+                    a: { a: 0, k: [0, 0, 0] },
+                    s: { a: 1, k: [
+                      { t: 36,  s: [100, 100], o: { x: [0.3], y: [0] }, i: { x: [0.7], y: [1] } },
+                      { t: 40,  s: [132, 68],  o: { x: [0.3], y: [0] }, i: { x: [0.7], y: [1] } },
+                      { t: 46,  s: [100, 100] },
+                      { t: 101, s: [100, 100], o: { x: [0.3], y: [0] }, i: { x: [0.7], y: [1] } },
+                      { t: 105, s: [124, 78],  o: { x: [0.3], y: [0] }, i: { x: [0.7], y: [1] } },
+                      { t: 111, s: [100, 100] }
+                    ] }
+                  },
+                  shapes: [
+                    { ty: 'gr', it: [
+                      { ty: 'el', p: { a: 0, k: [0, 0] }, s: { a: 0, k: [44, 44] } },
+                      { ty: 'fl', c: { a: 0, k: [0.82, 0.286, 0.357, 1] }, o: { a: 0, k: 100 } },
+                      { ty: 'tr', p: { a: 0, k: [0, 0] }, a: { a: 0, k: [0, 0] },
+                        s: { a: 0, k: [100, 100] }, r: { a: 0, k: 0 }, o: { a: 0, k: 100 } }
+                    ] }
+                  ],
+                  ip: 0, op: 150, st: 0 },
+                { ddd: 0, ind: 2, ty: 4, nm: 'ground', sr: 1,
+                  ks: { o: { a: 0, k: 100 }, r: { a: 0, k: 0 },
+                        p: { a: 0, k: [170, 280, 0] }, a: { a: 0, k: [0, 0, 0] },
+                        s: { a: 0, k: [100, 100, 100] } },
+                  shapes: [
+                    { ty: 'gr', it: [
+                      { ty: 'rc', p: { a: 0, k: [0, 0] }, s: { a: 0, k: [300, 10] }, r: { a: 0, k: 3 } },
+                      { ty: 'fl', c: { a: 0, k: [0.486, 0.541, 0.627, 1] }, o: { a: 0, k: 100 } },
+                      { ty: 'tr', p: { a: 0, k: [0, 0] }, a: { a: 0, k: [0, 0] },
+                        s: { a: 0, k: [100, 100] }, r: { a: 0, k: 0 }, o: { a: 0, k: 100 } }
+                    ] }
+                  ],
+                  ip: 0, op: 150, st: 0 }
+              ]
+            }
+          });
+
+          // ---- Right: the integrated bounce ------------------------------
+          var canvas = el.querySelector('[data-c]');
+          var Wc = 340, Hc = 300, dpr = window.devicePixelRatio || 1;
+          canvas.width = Wc * dpr; canvas.height = Hc * dpr;
+          var ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+
+          var G = 700, E = 0.75;             // px/s², restitution
+          var y = 50, vy = 0;                // px, px/s (y down)
+          var floor = 252, r = 22;
+          function reset() { y = 50; vy = 0; }
+
+          var raf, running = true, last = performance.now();
+          function frame(now) {
+            if (!running) return;
+            var dt = Math.min(0.033, (now - last) / 1000); last = now;
+            vy += G * dt; y += vy * dt;
+            if (y > floor) {
+              y = floor; vy = -vy * E;
+              if (Math.abs(vy) < 28) reset();   // restart the loop
+            }
+            ctx.clearRect(0, 0, Wc, Hc);
+            ctx.fillStyle = '#7c8aa0';
+            ctx.fillRect(20, 275, Wc - 40, 10);
+            // squash on contact, conserving area — driven by the physics
+            var squash = y >= floor - 1 ? Math.min(0.4, Math.abs(vy) / 900) : 0;
+            ctx.fillStyle = '#2a9d8f';
+            ctx.beginPath();
+            ctx.ellipse(Wc / 2, y, r * (1 + squash), r * (1 - squash), 0, 0, 6.2832);
+            ctx.fill();
+            raf = requestAnimationFrame(frame);
+          }
+          raf = requestAnimationFrame(frame);
+
+          return function () {
+            running = false; cancelAnimationFrame(raf);
+            anim.destroy();
+          };
+        }
+        export default { render };
+        """
+
+    lottie_vs_solved = _LottieVsSolved()
+    return (lottie_vs_solved,)
+
+
+@app.cell(hide_code=True)
+def _(lottie_vs_solved, mo):
+    mo.ui.anywidget(lottie_vs_solved)
+    return
+
+
+# ============================================================================
+# Demo 11 — 120,000 particles (WebGPU compute shader)
+# ============================================================================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## 11 · 120,000 particles, integrated on the GPU
+
+        Demo 4 advected a few hundred particles on the CPU. This is
+        the same damped pendulum flow — but **120,000 particles**,
+        every one of them stepped by an RK2 integrator that runs *as
+        a compute shader on your graphics card*. The CPU's only job
+        is to say "go" once per frame; the integration arithmetic —
+        a quarter of a million function evaluations per frame —
+        happens in parallel across the GPU's cores. This is
+        **WebGPU**, the successor to WebGL that exposes
+        general-purpose GPU computing to the browser.
+
+        The texture of the flow appears in a way no arrow plot can
+        show: dense rivers where trajectories bunch, voids around
+        the unstable points, the slow spiral drains at the stable
+        equilibria.
+
+        *Requires a WebGPU-capable browser (Chrome/Edge 113+, Safari
+        18+). If unsupported you'll see a notice instead.*
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    import anywidget as _aw
+
+    class _WebGpuFlow(_aw.AnyWidget):
+        _esm = r"""
+        async function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <div data-r style="width:100%;max-width:680px;height:420px;border:1px solid #dde4ec;border-radius:8px;overflow:hidden;background:#0c1118;position:relative">
+                <canvas style="width:100%;height:100%;display:block"></canvas>
+              </div>
+              <div style="color:#8a96a5;margin-top:4px">θ horizontal · ω vertical · 120,000 particles, RK2 per-particle in a compute shader</div>
+            </div>`;
+          var host = el.querySelector('[data-r]');
+          var canvas = host.querySelector('canvas');
+
+          function bail(msg) {
+            host.innerHTML = '<div style="padding:24px;color:#c9d4e0;font:13px sans-serif">' + msg + '</div>';
+            return function () {};
+          }
+          if (!navigator.gpu) return bail(
+            'WebGPU is not available in this browser. Chrome/Edge 113+ or Safari 18+ required — Demo 4 above shows the same flow CPU-side.');
+          var adapter = await navigator.gpu.requestAdapter();
+          if (!adapter) return bail('No WebGPU adapter found on this device.');
+          var device = await adapter.requestDevice();
+
+          var dpr = window.devicePixelRatio || 1;
+          var W = (host.clientWidth || 680), H = 420;
+          canvas.width = W * dpr; canvas.height = H * dpr;
+          var ctx = canvas.getContext('webgpu');
+          var format = navigator.gpu.getPreferredCanvasFormat();
+          ctx.configure({ device: device, format: format, alphaMode: 'opaque' });
+
+          var N = 120000;
+          var XR = 5.2, YR = 3.4;
+
+          // particle buffer: vec4f per particle (x, y, life, seed)
+          var init = new Float32Array(N * 4);
+          for (var i = 0; i < N; i++) {
+            init[4*i]   = (Math.random() - 0.5) * 2 * XR;
+            init[4*i+1] = (Math.random() - 0.5) * 2 * YR;
+            init[4*i+2] = 100 + Math.random() * 500;
+            init[4*i+3] = Math.random() * 1000;
+          }
+          var partBuf = device.createBuffer({
+            size: init.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+          });
+          device.queue.writeBuffer(partBuf, 0, init);
+          var uniBuf = device.createBuffer({
+            size: 16,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+          });
+
+          var computeWGSL = `
+            @group(0) @binding(0) var<storage, read_write> parts: array<vec4f>;
+            @group(0) @binding(1) var<uniform> u: vec4f;  // dt, frame, _, _
+
+            fn flow(p: vec2f) -> vec2f {
+              return vec2f(p.y, -sin(p.x) - 0.15 * p.y);
+            }
+            fn hash(n0: u32) -> f32 {
+              var n = n0;
+              n = n ^ (n >> 16u); n = n * 0x7feb352du;
+              n = n ^ (n >> 15u); n = n * 0x846ca68bu;
+              n = n ^ (n >> 16u);
+              return f32(n) / 4294967295.0;
+            }
+
+            @compute @workgroup_size(64)
+            fn main(@builtin(global_invocation_id) gid: vec3u) {
+              let i = gid.x;
+              if (i >= arrayLength(&parts)) { return; }
+              var p = parts[i];
+              let dt = u.x;
+              let k1 = flow(p.xy);
+              let k2 = flow(p.xy + dt * k1);
+              var pos = p.xy + 0.5 * dt * (k1 + k2);
+              var life = p.z - 1.0;
+              if (life <= 0.0 || abs(pos.x) > 5.2 || abs(pos.y) > 3.4) {
+                let f = u32(u.y);
+                let r1 = hash(i * 1664525u + f * 13u + 1u);
+                let r2 = hash(i * 22695477u + f * 7u + 5u);
+                pos = vec2f((r1 - 0.5) * 10.4, (r2 - 0.5) * 6.8);
+                life = 100.0 + 500.0 * hash(i + f * 3u);
+              }
+              parts[i] = vec4f(pos, life, p.w);
+            }`;
+          var renderWGSL = `
+            @group(0) @binding(0) var<storage, read> parts: array<vec4f>;
+
+            @vertex
+            fn vs(@builtin(vertex_index) vi: u32) -> @builtin(position) vec4f {
+              let p = parts[vi].xy;
+              return vec4f(p.x / 5.2, p.y / 3.4, 0.0, 1.0);
+            }
+            @fragment
+            fn fs() -> @location(0) vec4f {
+              return vec4f(0.42, 0.55, 0.75, 1.0);
+            }`;
+
+          var computePipe = device.createComputePipeline({
+            layout: 'auto',
+            compute: { module: device.createShaderModule({ code: computeWGSL }),
+                       entryPoint: 'main' },
+          });
+          var renderPipe = device.createRenderPipeline({
+            layout: 'auto',
+            vertex: { module: device.createShaderModule({ code: renderWGSL }),
+                      entryPoint: 'vs' },
+            fragment: { module: device.createShaderModule({ code: renderWGSL }),
+                        entryPoint: 'fs',
+                        targets: [{ format: format }] },
+            primitive: { topology: 'point-list' },
+          });
+          var computeBind = device.createBindGroup({
+            layout: computePipe.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: { buffer: partBuf } },
+              { binding: 1, resource: { buffer: uniBuf } },
+            ],
+          });
+          var renderBind = device.createBindGroup({
+            layout: renderPipe.getBindGroupLayout(0),
+            entries: [{ binding: 0, resource: { buffer: partBuf } }],
+          });
+
+          var frameNo = 0, raf, running = true;
+          function frame() {
+            if (!running) return;
+            frameNo++;
+            device.queue.writeBuffer(uniBuf, 0,
+              new Float32Array([0.012, frameNo, 0, 0]));
+
+            var enc = device.createCommandEncoder();
+            var cp = enc.beginComputePass();
+            cp.setPipeline(computePipe);
+            cp.setBindGroup(0, computeBind);
+            cp.dispatchWorkgroups(Math.ceil(N / 64));
+            cp.end();
+
+            var rp = enc.beginRenderPass({
+              colorAttachments: [{
+                view: ctx.getCurrentTexture().createView(),
+                clearValue: { r: 0.047, g: 0.067, b: 0.094, a: 1 },
+                loadOp: 'clear', storeOp: 'store',
+              }],
+            });
+            rp.setPipeline(renderPipe);
+            rp.setBindGroup(0, renderBind);
+            rp.draw(N);
+            rp.end();
+            device.queue.submit([enc.finish()]);
+            raf = requestAnimationFrame(frame);
+          }
+          frame();
+          return function () {
+            running = false; cancelAnimationFrame(raf);
+            device.destroy();
+          };
+        }
+        export default { render };
+        """
+
+    webgpu_flow = _WebGpuFlow()
+    return (webgpu_flow,)
+
+
+@app.cell(hide_code=True)
+def _(mo, webgpu_flow):
+    mo.ui.anywidget(webgpu_flow)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
         ---
-        ## What's deliberately *not* here, and what happens next
+        ## The full bench has now played
 
-        Two technologies from the original list still didn't make the
-        page: **GSAP / Motion One** (timeline keyframe animation —
-        superb for choreographed UI and narrative transitions, but
-        Demo 7's D3 transitions cover the same ground for our SVG
-        needs) and **Lottie** (designer-authored After Effects
-        animations — needs an asset pipeline we don't have yet; the
-        natural fit would be decorative chapter-opener art, not the
-        math itself).
+        Eleven demos, ten technologies. The only candidate left
+        unbuilt is **CodeMirror 6** (embedded code editing inside a
+        widget) — skipped deliberately, because marimo already gives
+        every chapter cell-level code editing; duplicating it inside
+        a widget adds machinery without adding capability.
 
-        Two more capabilities we *could* bring in if a chapter earns
-        them: **WebGPU compute shaders** (think a swarm of 100,000
-        particles riding a flow with GPU-side integration — overkill
-        for any current chapter, exciting for a future "fluid"
-        chapter), and **CodeMirror 6 embedded code editing** (let
-        the student type $f(x, y)$ directly into the field and see
-        it update — slick, but marimo already provides this at the
-        cell level).
-
-        Everything on this page runs **client-side at 60 fps** with
-        no Python in the loop — the JS integrates the ODEs itself.
-        That's the architectural lesson: for *feel* (drag, fling,
-        orbit, hear), put the integrator in the browser; for
-        *analysis* (convergence plots, parameter sweeps, symbolic
-        work), keep Python and Plotly. The two coexist in one
-        notebook because each widget is just a cell.
+        Everything on this page runs **client-side** with no Python
+        in the loop — where there's motion, the JS integrates the
+        ODE itself (except Demo 9 and the left half of Demo 10,
+        which are the two *deliberate* exceptions: choreographed
+        narrative and designer keyframes, shown precisely to draw
+        the contrast with integration). That's the architectural
+        lesson: for *feel* (drag, fling, orbit, hear), put the
+        integrator in the browser; for *analysis* (convergence
+        plots, parameter sweeps, symbolic work), keep Python and
+        Plotly. The two coexist in one notebook because each widget
+        is just a cell.
 
         **Graduation criteria** — a demo gets promoted into a real
         chapter as a `delib` widget when (1) the chapter's core idea
@@ -1344,11 +1897,14 @@ def _(mo):
         |------|-------------------|----------|
         | 1 · grab the mass | Ch 6 / Ch 7 | "imagine pulling it down…" prose |
         | 2 · hear resonance | Ch 7 | the $A(\omega)$ peak as a visual abstraction |
-        | 6 · shader slope field | Ch 12 / Ch 13 | sparse arrow grids |
         | 7 · D3 bifurcation | Ch 10 | static bifurcation diagrams without a slider |
+        | 6 · shader slope field | Ch 12 / Ch 13 | sparse arrow grids |
         | 8 · Kuramoto sync | Ch 14 (coupled oscillators) | "they synchronize" stated, never shown |
+        | 9 · GSAP anatomy | Ch 7 / Ch 8 | the $x_h + x_p$ split as static stacked plots |
         | 4 · touchable flow | Ch 12 / Ch 13 | a phase plane you can't seed by hand |
+        | 11 · WebGPU swarm | Ch 12 / Ch 13 (deluxe) | Demo 6's hybrid, where supported |
         | 3 · Lorenz butterfly | Ch 20 | a static 2-D projection of a 3-D attractor |
+        | 10 · drawn vs solved | Ch 4 (epigraph material) | — it's a *parable*, not a tool |
         | 5 · tiny game engine | nowhere — it's the *thesis*, not a chapter | |
         """
     )
