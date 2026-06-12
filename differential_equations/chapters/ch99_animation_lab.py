@@ -8,8 +8,10 @@ app = marimo.App(width="medium")
 def _():
     import marimo as mo
 
-    import delib  # noqa: F401  (keeps the page consistent with chapters)
-    return (mo,)
+    # Kept for consistency with chapters (and required by the WASM
+    # build, whose inliner replaces this exact line).
+    import delib
+    return delib, mo
 
 
 @app.cell(hide_code=True)

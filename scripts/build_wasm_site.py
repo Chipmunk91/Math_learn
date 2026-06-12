@@ -37,7 +37,12 @@ SITE = REPO / "site"
 # delib is a locally-installed package and does not exist in the browser's
 # Pyodide runtime. For the WASM build we inline its source into each notebook so
 # the exported page is self-contained.
-DELIB_MODULES = ["solvers", "fields", "animate", "ui"]
+# Every module in differential_equations/delib/ that chapters use must be
+# listed here — the WASM bootstrap concatenates exactly these sources into
+# the inlined `delib` module. Forgetting a new module breaks chapters at
+# runtime in the browser (helpers silently missing) even though the local
+# build passes.
+DELIB_MODULES = ["solvers", "fields", "animate", "oscillators", "ui"]
 _FUTURE = re.compile(r"^from __future__ import .*$", re.MULTILINE)
 
 PEP723_HEADER = """\
@@ -265,7 +270,8 @@ def delib_bootstrap() -> str:
 
 
 def inline_delib(source: str) -> str:
-    pattern = re.compile(r"^[ \t]*import delib[ \t]*$", re.MULTILINE)
+    # Tolerate a trailing comment after `import delib` (e.g. `# noqa`).
+    pattern = re.compile(r"^[ \t]*import delib[ \t]*(?:#.*)?$", re.MULTILINE)
     if not pattern.search(source):
         raise ValueError("expected a standalone `import delib` line to inline")
     return pattern.sub(delib_bootstrap().rstrip("\n"), source, count=1)
