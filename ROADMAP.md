@@ -155,6 +155,11 @@ Anything chapters 1–5 use. Live in `differential_equations/delib/`.
 - **Numerical-methods walks (Ch 4):** `euler_steps`, `heun_steps`, `rk4_steps`.
 - **Forced oscillators (Ch 7):** `oscillator_animate`, `frequency_response`,
   `steady_state_amplitude`, `steady_state_phase`, `peak_frequency`.
+- **Interactive widgets (graduated from the Lab):** `spring_grab` (Ch 6 —
+  drag/flick a damped spring-mass, Canvas+RK4), `resonance_audio` (Ch 7 —
+  hear $A(\omega)$ via Web Audio), `solution_anatomy` (Ch 7 — GSAP
+  choreography of $x = x_h + x_p$). Defined in `delib/widgets.py`; the Lab
+  now calls these too, so there is one source of truth.
 - **Animation:** `animate_plotly`, `animate_time`, `flow_field`,
   `solution_surface`, `frame_index`.
 - **UI / interaction:** `param_slider`, `param_panel`, `run_exercise`,

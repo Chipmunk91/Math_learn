@@ -42,7 +42,7 @@ SITE = REPO / "site"
 # the inlined `delib` module. Forgetting a new module breaks chapters at
 # runtime in the browser (helpers silently missing) even though the local
 # build passes.
-DELIB_MODULES = ["solvers", "fields", "animate", "oscillators", "ui"]
+DELIB_MODULES = ["solvers", "fields", "animate", "oscillators", "widgets", "ui"]
 _FUTURE = re.compile(r"^from __future__ import .*$", re.MULTILINE)
 
 PEP723_HEADER = """\

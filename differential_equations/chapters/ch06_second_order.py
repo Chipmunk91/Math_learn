@@ -138,6 +138,37 @@ def _(go, mo, np):
 
 @app.cell(hide_code=True)
 def _(mo):
+    # Section 1 (interactive) — the grabbable mass, graduated from the
+    # animation lab. Reinforces the 'two numbers' point physically:
+    # dragging sets position, flicking sets velocity. Damping defaults
+    # near zero so it behaves like the hook's ideal spring; the reader
+    # can crank it up later (Section 5 needs the same intuition).
+    mo.md(
+        r"""
+        Before the algebra, get the idea into your hands. Below is a
+        spring-mass you can **grab**. Drag the red mass sideways and
+        let go — or *flick* it, releasing while still moving, to give
+        it a starting velocity. The trace at the bottom is its
+        motion $x(t)$.
+
+        Notice what your two gestures controlled: *where* you let go
+        set the starting **position**, and *how fast you were moving*
+        when you released set the starting **velocity**. Those are
+        the two numbers. (Leave damping near zero for now to watch it
+        ring; we'll put that slider to work later.)
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    delib.spring_grab(omega0=2.0, gamma=0.05)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
     # Section 2 — concept bridge: from force law to second-order ODE.
     # Earn Hooke's law and assemble m x'' = -k x; name 'second-order';
     # note the doubled state (two initial conditions).

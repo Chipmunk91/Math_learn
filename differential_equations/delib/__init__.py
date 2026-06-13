@@ -29,6 +29,11 @@ from delib.oscillators import (
     steady_state_phase,
     peak_frequency,
 )
+from delib.widgets import (
+    spring_grab,
+    resonance_audio,
+    solution_anatomy,
+)
 from delib.animate import (
     animate_time,
     animate_plotly,
@@ -79,6 +84,9 @@ __all__ = [
     "steady_state_amplitude",
     "steady_state_phase",
     "peak_frequency",
+    "spring_grab",
+    "resonance_audio",
+    "solution_anatomy",
     "animate_time",
     "animate_plotly",
     "flow_field",

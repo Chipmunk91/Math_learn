@@ -181,8 +181,24 @@ def _(mo):
            That dependence is the resonance story. The right-hand
            panel above has small $A$; the left-hand panel has huge
            $A$. We want the formula.
+
+        Before the formula, watch the decomposition *happen*. The
+        choreography below plays the split as a four-act story:
+        the full solution draws in, separates into its transient and
+        steady-state pieces, the transient fades to nothing as time
+        sweeps, and the steady state returns alone. Press ▶, or drag
+        the scrubber to move through it at your own pace.
         """
     )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    # Section 2 (interactive) — GSAP anatomy of x = x_h + x_p,
+    # graduated from the animation lab. Same constants as the prose
+    # discusses (lightly damped, driven off-resonance).
+    delib.solution_anatomy(omega0=2.0, gamma=0.25, omega=1.2, F0=1.0)
     return
 
 
@@ -405,6 +421,31 @@ def _(delib, fr_panel, mo):
         title=f"Frequency response   ω₀ = {_omega0:.2f}, γ = {_gamma:.2f}",
     )
     mo.vstack([fr_panel, _fig])
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Section 5 (interactive) — hear the same curve. The peak is far
+    # more visceral as a swell of loudness than as a bump on a plot.
+    mo.md(
+        r"""
+        You've *seen* the peak; now **hear** it. The widget below
+        plays a tone whose pitch follows the drive frequency and
+        whose loudness follows the very amplitude $A(\omega)$ plotted
+        above. Enable sound and sweep $\omega$ slowly across $\omega_0$
+        (the dotted line): the system swells loud right at resonance,
+        then fades as you pass it. Tighten the damping and the loud
+        band narrows to a knife-edge — that's a high-$Q$ resonator,
+        the principle behind every tuned circuit and every string.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    delib.resonance_audio(omega0=2.0, gamma=0.15, F0=1.0)
     return
 
 
