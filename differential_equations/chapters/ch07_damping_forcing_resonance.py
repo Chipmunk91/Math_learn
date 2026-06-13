@@ -92,13 +92,24 @@ def _(delib, mo):
             push at the wrong rhythm just jiggles the kid around
             the bottom.
 
-            Watch the same idea in two panels below. Both are the
-            same equation — same mass, same friction, same push
-            amplitude — released from rest at $x = 0$. The
-            **only** difference is the drive frequency $\omega$.
-            The dashed curve is the push, $\cos(\omega t)$; the
-            solid is the swing's actual motion, $x(t)$. Press ▶
-            on each:
+            Watch the same idea in two panels below. Both panels
+            integrate the **same equation** — the swing's position
+            $x(t)$ obeys
+
+            $$
+            \ddot x + 2\gamma\,\dot x + \omega_0^2\,x \;=\; F_0\cos(\omega t),
+            $$
+
+            where the three constants are the swing's own rhythm
+            $\omega_0$, the friction $\gamma$, and the push (amplitude
+            $F_0$, rhythm $\omega$). Don't worry about where this
+            comes from yet — we build it piece by piece two sections
+            from now. For the panels, every constant is held fixed
+            except the **drive frequency $\omega$**: the left panel
+            pushes at $\omega = \omega_0$ (the swing's own rhythm),
+            the right at a different $\omega$. Both start from rest
+            at $x = 0$; the dashed curve is the push $\cos(\omega t)$,
+            the solid is the motion $x(t)$. Press ▶ on each:
             """
         ),
         mo.hstack([_fig_right, _fig_wrong], justify="space-between",
