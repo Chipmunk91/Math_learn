@@ -199,6 +199,67 @@ MATH_RENDER_JS = (
 )
 
 
+# A branded splash shown immediately on a chapter page, covering everything
+# (z-index above the nav) until marimo's WASM runtime has booted Pyodide and
+# rendered the first cell. Without it, a cold visitor stares at a blank page
+# for several seconds and assumes the site is broken.
+LOADING_CSS = (
+    "<style>"
+    ".ml-loading{position:fixed;inset:0;z-index:3000;background:#fff;"
+    "display:flex;flex-direction:column;align-items:center;justify-content:center;"
+    "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;"
+    "color:#1d2733;text-align:center;padding:1.5rem;transition:opacity .55s ease;}"
+    ".ml-loading.ml-hide{opacity:0;pointer-events:none;}"
+    ".ml-loading .ring{width:46px;height:46px;border-radius:50%;"
+    "border:4px solid #e3e9f0;border-top-color:#5b7db1;"
+    "animation:ml-spin .9s linear infinite;}"
+    ".ml-loading .t{margin-top:1.1rem;font-size:1.15rem;font-weight:600;}"
+    ".ml-loading .s{margin-top:.4rem;font-size:.95rem;color:#56636f;max-width:24rem;line-height:1.5;}"
+    ".ml-loading .b{margin-top:1.2rem;font-size:.82rem;color:#9aa7b5;}"
+    "@keyframes ml-spin{to{transform:rotate(360deg);}}"
+    "</style>"
+)
+
+# Hides the splash once a real notebook cell has rendered (polls for a
+# non-empty .marimo-cell), with a small settle delay so layout finishes
+# first. Hard 75s cap so a future marimo selector change can never trap a
+# visitor behind the splash.
+LOADING_JS = (
+    "<script>(function(){"
+    "var ov=document.getElementById('ml-loading');if(!ov)return;"
+    "var done=false;"
+    "function hide(){if(done)return;done=true;ov.classList.add('ml-hide');"
+    "setTimeout(function(){if(ov&&ov.parentNode)ov.parentNode.removeChild(ov);},700);}"
+    "function ready(){var c=document.querySelector('.marimo-cell');"
+    "return !!(c&&(c.textContent||'').trim().length>0);}"
+    "var t0=Date.now();"
+    "var iv=setInterval(function(){"
+    "if(ready()){clearInterval(iv);setTimeout(hide,500);return;}"
+    "if(Date.now()-t0>75000){clearInterval(iv);hide();}"
+    "},200);"
+    "})();</script>"
+)
+
+
+def _loading_overlay(name: str) -> str:
+    """The splash markup for a chapter page (title personalised)."""
+    if _is_lab(name):
+        what = "the Animation Lab"
+    elif name in CHAPTER_CARDS:
+        what = CHAPTER_CARDS[name][1]
+    else:
+        what = "the chapter"
+    return (
+        '<div class="ml-loading" id="ml-loading">'
+        '<div class="ring"></div>'
+        f'<div class="t">Loading {what}…</div>'
+        '<div class="s">Starting Python in your browser — about 10 seconds the '
+        'first time, then instant.</div>'
+        '<div class="b">Everything runs locally. There is no server.</div>'
+        '</div>'
+    )
+
+
 # A slim fixed bar at the top of every chapter linking to the previous/next
 # chapter and back to the index. marimo's real scroll container is .dvn-scroller
 # (its page is position:sticky/absolute top:0, so it ignores #root padding); we
@@ -428,16 +489,22 @@ def inject_tutor(page: Path, name: str) -> None:
     """
     html = page.read_text(encoding="utf-8")
     config = json.dumps(tutor_config(name))
-    head = KATEX_CSS + MARIMO_CHROME_CSS + "</head>"
+    head = LOADING_CSS + KATEX_CSS + MARIMO_CHROME_CSS + "</head>"
     body = (
         f"<script>window.TUTOR_CONFIG = {config};</script>"
         + MATH_RENDER_JS
         + MARIMO_HIDE_JS
+        + LOADING_JS
         + "</body>"
     )
     if "</head>" not in html or "</body>" not in html:
         raise ValueError(f"missing </head> or </body> in {page}")
     html = html.replace("</head>", head, 1).replace("</body>", body, 1)
+    # Splash goes right after the opening <body> tag so it paints before the
+    # WASM runtime boots. A callable replacement inserts the markup literally
+    # (no backslash/group-ref processing); tolerates body attributes.
+    overlay = _loading_overlay(name)
+    html = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + overlay, html, count=1)
     page.write_text(html, encoding="utf-8")
 
 

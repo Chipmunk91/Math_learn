@@ -104,9 +104,10 @@
     .why .item .ico { font-size: 1.4rem; }
 
     /* ---- tutor note ---- */
-    .note { border: 1px solid var(--line); border-left: 3px solid var(--gold);
+    .note { display: block; border: 1px solid var(--line);
+            border-left: 3px solid var(--gold);
             border-radius: 0.5rem; padding: 0.9rem 1.1rem; background: #fffdf8;
-            color: var(--grey); font-size: 0.97rem; }
+            color: var(--grey); font-size: 0.97rem; margin: 1.6rem 0 0; }
     .note b { color: var(--ink); }
 
     /* ---- footer ---- */
@@ -196,14 +197,12 @@
              "trust me" moments are kept to a minimum.</p>
         </div>
       </div>
-      <p style="margin-top:1.6rem">
-        <span class="note">
-          <b>An optional AI tutor</b> rides along in every chapter for free-form
-          questions. It's bring-your-own-key (Anthropic): your key stays in your
-          browser and is sent only to Anthropic, never to this site. Every
-          chapter is complete without it.
-        </span>
-      </p>
+      <div class="note">
+        <b>An optional AI tutor</b> rides along in every chapter for free-form
+        questions. It's bring-your-own-key (Anthropic): your key stays in your
+        browser and is sent only to Anthropic, never to this site. Every
+        chapter is complete without it.
+      </div>
     </div>
   </section>
 
