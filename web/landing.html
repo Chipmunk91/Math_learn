@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Differential Equations — an interactive, visual playground</title>
+  <meta name="description" content="Learn differential equations the way you can see them: real-world stories, live animations, sliders, and runnable code — from slope fields to chaos. Runs entirely in your browser. No prerequisites. Free and open.">
+
+  <!-- Open Graph / Twitter share cards (Reddit, Twitter, Slack, …) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Differential Equations — an interactive, visual playground">
+  <meta property="og:description" content="Slope fields to chaos — drag the sliders, play the animations, run the code. Runs entirely in your browser. No prerequisites. Free and open.">
+  <meta property="og:image" content="__BASE_URL__/assets/og-card.png">
+  <meta property="og:url" content="__BASE_URL__/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Differential Equations — an interactive, visual playground">
+  <meta name="twitter:description" content="Slope fields to chaos — drag the sliders, play the animations, run the code. Free and open.">
+  <meta name="twitter:image" content="__BASE_URL__/assets/og-card.png">
+
+  <style>
+    :root {
+      --ink: #1d2733; --grey: #56636f; --blue: #5b7db1; --blue-d: #2a5d9c;
+      --teal: #2a9d8f; --gold: #e9a23b; --red: #d1495b;
+      --line: #d6dde6; --wash: #f5f8fc;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      color: var(--ink); margin: 0; line-height: 1.55;
+      background: #fff;
+    }
+    a { color: var(--blue-d); }
+    .wrap { max-width: 60rem; margin: 0 auto; padding: 0 1.25rem; }
+
+    /* ---- hero ---- */
+    .hero { padding: 3.4rem 0 1.2rem; }
+    .hero h1 {
+      font-size: clamp(2.1rem, 5.5vw, 3.4rem); line-height: 1.08;
+      margin: 0 0 0.6rem; letter-spacing: -0.015em;
+    }
+    .hero .tag { font-size: clamp(1.05rem, 2.6vw, 1.4rem); color: var(--blue-d);
+                 margin: 0 0 1.1rem; font-weight: 500; }
+    .hero p.lead { font-size: 1.12rem; color: var(--grey); margin: 0 0 1.6rem;
+                   max-width: 42rem; }
+    .badges { display: flex; flex-wrap: wrap; gap: 0.5rem 1.1rem; margin: 0 0 1.8rem;
+              font-size: 0.95rem; color: var(--grey); }
+    .badges span { display: inline-flex; align-items: center; gap: 0.4rem; }
+    .badges b { color: var(--ink); font-weight: 600; }
+    .cta { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; }
+    .btn {
+      display: inline-block; padding: 0.8rem 1.5rem; border-radius: 0.6rem;
+      font-weight: 700; text-decoration: none; font-size: 1.05rem;
+    }
+    .btn-primary { background: var(--blue-d); color: #fff; }
+    .btn-primary:hover { background: #234e85; }
+    .btn-ghost { color: var(--blue-d); border: 1px solid var(--line); }
+    .btn-ghost:hover { background: var(--wash); }
+
+    /* ---- hero canvas showcase ---- */
+    .show { margin: 1.8rem 0 0; border: 1px solid var(--line); border-radius: 0.8rem;
+            overflow: hidden; background: #fff; position: relative; }
+    .show canvas { display: block; width: 100%; height: 340px; }
+    .show .cap { position: absolute; left: 0.9rem; bottom: 0.7rem; font-size: 0.85rem;
+                 color: var(--grey); background: rgba(255,255,255,0.82);
+                 padding: 0.2rem 0.55rem; border-radius: 0.4rem; }
+
+    /* ---- sections ---- */
+    section { padding: 2.6rem 0; }
+    section.alt { background: var(--wash); border-top: 1px solid var(--line);
+                  border-bottom: 1px solid var(--line); }
+    h2 { font-size: 1.5rem; margin: 0 0 0.4rem; letter-spacing: -0.01em; }
+    .sub { color: var(--grey); margin: 0 0 1.4rem; }
+
+    /* ---- available-chapter cards ---- */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+             gap: 0.8rem; list-style: none; padding: 0; margin: 0; }
+    .card { border: 1px solid var(--line); border-radius: 0.6rem; background: #fff; }
+    .card a { display: block; padding: 0.9rem 1rem; text-decoration: none; }
+    .card a:hover { background: var(--wash); }
+    .card .n { font-size: 0.78rem; font-weight: 700; color: var(--blue);
+               text-transform: uppercase; letter-spacing: 0.04em; }
+    .card .t { display: block; font-weight: 600; color: var(--ink); margin-top: 0.15rem; }
+
+    /* ---- roadmap ---- */
+    .part { margin: 0 0 1.5rem; }
+    .part h3 { font-size: 1.05rem; margin: 0 0 0.5rem; color: var(--ink); }
+    .part h3 small { color: var(--grey); font-weight: 400; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0; margin: 0;
+             list-style: none; }
+    .chip { font-size: 0.9rem; padding: 0.35rem 0.7rem; border-radius: 1rem;
+            border: 1px solid var(--line); }
+    .chip.done { border-color: var(--teal); }
+    .chip.done a { color: var(--ink); text-decoration: none; }
+    .chip.done a:hover { color: var(--teal); }
+    .chip.done .mark { color: var(--teal); font-weight: 700; }
+    .chip.todo { color: #9aa7b5; background: #fafbfc; }
+
+    /* ---- why ---- */
+    .why { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+           gap: 1.2rem; }
+    .why .item h4 { margin: 0 0 0.3rem; font-size: 1.05rem; }
+    .why .item p { margin: 0; color: var(--grey); font-size: 0.97rem; }
+    .why .item .ico { font-size: 1.4rem; }
+
+    /* ---- tutor note ---- */
+    .note { border: 1px solid var(--line); border-left: 3px solid var(--gold);
+            border-radius: 0.5rem; padding: 0.9rem 1.1rem; background: #fffdf8;
+            color: var(--grey); font-size: 0.97rem; }
+    .note b { color: var(--ink); }
+
+    /* ---- footer ---- */
+    footer { padding: 2.4rem 0 3rem; color: var(--grey); font-size: 0.92rem;
+             border-top: 1px solid var(--line); }
+    footer a { color: var(--blue-d); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Differential equations,<br>the way you can <em>see</em> them.</h1>
+      <p class="tag">An interactive, visual playground — slope fields to chaos.</p>
+      <p class="lead">
+        Every idea starts from something real — a cooling cup of coffee, a
+        child on a swing, a switch that snaps — and is anchored to a picture
+        you can play with. Drag the sliders, watch the animations, and edit
+        and run the code, all in your browser. No install, no prerequisites
+        beyond first-year calculus.
+      </p>
+      <div class="badges">
+        <span><b>Runs in your browser</b> — nothing to install</span>
+        <span><b>No prerequisites</b> — terms are earned, not assumed</span>
+        <span><b>Free &amp; open</b> source</span>
+      </div>
+      <div class="cta">
+        <a class="btn btn-primary" href="./__START_HREF__/">Start with Chapter 1 →</a>
+        <a class="btn btn-ghost" href="./__LAB_HREF__/">See the animation lab</a>
+      </div>
+
+      <div class="show">
+        <canvas id="flow"></canvas>
+        <div class="cap">Live: a pendulum's phase flow — every dot is a starting state finding its fate.</div>
+      </div>
+    </header>
+  </div>
+
+  <section class="alt">
+    <div class="wrap">
+      <h2>Read it now</h2>
+      <p class="sub">Chapters available today. Each reads top-to-bottom; expand
+        any cell to edit and re-run its code right in the page.</p>
+      <ul class="cards">
+        __AVAILABLE_CHAPTERS__
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Where it's going</h2>
+      <p class="sub">The full arc — a standard undergraduate differential-equations
+        course, built one interactive chapter at a time.
+        <span class="chip done" style="padding:0.1rem 0.5rem"><span class="mark">✓</span> available</span>
+        means you can read it today.</p>
+      __ROADMAP__
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="wrap">
+      <h2>What makes it different</h2>
+      <p class="sub">Not a PDF with a few plots bolted on.</p>
+      <div class="why">
+        <div class="item">
+          <div class="ico">🪧</div>
+          <h4>Stories first</h4>
+          <p>Each chapter opens on a concrete phenomenon and builds the math
+             out of it — the equation is derived, never dropped from the sky.</p>
+        </div>
+        <div class="item">
+          <div class="ico">🎛️</div>
+          <h4>Everything moves</h4>
+          <p>Sliders, 60-fps animations, draggable masses, an audible resonance
+             curve. The intuition is something you do, not something you read.</p>
+        </div>
+        <div class="item">
+          <div class="ico">⌨️</div>
+          <h4>Real, runnable code</h4>
+          <p>Every figure is generated by Python you can edit and re-run in the
+             browser — and an open playground in each chapter to try your own.</p>
+        </div>
+        <div class="item">
+          <div class="ico">🧮</div>
+          <h4>Honest derivations</h4>
+          <p>Hand-built animations walk the hard algebra step by step, so the
+             "trust me" moments are kept to a minimum.</p>
+        </div>
+      </div>
+      <p style="margin-top:1.6rem">
+        <span class="note">
+          <b>An optional AI tutor</b> rides along in every chapter for free-form
+          questions. It's bring-your-own-key (Anthropic): your key stays in your
+          browser and is sent only to Anthropic, never to this site. Every
+          chapter is complete without it.
+        </span>
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>Built as a static site of <a href="https://marimo.io">marimo</a>
+         notebooks compiled to WebAssembly — the Python runs in your browser,
+         there is no server.</p>
+      <p>Free and open source on
+         <a href="https://github.com/Chipmunk91/Math_learn">GitHub</a>.
+         Found a bug or have feedback? Opening an issue is the best way to reach me.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Dependency-free hero: particles advecting on the damped-pendulum phase
+    // flow  θ' = ω,  ω' = -sin θ - 0.12 ω.  Pure canvas, ~60 fps, no Pyodide —
+    // the landing page must load instantly.
+    (function () {
+      var canvas = document.getElementById('flow');
+      if (!canvas || !canvas.getContext) return;
+      var ctx = canvas.getContext('2d');
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var W = 0, H = 0;
+      function resize() {
+        var rect = canvas.getBoundingClientRect();
+        W = rect.width; H = 340;
+        canvas.width = W * dpr; canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        buildField();
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      }
+      var TH = Math.PI * 2.2, OM = 3.2;   // view half-ranges
+      function toPx(th, om) {
+        return [W / 2 + th / TH * (W / 2 - 12), H / 2 - om / OM * (H / 2 - 12)];
+      }
+      function f(th, om) { return [om, -Math.sin(th) - 0.12 * om]; }
+
+      // cached static field layer (arrows) so we only redraw particles
+      var field = document.createElement('canvas');
+      function buildField() {
+        field.width = W * dpr; field.height = H * dpr;
+        var fx = field.getContext('2d');
+        fx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        fx.clearRect(0, 0, W, H);
+        fx.strokeStyle = 'rgba(124,138,160,0.30)'; fx.lineWidth = 1;
+        var cols = Math.max(20, Math.round(W / 26));
+        for (var i = 0; i <= cols; i++) for (var j = 0; j <= 14; j++) {
+          var th = -TH + 2 * TH * i / cols, om = -OM + 2 * OM * j / 14;
+          var d = f(th, om), n = Math.hypot(d[0], d[1]) || 1;
+          var p = toPx(th, om), ux = d[0] / n * 8, uy = -d[1] / n * 8;
+          fx.beginPath(); fx.moveTo(p[0] - ux / 2, p[1] - uy / 2);
+          fx.lineTo(p[0] + ux / 2, p[1] + uy / 2); fx.stroke();
+        }
+        // fixed points: stable centres (teal), saddles (open red) at ±π
+        [[-2 * Math.PI, 0], [0, 0], [2 * Math.PI, 0]].forEach(function (s) {
+          var p = toPx(s[0], s[1]);
+          fx.fillStyle = '#2a9d8f';
+          fx.beginPath(); fx.arc(p[0], p[1], 5, 0, 6.2832); fx.fill();
+        });
+        [[-Math.PI, 0], [Math.PI, 0]].forEach(function (s) {
+          var p = toPx(s[0], s[1]);
+          fx.strokeStyle = '#d1495b'; fx.lineWidth = 2; fx.fillStyle = '#fff';
+          fx.beginPath(); fx.arc(p[0], p[1], 5, 0, 6.2832); fx.fill(); fx.stroke();
+        });
+      }
+
+      var parts = [];
+      function spawn(th, om) {
+        parts.push({ th: th, om: om, life: 260 + Math.random() * 280 });
+      }
+      function seed(n) {
+        for (var i = 0; i < n; i++)
+          spawn((Math.random() - 0.5) * 2 * TH, (Math.random() - 0.5) * 2 * OM);
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+      seed(320);
+
+      var running = true;
+      function frame() {
+        if (!running) return;
+        ctx.fillStyle = 'rgba(255,255,255,0.14)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.drawImage(field, 0, 0, W, H);
+        var dt = 0.022;
+        ctx.fillStyle = '#5b7db1';
+        for (var i = parts.length - 1; i >= 0; i--) {
+          var p = parts[i];
+          var k1 = f(p.th, p.om);
+          var k2 = f(p.th + dt * k1[0], p.om + dt * k1[1]);
+          p.th += dt / 2 * (k1[0] + k2[0]);
+          p.om += dt / 2 * (k1[1] + k2[1]);
+          p.life--;
+          if (p.life <= 0 || Math.abs(p.om) > OM * 1.15) { parts.splice(i, 1); continue; }
+          if (p.th > TH) p.th -= 2 * TH;
+          if (p.th < -TH) p.th += 2 * TH;
+          var q = toPx(p.th, p.om);
+          ctx.beginPath(); ctx.arc(q[0], q[1], 1.7, 0, 6.2832); ctx.fill();
+        }
+        while (parts.length < 320) seed(1);
+        requestAnimationFrame(frame);
+      }
+      frame();
+      // pause when the tab is hidden (battery / CPU politeness)
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) { running = false; }
+        else if (!running) { running = true; frame(); }
+      });
+    })();
+  </script>
+</body>
+</html>

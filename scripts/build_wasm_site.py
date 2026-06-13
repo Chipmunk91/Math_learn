@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import re
 import subprocess
 import sys
@@ -33,6 +34,66 @@ CHAPTERS_DIR = REPO / "differential_equations" / "chapters"
 DELIB_DIR = REPO / "differential_equations" / "delib"
 ASSETS_DIR = REPO / "assets"  # pre-rendered media (e.g. Manim clips) -> site/assets/
 SITE = REPO / "site"
+WEB = REPO / "web"            # static templates/assets (landing.html, …)
+
+# Absolute base URL for share-card (Open Graph) tags. Default to the
+# GitHub Pages project-page convention; override with SITE_BASE_URL for a
+# custom domain. No trailing slash.
+SITE_BASE_URL = os.environ.get(
+    "SITE_BASE_URL", "https://chipmunk91.github.io/Math_learn"
+).rstrip("/")
+
+# The full course arc, grouped by Part (titles match ROADMAP.md). Each entry
+# is (display title, built-slug-or-None); a chapter shows as "available" when
+# its slug is among the chapters actually built.
+ROADMAP_PARTS = [
+    ("Part I · First-order equations", "reading the field, then solving it", [
+        ("First-order ODEs & slope fields", "ch01_first_order_odes"),
+        ("Separable & linear", "ch02_separable_and_linear"),
+        ("Exact equations", "ch03a_exact_equations"),
+        ("Integrating factors & substitutions", "ch03b_integrating_factors"),
+        ("Numerical methods", "ch04_numerical_methods"),
+    ]),
+    ("Part II · Higher-order & transforms", "oscillation, resonance, Laplace", [
+        ("Second-order ODEs", "ch06_second_order"),
+        ("Damping, forcing, resonance", "ch07_damping_forcing_resonance"),
+        ("Non-homogeneous equations", None),
+        ("Laplace transforms", None),
+    ]),
+    ("Part III · Qualitative dynamics", "what the flow does without solving it", [
+        ("Fixed points & stability", "ch05_fixed_points_stability"),
+        ("Bifurcations in 1-D", None),
+        ("Flows on the circle", None),
+        ("Linear 2-D systems", None),
+        ("Nonlinear phase portraits", None),
+        ("Limit cycles", None),
+        ("Bifurcations in 2-D", None),
+    ]),
+    ("Part IV · Partial differential equations", "variation in space and time", [
+        ("Intro to PDEs", None),
+        ("Heat equation", None),
+        ("Wave equation", None),
+        ("Fourier series", None),
+    ]),
+    ("Part V · Chaos", "sensitive dependence, strange attractors", [
+        ("The Lorenz attractor", None),
+        ("One-dimensional maps", None),
+        ("Fractals", None),
+    ]),
+]
+
+# Nice (chapter-label, title) for the built chapters shown as "Read it now"
+# cards, in reading order. Keys are slugs; the lab is featured separately.
+CHAPTER_CARDS = {
+    "ch01_first_order_odes": ("Chapter 1", "First-order ODEs & slope fields"),
+    "ch02_separable_and_linear": ("Chapter 2", "Separable & linear equations"),
+    "ch03a_exact_equations": ("Chapter 3 · I", "Exact equations"),
+    "ch03b_integrating_factors": ("Chapter 3 · II", "Integrating factors & substitutions"),
+    "ch04_numerical_methods": ("Chapter 4", "Numerical methods"),
+    "ch05_fixed_points_stability": ("Chapter 5", "Fixed points & stability"),
+    "ch06_second_order": ("Chapter 6", "Second-order ODEs"),
+    "ch07_damping_forcing_resonance": ("Chapter 7", "Damping, forcing, resonance"),
+}
 
 # delib is a locally-installed package and does not exist in the browser's
 # Pyodide runtime. For the WASM build we inline its source into each notebook so
@@ -380,43 +441,72 @@ def inject_tutor(page: Path, name: str) -> None:
     page.write_text(html, encoding="utf-8")
 
 
+def _is_lab(slug: str) -> bool:
+    return slug.startswith("ch99") or "animation_lab" in slug
+
+
 def build_index(names: list[str]) -> str:
-    cards = "\n".join(
-        f"""      <li class="card">
-        <a href="./{n}/">{pretty(n)}</a>
-      </li>"""
-        for n in names
+    """Render the landing page from web/landing.html.
+
+    Injects: the absolute base URL (share cards), the start/lab links, the
+    'Read it now' cards (built chapters in reading order), and the full
+    five-part roadmap with available chapters linked. Falls back to a bare
+    chapter list if the template is missing.
+    """
+    built = set(names)
+    chapters = [n for n in names if not _is_lab(n)]
+    lab = next((n for n in names if _is_lab(n)), None)
+    start_href = chapters[0] if chapters else (names[0] if names else "")
+    lab_href = lab or start_href
+
+    template_path = WEB / "landing.html"
+    if not template_path.exists():
+        # minimal fallback — keeps the build working without the template
+        items = "\n".join(f'  <li><a href="./{n}/">{pretty(n)}</a></li>' for n in names)
+        return ("<!doctype html><meta charset=utf-8>"
+                "<title>Differential Equations</title>"
+                f"<h1>Differential Equations</h1><ul>{items}</ul>")
+
+    # 'Read it now' cards — built chapters in reading order, nice titles.
+    card_li = []
+    for slug in chapters:
+        label, title = CHAPTER_CARDS.get(slug, ("Chapter", pretty(slug)))
+        card_li.append(
+            f'        <li class="card"><a href="./{slug}/">'
+            f'<span class="n">{label}</span>'
+            f'<span class="t">{title}</span></a></li>'
+        )
+    available_html = "\n".join(card_li)
+
+    # The five-part roadmap; built chapters become links, the rest grey chips.
+    parts_html = []
+    for part_title, part_sub, entries in ROADMAP_PARTS:
+        chips = []
+        for title, slug in entries:
+            if slug and slug in built:
+                chips.append(
+                    f'<li class="chip done"><a href="./{slug}/">'
+                    f'<span class="mark">✓</span> {title}</a></li>'
+                )
+            else:
+                chips.append(f'<li class="chip todo">{title}</li>')
+        parts_html.append(
+            f'      <div class="part">\n'
+            f'        <h3>{part_title} <small>· {part_sub}</small></h3>\n'
+            f'        <ul class="chips">\n          '
+            + "\n          ".join(chips)
+            + f'\n        </ul>\n      </div>'
+        )
+    roadmap_html = "\n".join(parts_html)
+
+    html = template_path.read_text(encoding="utf-8")
+    return (
+        html.replace("__BASE_URL__", SITE_BASE_URL)
+        .replace("__START_HREF__", start_href)
+        .replace("__LAB_HREF__", lab_href)
+        .replace("__AVAILABLE_CHAPTERS__", available_html)
+        .replace("__ROADMAP__", roadmap_html)
     )
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Math Learn — Differential Equations</title>
-  <style>
-    body {{ font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto;
-           padding: 0 1.25rem; line-height: 1.5; color: #1d2733; }}
-    h1 {{ font-size: 1.6rem; }}
-    ul {{ list-style: none; padding: 0; }}
-    .card {{ border: 1px solid #d6dde6; border-radius: 0.6rem; margin: 0.6rem 0; }}
-    .card a {{ display: block; padding: 0.9rem 1rem; text-decoration: none;
-               font-weight: 600; color: #2a5d9c; }}
-    .card a:active, .card a:hover {{ background: #f5f8fc; }}
-    p {{ color: #56636f; }}
-  </style>
-</head>
-<body>
-  <h1>Differential Equations Playground</h1>
-  <p>Interactive chapters that run entirely in your browser — drag the sliders,
-     play the animations, and ask the in-notebook playground to write and run code.</p>
-  <p>Each chapter reads top-to-bottom; expand any cell to edit and re-run its
-     code right in the browser.</p>
-  <ul>
-{cards}
-  </ul>
-</body>
-</html>
-"""
 
 
 def main() -> int:
