@@ -291,30 +291,65 @@ def _(mo):
         r"""
         ## Pinning down the steady state
 
-        We need a formula for $x_p$ — the locked-to-the-drive part
-        that survives after the transient dies. Two physical clues
-        narrow the form down almost completely:
+        Let's reconnect to where we are. Back in the bridge section
+        we split the motion into two parts,
+        $x(t) = x_h(t) + x_p(t)$: the **transient** $x_h$ (Chapter
+        6's solution, which dies away) plus the **steady state**
+        $x_p$ (the part locked to the push, which lives forever).
+        After you wait a few seconds the transient is gone, so
+        *the steady state is the motion you actually see* — the
+        clean repeating swing in the animations above. "Find a
+        formula for $x_p$" simply means: **write down what that
+        long-term swinging motion is.** That's the goal of this
+        section.
 
-        1. The forcing is at frequency $\omega$, and the equation
-           is **linear**. Linear equations can't change a single-
-           frequency input into anything but the same single
-           frequency at the output (no harmonics, no broadening).
-           So $x_p$ must be a sinusoid at $\omega$.
-        2. But it might be *shifted* in time relative to the push
-           — the swing might lag a bit. So allow a phase $\varphi$.
+        We could grind it out, but there's a shortcut: we can
+        *guess the shape* of $x_p$ from two facts, and then only
+        have to find a couple of numbers. Here are the two facts.
 
-        That fixes the shape:
+        **Fact one: the answer is a sinusoid at the push's
+        frequency.** Why? Look at the left side of the equation,
+        $\ddot x + 2\gamma\dot x + \omega_0^2 x$. It does only three
+        things to $x$: differentiate it, scale it, and add the
+        pieces. None of those operations invents a new frequency.
+        Differentiate $\cos(\omega t)$ and you get $-\omega
+        \sin(\omega t)$ — still frequency $\omega$. Scale it,
+        add two of them together — still frequency $\omega$. (This
+        is what the word **linear** is buying us: $x$ and its
+        derivatives appear only on their own, to the first power,
+        never squared or multiplied together or stuffed inside
+        another function. An equation built only from
+        "differentiate, scale, add" can't turn one frequency into
+        another.) So if the push on the right is a pure $\omega$
+        sinusoid, the only way the left side can possibly match it
+        is if $x_p$ is *also* a pure $\omega$ sinusoid. Any other
+        frequency would have nothing on the right to balance
+        against.
+
+        **Fact two: it may be shifted in time.** The swing needn't
+        peak at the same instant the push peaks — it can lag behind.
+        A sinusoid at frequency $\omega$ has exactly two adjustable
+        features: how *big* it is, and *when* it peaks. Call the
+        size $A$ (the amplitude) and the timing offset $\varphi$
+        (the phase lag). The general frequency-$\omega$ sinusoid
+        with those two knobs is
 
         $$
         x_p(t) \;=\; A\cos(\omega t - \varphi).
         $$
 
-        Two unknowns remaining: the amplitude $A$ and the phase
-        lag $\varphi$. Both must be determined by demanding the
-        equation actually hold. The video below runs the
-        substitution and matching from start to finish; the result
-        will be one of the most-used pair of formulas in
-        engineering.
+        The $-\varphi$ inside is just a sign convention: a positive
+        $\varphi$ shifts the peak *later* than the push's peak, so
+        $\varphi$ reads directly as "how far the swing lags behind."
+
+        So the shape is fixed, and only **two numbers** are left to
+        find: the amplitude $A$ and the lag $\varphi$. We pin them
+        down the only way available — substitute this guess into
+        the equation and demand that it actually hold for all $t$.
+        The video runs that substitution from start to finish; out
+        the other end comes a formula for $A$ and one for $\varphi$,
+        each in terms of the three knobs $\omega_0$, $\gamma$,
+        $\omega$.
         """
     )
     return
