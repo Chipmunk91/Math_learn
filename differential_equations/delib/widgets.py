@@ -31,11 +31,11 @@ __all__ = ["spring_grab", "resonance_audio", "solution_anatomy",
 # AUTHORING.md → "Feedback form setup"). Until GFORM_ACTION is set, the
 # widget renders a polite "being set up" placeholder instead of posting
 # nowhere, so the site is safe to ship before the form exists.
-GFORM_ACTION = ""          # "https://docs.google.com/forms/d/e/<ID>/formResponse"
-GFORM_ENTRY_RATING = ""    # "entry.<NNN>"  — the 1–5 rating field
-GFORM_ENTRY_COMMENT = ""   # "entry.<NNN>"  — the paragraph/comment field
-GFORM_ENTRY_CHAPTER = ""   # "entry.<NNN>"  — the (auto-filled) chapter field
-GFORM_VIEW_URL = ""        # optional "…/viewform" for a fallback link
+GFORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSf2zkzsTtLGAkbZ6VdiXQqCLYfqPjlPi3ZLIpEs-VLCP_6gHg/formResponse"          # "https://docs.google.com/forms/d/e/<ID>/formResponse"
+GFORM_ENTRY_RATING = "entry.1887182985"    # "entry.<NNN>"  — the 1–5 rating field
+GFORM_ENTRY_COMMENT = "entry.1050269236"   # "entry.<NNN>"  — the paragraph/comment field
+GFORM_ENTRY_CHAPTER = "entry.1540647133=123"   # "entry.<NNN>"  — the (auto-filled) chapter field
+GFORM_VIEW_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf2zkzsTtLGAkbZ6VdiXQqCLYfqPjlPi3ZLIpEs-VLCP_6gHg/viewform"        # optional "…/viewform" for a fallback link
 
 
 # ---------------------------------------------------------------------------
