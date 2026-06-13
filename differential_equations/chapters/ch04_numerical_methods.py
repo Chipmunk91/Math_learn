@@ -1700,67 +1700,6 @@ def _(delib, e3_code, e3_run):
     return
 
 
-# --- Playground ----------------------------------------------------------------
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ---
-        ## Playground — free exploration
-
-        No task, no grading. Type any Python, or ask the tutor (✨) to
-        write it, then **Run** to see the result.
-        """
-    )
-    return
-
-
-@app.cell
-def _(mo):
-    pg_get, pg_set = mo.state(
-        "f = lambda x, y: y - x**2\n"
-        "xs, ys = delib.euler_steps(f, 0.0, 1.0, 0.25, 8)\n"
-        "view = delib.slope_field_plotly(f, (-0.1, 2.2), (0.5, 3.3),\n"
-        "                                title='Try a different f, h, or method!')\n"
-        "view.add_scatter(x=list(xs), y=list(ys), mode='lines+markers',\n"
-        "                 name='Euler walk')\n"
-    )
-    return pg_get, pg_set
-
-
-@app.cell
-def _(delib, pg_get):
-    pg_ai, pg_gen, pg_code, pg_run = delib.exercise_inputs(pg_get(), run_label="Run")
-    return pg_ai, pg_code, pg_gen, pg_run
-
-
-@app.cell
-async def _(api_field, delib, key_bridge, pg_ai, pg_code, pg_gen, pg_set):
-    await delib.exercise_ai(
-        pg_gen, pg_ai, pg_code, pg_set,
-        api_field.value or (key_bridge.value or {}).get("key", ""),
-        coach=False,
-        context="Open sandbox for chapter 4 (numerical methods). Helpers: "
-                "delib.euler_steps(f, x0, y0, h, n), delib.heun_steps(...), "
-                "delib.rk4_steps(...) — each returns (xs, ys) arrays — plus "
-                "delib.slope_field_plotly(f, xlim, ylim). Write complete "
-                "runnable code; assign a Plotly figure to `view`.",
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_ai, pg_code, pg_gen, pg_run):
-    delib.exercise_view(None, pg_ai, pg_gen, pg_code, pg_run)
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_code, pg_run):
-    delib.run_exercise(pg_code.value, pg_run.value)
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) -------------------------------------------
 @app.cell
 def _(delib):
@@ -1874,6 +1813,13 @@ def _(mo):
         and the phase line — without solving anything at all.
         """
     )
+    return
+
+
+# --- Feedback (replaces the old playground) ------------------------------------
+@app.cell(hide_code=True)
+def _(delib):
+    delib.feedback_form("Chapter 4 — Numerical methods")
     return
 
 

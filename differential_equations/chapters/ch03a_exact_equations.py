@@ -911,68 +911,6 @@ def _(delib, e2_code, e2_run):
     return
 
 
-# --- Playground ----------------------------------------------------------------
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ---
-        ## Playground — free exploration
-
-        No task, no grading. Type any Python, or ask the tutor (✨) to write it,
-        then **Run** to see the result.
-        """
-    )
-    return
-
-
-@app.cell
-def _(mo):
-    pg_get, pg_set = mo.state(
-        "# Try a different conserved quantity. Edit F and watch its contours.\n"
-        "F = lambda x, y: x**2 - y**2\n"
-        "view = delib.level_curves(F, (-3, 3), (-3, 3),\n"
-        "                          levels=[-4, -1, 0, 1, 4],\n"
-        "                          field=True,\n"
-        "                          title='Hyperbolas: F = x² - y²')\n"
-    )
-    return pg_get, pg_set
-
-
-@app.cell
-def _(delib, pg_get):
-    pg_ai, pg_gen, pg_code, pg_run = delib.exercise_inputs(pg_get(), run_label="Run")
-    return pg_ai, pg_code, pg_gen, pg_run
-
-
-@app.cell
-async def _(api_field, delib, key_bridge, pg_ai, pg_code, pg_gen, pg_set):
-    await delib.exercise_ai(
-        pg_gen, pg_ai, pg_code, pg_set,
-        api_field.value or (key_bridge.value or {}).get("key", ""),
-        coach=False,
-        context="Open sandbox for Chapter 3 Part 1 (exact equations, level "
-                "curves, the contour-map view of solutions). Helpers: "
-                "delib.level_curves(F, xrange, yrange, levels=..., field=True or (M, N)). "
-                "Write complete runnable code; assign a Plotly figure to `view`. "
-                "Part 2's topics (integrating factors, Bernoulli) are out of "
-                "scope here -- flag them but don't try to solve them in this sandbox.",
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_ai, pg_code, pg_gen, pg_run):
-    delib.exercise_view(None, pg_ai, pg_gen, pg_code, pg_run)
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_code, pg_run):
-    delib.run_exercise(pg_code.value, pg_run.value)
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) ------------------------------------------
 @app.cell
 def _(delib):
@@ -1088,6 +1026,13 @@ def _(mo):
         back to Part 1's exactness condition.
         """
     )
+    return
+
+
+# --- Feedback (replaces the old playground) ------------------------------------
+@app.cell(hide_code=True)
+def _(delib):
+    delib.feedback_form("Chapter 3 (Part 1) — Exact equations")
     return
 
 

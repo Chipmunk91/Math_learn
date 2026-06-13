@@ -1110,74 +1110,6 @@ def _(delib, e3_code, e3_run):
     return
 
 
-# --- Playground ----------------------------------------------------------------
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ---
-        ## Playground — free exploration
-
-        No task, no grading. Type any Python, or ask the tutor (✨) to
-        write it, then **Run** to see the result.
-        """
-    )
-    return
-
-
-@app.cell
-def _(mo):
-    pg_get, pg_set = mo.state(
-        "# Solve x'' + b x' + c x = 0 numerically and plot. Try your\n"
-        "# own b, c — or set b = 0 and watch it ring forever.\n"
-        "b, c = 0.4, 4.0\n"
-        "sol = delib.solve_system(\n"
-        "    lambda t, s: [s[1], -c*s[0] - b*s[1]],\n"
-        "    (0.0, 20.0), [1.0, 0.0],\n"
-        ")\n"
-        "view = go.Figure(go.Scatter(x=list(sol.t), y=list(sol.y[0]),\n"
-        "                            mode='lines'))\n"
-        "view.update_layout(title=f'x(t) for b={b}, c={c}',\n"
-        "                   template='plotly_white')\n"
-    )
-    return pg_get, pg_set
-
-
-@app.cell
-def _(delib, pg_get):
-    pg_ai, pg_gen, pg_code, pg_run = delib.exercise_inputs(pg_get(), run_label="Run")
-    return pg_ai, pg_code, pg_gen, pg_run
-
-
-@app.cell
-async def _(api_field, delib, key_bridge, pg_ai, pg_code, pg_gen, pg_set):
-    await delib.exercise_ai(
-        pg_gen, pg_ai, pg_code, pg_set,
-        api_field.value or (key_bridge.value or {}).get("key", ""),
-        coach=False,
-        context="Open sandbox for chapter 6 (second-order linear ODEs, "
-                "x'' + b x' + c x = 0, characteristic equation, three "
-                "cases). Helpers: delib.solve_system(F, t_span, s0) where "
-                "F(t, s) returns [s1', s2'] and s = [x, v] — use "
-                "[s[1], -c*s[0] - b*s[1]] for the oscillator. Plotly via "
-                "go.Figure. Write complete runnable code; assign a Plotly "
-                "figure to `view`.",
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_ai, pg_code, pg_gen, pg_run):
-    delib.exercise_view(None, pg_ai, pg_gen, pg_code, pg_run)
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_code, pg_run):
-    delib.run_exercise(pg_code.value, pg_run.value)
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) -------------------------------------------
 @app.cell
 def _(delib):
@@ -1310,6 +1242,13 @@ def _(mo):
         child exploits — **resonance**.
         """
     )
+    return
+
+
+# --- Feedback (replaces the old playground) ------------------------------------
+@app.cell(hide_code=True)
+def _(delib):
+    delib.feedback_form("Chapter 6 — Second-order ODEs")
     return
 
 

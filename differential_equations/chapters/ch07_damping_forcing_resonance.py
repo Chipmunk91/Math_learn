@@ -870,80 +870,6 @@ def _(delib, e3_code, e3_run):
     return
 
 
-# --- Playground ----------------------------------------------------------------
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ---
-        ## Playground — free exploration
-
-        Type any Python, or ask the tutor (✨) to write it, then
-        **Run**. Try the system with $\gamma$ ramped to zero and
-        the drive sweeping across $\omega_0$; or compare
-        steady-state amplitude against the early-time response
-        when transients still matter.
-        """
-    )
-    return
-
-
-@app.cell
-def _(mo):
-    pg_get, pg_set = mo.state(
-        "# Numerically simulate x'' + 2*gamma*x' + omega0^2 * x = F0 cos(omega t).\n"
-        "# Try: gamma = 0.05 (very light damping), omega close to omega0,\n"
-        "# and watch the transient + steady-state build up.\n"
-        "omega0, gamma, F0, omega = 2.0, 0.05, 1.0, 2.0\n"
-        "view = delib.oscillator_animate(\n"
-        "    omega0, gamma, F0, omega,\n"
-        "    ic=(0.0, 0.0), t_end=60.0,\n"
-        "    title='Lightly damped, driven at resonance',\n"
-        "    ylim=(-12, 12),\n"
-        ")\n"
-    )
-    return pg_get, pg_set
-
-
-@app.cell
-def _(delib, pg_get):
-    pg_ai, pg_gen, pg_code, pg_run = delib.exercise_inputs(pg_get(), run_label="Run")
-    return pg_ai, pg_code, pg_gen, pg_run
-
-
-@app.cell
-async def _(api_field, delib, key_bridge, pg_ai, pg_code, pg_gen, pg_set):
-    await delib.exercise_ai(
-        pg_gen, pg_ai, pg_code, pg_set,
-        api_field.value or (key_bridge.value or {}).get("key", ""),
-        coach=False,
-        context="Open sandbox for chapter 7 (forced/damped second-order). "
-                "Helpers: delib.oscillator_animate(omega0, gamma, F0, "
-                "omega, ic=(x0, v0), t_end, ylim, title) returns an "
-                "animated Plotly figure; "
-                "delib.frequency_response(omega0, gamma, F0) returns the "
-                "A(omega) / phi(omega) two-panel figure; "
-                "delib.steady_state_amplitude, "
-                "delib.steady_state_phase, "
-                "delib.peak_frequency are the closed-form scalars. "
-                "Write complete runnable code; assign a Plotly figure to "
-                "`view`.",
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_ai, pg_code, pg_gen, pg_run):
-    delib.exercise_view(None, pg_ai, pg_gen, pg_code, pg_run)
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_code, pg_run):
-    delib.run_exercise(pg_code.value, pg_run.value)
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) -------------------------------------------
 @app.cell
 def _(delib):
@@ -1072,6 +998,13 @@ def _(mo):
         where two or more state variables interact.
         """
     )
+    return
+
+
+# --- Feedback (replaces the old playground) ------------------------------------
+@app.cell(hide_code=True)
+def _(delib):
+    delib.feedback_form("Chapter 7 — Damping, forcing, resonance")
     return
 
 

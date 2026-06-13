@@ -925,61 +925,6 @@ def _(delib, e3_code, e3_run):
     return
 
 
-# --- Playground ----------------------------------------------------------------
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ---
-        ## Playground — free exploration
-
-        No task, no grading. Type any Python, or ask the tutor (✨) to write it,
-        then **Run** to see the result.
-        """
-    )
-    return
-
-
-@app.cell
-def _(mo):
-    pg_get, pg_set = mo.state(
-        "view = delib.phase_line(lambda x: x - x**3, (-2.0, 2.0),\n"
-        "                        title='Try editing this rate law!')\n"
-    )
-    return pg_get, pg_set
-
-
-@app.cell
-def _(delib, pg_get):
-    pg_ai, pg_gen, pg_code, pg_run = delib.exercise_inputs(pg_get(), run_label="Run")
-    return pg_ai, pg_code, pg_gen, pg_run
-
-
-@app.cell
-async def _(api_field, delib, key_bridge, pg_ai, pg_code, pg_gen, pg_set):
-    await delib.exercise_ai(
-        pg_gen, pg_ai, pg_code, pg_set,
-        api_field.value or (key_bridge.value or {}).get("key", ""),
-        coach=False,
-        context="Open sandbox for chapter 3 (1-D phase line, potential, fixed points). "
-                "Helpers available: delib.phase_line(f, xrange), delib.potential_plot(f, xrange), "
-                "delib.equilibria_report(expr, var='x'). Write complete runnable code; assign a Plotly figure to `view`.",
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_ai, pg_code, pg_gen, pg_run):
-    delib.exercise_view(None, pg_ai, pg_gen, pg_code, pg_run)
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_code, pg_run):
-    delib.run_exercise(pg_code.value, pg_run.value)
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) ------------------------------------------
 @app.cell
 def _(delib):
@@ -1098,6 +1043,13 @@ def _(mo):
         points) becomes possible.
         """
     )
+    return
+
+
+# --- Feedback (replaces the old playground) ------------------------------------
+@app.cell(hide_code=True)
+def _(delib):
+    delib.feedback_form("Chapter 5 — Fixed points & stability")
     return
 
 

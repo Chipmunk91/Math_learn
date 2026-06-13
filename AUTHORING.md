@@ -628,3 +628,49 @@ speculative fixes — make the failure visible (the ai-code error banner, the
 console probe pattern), confirm root cause, then patch. The ch01 nav
 overlap saga and the ch02 multiple-defs were both solved by reading rather
 than guessing.
+
+## Feedback form setup (Google Form)
+
+Each chapter ends with a star + comment box (`delib.feedback_form`) that
+posts anonymously to a Google Form whose responses land in a Sheet you own.
+Until it's wired up, the widget shows a polite "being set up" placeholder, so
+the site is safe to ship before the form exists. To activate it:
+
+1. **Create the form.** [forms.google.com](https://forms.google.com) → blank
+   form, e.g. "Math Learn feedback". Add three questions:
+   - `Chapter` — *Short answer* (auto-filled by the widget)
+   - `Rating` — *Short answer* (the widget sends 1–5)
+   - `Comment` — *Paragraph*
+
+   Make none of them "required" (the widget may send a rating with no
+   comment, or vice versa).
+
+2. **Link responses to a Sheet.** Responses tab → the green Sheets icon →
+   *Create new spreadsheet*. That's where feedback collects.
+
+3. **Get the three `entry.NNN` field IDs.** Click the ⋮ menu → *Get
+   pre-filled link*, type a dummy value in each field, *Get link*, copy it.
+   The URL contains `entry.123456=...` once per field — note which number
+   goes with which question.
+
+4. **Get the action URL.** It's the form's URL with `/viewform` replaced by
+   `/formResponse`, i.e. `https://docs.google.com/forms/d/e/<ID>/formResponse`.
+
+5. **Fill in the constants** at the top of
+   `differential_equations/delib/widgets.py`:
+   ```python
+   GFORM_ACTION        = "https://docs.google.com/forms/d/e/<ID>/formResponse"
+   GFORM_ENTRY_RATING  = "entry.<the Rating number>"
+   GFORM_ENTRY_COMMENT = "entry.<the Comment number>"
+   GFORM_ENTRY_CHAPTER = "entry.<the Chapter number>"
+   GFORM_VIEW_URL      = "https://docs.google.com/forms/d/e/<ID>/viewform"  # optional
+   ```
+
+6. Rebuild (`python scripts/build_wasm_site.py`) and the box goes live in
+   every chapter. Submissions are anonymous and grouped by chapter via the
+   auto-filled `Chapter` field.
+
+Note: Google Forms doesn't return CORS headers, so the widget POSTs in
+`no-cors` mode and treats the request resolving as success — it can't read
+the actual HTTP status. Do a test submission after wiring it up and confirm
+the row appears in your Sheet.

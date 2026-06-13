@@ -1179,79 +1179,6 @@ def _(delib, e3_code, e3_run):
     return
 
 
-# --- Playground ----------------------------------------------------------------
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ---
-        ## Playground — free exploration
-
-        No task, no grading. Type any Python, or ask the tutor (✨) to
-        write it, then **Run** to see the result.
-        """
-    )
-    return
-
-
-@app.cell
-def _(mo):
-    pg_get, pg_set = mo.state(
-        "# Try a non-exact equation. Run the diagnostic ratios and see\n"
-        "# which (if either) gives a one-variable function.\n"
-        "import sympy as sp\n"
-        "x, y = sp.symbols('x y')\n"
-        "M = 2*x*y + y**2\n"
-        "N = x**2 + 2*x*y\n"
-        "My, Nx = sp.diff(M, y), sp.diff(N, x)\n"
-        "ratio_x = sp.simplify((My - Nx) / N)  # function of x only?\n"
-        "ratio_y = sp.simplify((Nx - My) / M)  # function of y only?\n"
-        "view = mo.md(\n"
-        "    f'M_y = {sp.latex(My)}; N_x = {sp.latex(Nx)}'\n"
-        "    f'  ;  diagnostic ratios:'\n"
-        "    f'  (M_y - N_x)/N = {sp.latex(ratio_x)}'\n"
-        "    f'  ;  (N_x - M_y)/M = {sp.latex(ratio_y)}'\n"
-        ")\n"
-    )
-    return pg_get, pg_set
-
-
-@app.cell
-def _(delib, pg_get):
-    pg_ai, pg_gen, pg_code, pg_run = delib.exercise_inputs(pg_get(), run_label="Run")
-    return pg_ai, pg_code, pg_gen, pg_run
-
-
-@app.cell
-async def _(api_field, delib, key_bridge, pg_ai, pg_code, pg_gen, pg_set):
-    await delib.exercise_ai(
-        pg_gen, pg_ai, pg_code, pg_set,
-        api_field.value or (key_bridge.value or {}).get("key", ""),
-        coach=False,
-        context="Open sandbox for Chapter 3 Part 2 (integrating factors, "
-                "Bernoulli substitution). SymPy is available as sp; the "
-                "marimo namespace as mo. Common moves: check exactness via "
-                "M_y vs N_x; run the diagnostic ratios (M_y - N_x)/N and "
-                "(N_x - M_y)/M to look for mu(x) or mu(y); apply v = y^(1-n) "
-                "to a Bernoulli equation. Write complete runnable code; "
-                "assign the result you want shown to `view`.",
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_ai, pg_code, pg_gen, pg_run):
-    delib.exercise_view(None, pg_ai, pg_gen, pg_code, pg_run)
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_code, pg_run):
-    delib.run_exercise(pg_code.value, pg_run.value)
-    return
-
-
 # --- Tutor (BYO-key chat, from delib) ------------------------------------------
 @app.cell
 def _(delib):
@@ -1366,6 +1293,13 @@ def _(mo):
         MuJoCo or PyBullet when you pick the wrong $\Delta t$.
         """
     )
+    return
+
+
+# --- Feedback (replaces the old playground) ------------------------------------
+@app.cell(hide_code=True)
+def _(delib):
+    delib.feedback_form("Chapter 3 (Part 2) — Integrating factors")
     return
 
 

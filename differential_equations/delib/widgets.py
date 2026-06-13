@@ -16,11 +16,26 @@ GSAP timeline) runs client-side at 60 fps with no Python in the loop.
   steady-state amplitude ``A(omega)``. Web Audio. (Ch 7.)
 - :func:`solution_anatomy` — a four-act GSAP choreography of the
   transient + steady-state split ``x = x_h + x_p``. (Ch 7.)
+- :func:`feedback_form` — a star + comment box that posts to a Google
+  Form (anonymous, lands in a Sheet you own). Replaces the per-chapter
+  playground.
 """
 
 from __future__ import annotations
 
-__all__ = ["spring_grab", "resonance_audio", "solution_anatomy"]
+__all__ = ["spring_grab", "resonance_audio", "solution_anatomy",
+           "feedback_form"]
+
+# --- Google Form feedback wiring --------------------------------------------
+# Fill these four in ONCE after creating the feedback Google Form (see
+# AUTHORING.md → "Feedback form setup"). Until GFORM_ACTION is set, the
+# widget renders a polite "being set up" placeholder instead of posting
+# nowhere, so the site is safe to ship before the form exists.
+GFORM_ACTION = ""          # "https://docs.google.com/forms/d/e/<ID>/formResponse"
+GFORM_ENTRY_RATING = ""    # "entry.<NNN>"  — the 1–5 rating field
+GFORM_ENTRY_COMMENT = ""   # "entry.<NNN>"  — the paragraph/comment field
+GFORM_ENTRY_CHAPTER = ""   # "entry.<NNN>"  — the (auto-filled) chapter field
+GFORM_VIEW_URL = ""        # optional "…/viewform" for a fallback link
 
 
 # ---------------------------------------------------------------------------
@@ -454,3 +469,132 @@ def solution_anatomy(omega0: float = 2.0, gamma: float = 0.25,
     return mo.ui.anywidget(_SolutionAnatomy(
         init_w0=float(omega0), init_g=float(gamma),
         init_om=float(omega), init_F0=float(F0)))
+
+
+# ---------------------------------------------------------------------------
+# 4. Feedback (stars + comment) → Google Form
+# ---------------------------------------------------------------------------
+
+def feedback_form(chapter: str = ""):
+    """A star-rating + comment box that posts anonymously to a Google Form.
+
+    Reads the form wiring from the module-level ``GFORM_*`` constants. Until
+    ``GFORM_ACTION`` is set, it renders a polite "being set up" placeholder
+    (so the page is safe to ship before the form exists). ``chapter`` is a
+    label auto-attached to each submission so responses are grouped by
+    chapter in the linked Sheet.
+    """
+    import marimo as mo
+    import anywidget
+    import traitlets
+
+    class _Feedback(anywidget.AnyWidget):
+        _esm = r"""
+        function render({ model, el }) {
+          var action = model.get('action');
+          var configured = !!action;
+          var chapter = model.get('chapter') || '';
+
+          el.innerHTML = `
+            <div style="font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+                        color:#1d2733;border:1px solid #d6dde6;border-left:3px solid #5b7db1;
+                        border-radius:.6rem;padding:1rem 1.2rem;max-width:680px;background:#fff">
+              <div style="font-weight:600;font-size:1.05rem">Was this chapter helpful?</div>
+              <div data-sub style="color:#56636f;font-size:.92rem;margin-top:.15rem">
+                Anonymous — a star and an optional note. It goes straight to the author.</div>
+              <div data-stars style="margin-top:.7rem;font-size:1.7rem;line-height:1;user-select:none"></div>
+              <textarea data-comment rows="3" placeholder="What worked, what was confusing, what you'd change… (optional)"
+                style="width:100%;margin-top:.7rem;padding:.55rem .65rem;border:1px solid #d6dde6;
+                       border-radius:.45rem;font:inherit;resize:vertical;box-sizing:border-box"></textarea>
+              <div style="margin-top:.6rem;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
+                <button data-send style="padding:.5rem 1.1rem;border:0;border-radius:.45rem;
+                  background:#2a5d9c;color:#fff;font:inherit;font-weight:600;cursor:pointer">Send feedback</button>
+                <span data-status style="color:#56636f;font-size:.9rem"></span>
+              </div>
+            </div>`;
+
+          var starsEl = el.querySelector('[data-stars]');
+          var commentEl = el.querySelector('[data-comment]');
+          var sendEl = el.querySelector('[data-send]');
+          var statusEl = el.querySelector('[data-status]');
+          var subEl = el.querySelector('[data-sub]');
+          var rating = 0;
+
+          // Build five clickable stars.
+          var stars = [];
+          for (var i = 1; i <= 5; i++) {
+            var s = document.createElement('span');
+            s.textContent = '☆';                 // ☆
+            s.dataset.v = i;
+            s.style.cssText = 'cursor:pointer;color:#e9a23b;padding:0 .05rem';
+            starsEl.appendChild(s); stars.push(s);
+          }
+          function paint(n) {
+            for (var i = 0; i < 5; i++) stars[i].textContent = (i < n) ? '★' : '☆';
+          }
+          starsEl.addEventListener('mouseover', function (e) {
+            if (e.target.dataset.v) paint(+e.target.dataset.v);
+          });
+          starsEl.addEventListener('mouseout', function () { paint(rating); });
+          starsEl.addEventListener('click', function (e) {
+            if (e.target.dataset.v) { rating = +e.target.dataset.v; paint(rating); }
+          });
+
+          if (!configured) {
+            subEl.textContent = 'Feedback is being set up — check back soon.';
+            sendEl.disabled = true;
+            sendEl.style.background = '#9aa7b5'; sendEl.style.cursor = 'default';
+            return function () {};
+          }
+
+          sendEl.addEventListener('click', function () {
+            var comment = (commentEl.value || '').trim();
+            if (!rating && !comment) {
+              statusEl.style.color = '#d1495b';
+              statusEl.textContent = 'Pick a star or jot a note first.';
+              return;
+            }
+            var fd = new FormData();
+            if (model.get('e_rating') && rating) fd.append(model.get('e_rating'), String(rating));
+            if (model.get('e_comment')) fd.append(model.get('e_comment'), comment);
+            if (model.get('e_chapter')) fd.append(model.get('e_chapter'), chapter);
+            sendEl.disabled = true;
+            statusEl.style.color = '#56636f';
+            statusEl.textContent = 'Sending…';
+            // Google Forms doesn't send CORS headers, so the response is
+            // opaque (no-cors) — resolving the fetch is our success signal.
+            fetch(action, { method: 'POST', mode: 'no-cors', body: fd })
+              .then(function () { thanks(); })
+              .catch(function () { thanks(); });   // opaque errors are expected; treat as sent
+          });
+
+          function thanks() {
+            el.querySelector('div').innerHTML =
+              '<div style="font-weight:600;font-size:1.05rem">Thank you</div>' +
+              '<div style="color:#56636f;margin-top:.3rem">Your feedback was sent — '
+              + 'it genuinely shapes what gets fixed next.</div>'
+              + (model.get('view_url')
+                  ? ' <div style="margin-top:.5rem;font-size:.9rem">'
+                    + '<a href="' + model.get('view_url') + '" target="_blank" rel="noopener">'
+                    + 'open the full form</a></div>'
+                  : '');
+          }
+          return function () {};
+        }
+        export default { render };
+        """
+        chapter = traitlets.Unicode("").tag(sync=True)
+        action = traitlets.Unicode("").tag(sync=True)
+        e_rating = traitlets.Unicode("").tag(sync=True)
+        e_comment = traitlets.Unicode("").tag(sync=True)
+        e_chapter = traitlets.Unicode("").tag(sync=True)
+        view_url = traitlets.Unicode("").tag(sync=True)
+
+    return mo.ui.anywidget(_Feedback(
+        chapter=chapter,
+        action=GFORM_ACTION,
+        e_rating=GFORM_ENTRY_RATING,
+        e_comment=GFORM_ENTRY_COMMENT,
+        e_chapter=GFORM_ENTRY_CHAPTER,
+        view_url=GFORM_VIEW_URL,
+    ))

@@ -585,56 +585,6 @@ def _(api_field, delib, key_bridge, picked_get):
 def _(api_field, chatbox, delib, key_bridge, picker):
     delib.tutor_sidebar(api_field, key_bridge, chatbox, picker=picker)
     return
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ---
-        ## Playground — free exploration
-
-        No task, no grading. Type any Python, or ask the tutor (✨) to write it, then
-        **Run** to see the result. Build whatever you're curious about.
-        """
-    )
-    return
-
-
-@app.cell
-def _(mo):
-    pg_get, pg_set = mo.state(
-        "view = delib.vector_field_plotly(lambda x, y: 1.0*y*(1 - y/4.0), (0, 10), (-1, 6))\n"
-    )
-    return pg_get, pg_set
-
-
-@app.cell
-def _(delib, pg_get):
-    pg_ai, pg_gen, pg_code, pg_run = delib.exercise_inputs(pg_get(), run_label="Run")
-    return pg_ai, pg_code, pg_gen, pg_run
-
-
-@app.cell
-async def _(api_field, delib, key_bridge, pg_ai, pg_code, pg_gen, pg_set):
-    await delib.exercise_ai(
-        pg_gen, pg_ai, pg_code, pg_set,
-        api_field.value or (key_bridge.value or {}).get("key", ""),
-        coach=False,
-        context="Open sandbox for chapter 1 (first-order ODEs, logistic). Write complete, runnable code; assign a Plotly figure to `view`.",
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_ai, pg_code, pg_gen, pg_run):
-    delib.exercise_view(None, pg_ai, pg_gen, pg_code, pg_run)
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib, pg_code, pg_run):
-    # No check -> run_exercise just renders the view (open sandbox).
-    delib.run_exercise(pg_code.value, pg_run.value)
-    return
 
 
 @app.cell(hide_code=True)
@@ -651,6 +601,13 @@ def _(mo):
         very flow we drew here. *(No code from this chapter is required to start it.)*
         """
     )
+    return
+
+
+# --- Feedback (replaces the old playground) ------------------------------------
+@app.cell(hide_code=True)
+def _(delib):
+    delib.feedback_form("Chapter 1 — First-order ODEs")
     return
 
 
