@@ -12,8 +12,12 @@ from collections.abc import Callable, Sequence
 import numpy as np
 from numpy.typing import NDArray
 
-import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
+# NOTE: matplotlib is imported lazily inside the few helpers that need it
+# (slope_field / vector_field / phase_portrait / overlay_solution). Those
+# matplotlib renderers are not used by any built chapter — every chapter uses
+# the Plotly helpers — so keeping matplotlib out of module import lets the
+# WebAssembly build drop the package entirely. Importing delib must not pull
+# matplotlib.
 
 __all__ = [
     "slope_field_data",
@@ -71,9 +75,10 @@ def slope_field(
     ylim: tuple[float, float],
     *,
     density: int = 20,
-    ax: Axes | None = None,
-) -> Axes:
+    ax=None,
+):
     """Draw the slope field of a first-order ODE ``y' = f(x, y)``."""
+    import matplotlib.pyplot as plt
     if ax is None:
         _, ax = plt.subplots(figsize=(7, 5))
     X, Y, U, V = slope_field_data(f, xlim, ylim, density=density)
@@ -101,10 +106,11 @@ def vector_field(
     ylim: tuple[float, float],
     *,
     density: int = 20,
-    ax: Axes | None = None,
+    ax=None,
     streamplot: bool = False,
-) -> Axes:
+):
     """Draw a 2D vector field ``(u, v) = F(x, y)`` as a quiver or streamplot."""
+    import matplotlib.pyplot as plt
     if ax is None:
         _, ax = plt.subplots(figsize=(6, 6))
     xs = np.linspace(xlim[0], xlim[1], density)
@@ -129,13 +135,14 @@ def phase_portrait(
     *,
     trajectories: Sequence[tuple[NDArray, NDArray]] | None = None,
     density: int = 20,
-    ax: Axes | None = None,
-) -> Axes:
+    ax=None,
+):
     """Streamplot of a 2D system, optionally overlaying solution trajectories.
 
     ``trajectories`` is a sequence of ``(xs, ys)`` arrays (e.g. the rows of a
     :func:`delib.solvers.solve_system` result) drawn on top of the flow.
     """
+    import matplotlib.pyplot as plt
     if ax is None:
         _, ax = plt.subplots(figsize=(6, 6))
     vector_field(F, xlim, ylim, density=density, ax=ax, streamplot=True)
@@ -147,13 +154,13 @@ def phase_portrait(
 
 
 def overlay_solution(
-    ax: Axes,
+    ax,
     t: NDArray,
     y: NDArray,
     *,
     color: str = "#d1495b",
     label: str | None = None,
-) -> Axes:
+):
     """Draw a solution curve ``y(t)`` on an existing field axis.
 
     ``t`` is the independent variable (plotted on x) and ``y`` the solution.

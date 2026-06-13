@@ -16,9 +16,10 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import Any
 
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib.figure import Figure
+# matplotlib is imported lazily inside animate_time (the only matplotlib
+# helper — an offline gif/mp4 builder no chapter calls). Keeping it out of
+# module import lets the WebAssembly build drop the package; every chapter
+# uses the Plotly helpers below.
 
 __all__ = [
     "animate_time",
@@ -34,19 +35,22 @@ def animate_time(
     frames: int,
     *,
     fps: int = 30,
-    fig: Figure | None = None,
+    fig=None,
     backend: str = "matplotlib",
-) -> FuncAnimation:
+):
     """Build a matplotlib ``FuncAnimation`` for export to gif/mp4.
 
     ``update_fn(i)`` draws frame ``i`` (0-indexed). Save the result with
-    ``anim.save("assets/foo.gif", writer="pillow", fps=fps)``.
+    ``anim.save("assets/foo.gif", writer="pillow", fps=fps)``. (Offline
+    authoring helper — not used in the in-browser chapters.)
     """
     if backend != "matplotlib":
         raise ValueError(
             f"animate_time only supports the matplotlib backend; "
             f"use animate_plotly for inline play/pause (got {backend!r})."
         )
+    import matplotlib.pyplot as plt
+    from matplotlib.animation import FuncAnimation
     if fig is None:
         fig = plt.gcf()
     interval = 1000 / fps

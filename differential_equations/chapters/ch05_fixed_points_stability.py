@@ -8,11 +8,10 @@ app = marimo.App(width="medium")
 def _():
     import marimo as mo
     import numpy as np
-    import matplotlib.pyplot as plt
     import plotly.graph_objects as go
 
     import delib
-    return delib, go, mo, np, plt
+    return delib, go, mo, np
 
 
 @app.cell(hide_code=True)

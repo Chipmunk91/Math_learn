@@ -113,9 +113,7 @@ PEP723_HEADER = """\
 #     "marimo",
 #     "anywidget",
 #     "numpy",
-#     "scipy",
 #     "sympy",
-#     "matplotlib",
 #     "plotly",
 # ]
 # ///
