@@ -637,21 +637,28 @@ Until it's wired up, the widget shows a polite "being set up" placeholder, so
 the site is safe to ship before the form exists. To activate it:
 
 1. **Create the form.** [forms.google.com](https://forms.google.com) → blank
-   form, e.g. "Math Learn feedback". Add three questions:
-   - `Chapter` — *Short answer* (auto-filled by the widget)
+   form, e.g. "Math Learn feedback". Two questions are enough:
    - `Rating` — *Short answer* (the widget sends 1–5)
    - `Comment` — *Paragraph*
 
-   Make none of them "required" (the widget may send a rating with no
-   comment, or vice versa).
+   Make neither "required" (the widget may send a rating with no comment, or
+   vice versa). **The chapter name is folded into the comment automatically**
+   (each comment arrives as `Chapter: <name>` then the note), so you don't
+   need a separate chapter field.
+
+   *Optional, for a clean separate chapter column:* add a third `Chapter` —
+   *Short answer* question and set `GFORM_ENTRY_CHAPTER` to **that field's
+   own** `entry.NNN`. Get it wrong or leave it blank and the chapter simply
+   rides along in the comment instead — nothing is lost.
 
 2. **Link responses to a Sheet.** Responses tab → the green Sheets icon →
    *Create new spreadsheet*. That's where feedback collects.
 
-3. **Get the three `entry.NNN` field IDs.** Click the ⋮ menu → *Get
-   pre-filled link*, type a dummy value in each field, *Get link*, copy it.
-   The URL contains `entry.123456=...` once per field — note which number
-   goes with which question.
+3. **Get the `entry.NNN` field IDs.** Click the ⋮ menu → *Get pre-filled
+   link*, type a dummy value in each field, *Get link*, copy it. The URL
+   contains `entry.123456=...` once per field — note which number goes with
+   which question. (Each field's number is distinct; copying the wrong one
+   is the usual cause of a field arriving blank.)
 
 4. **Get the action URL.** It's the form's URL with `/viewform` replaced by
    `/formResponse`, i.e. `https://docs.google.com/forms/d/e/<ID>/formResponse`.
@@ -662,13 +669,17 @@ the site is safe to ship before the form exists. To activate it:
    GFORM_ACTION        = "https://docs.google.com/forms/d/e/<ID>/formResponse"
    GFORM_ENTRY_RATING  = "entry.<the Rating number>"
    GFORM_ENTRY_COMMENT = "entry.<the Comment number>"
-   GFORM_ENTRY_CHAPTER = "entry.<the Chapter number>"
+   GFORM_ENTRY_CHAPTER = ""   # leave blank → chapter rides in the comment
    GFORM_VIEW_URL      = "https://docs.google.com/forms/d/e/<ID>/viewform"  # optional
    ```
+   Only set `GFORM_ENTRY_CHAPTER` if you added the optional `Chapter`
+   question and want its own column — and double-check it's *that* field's
+   `entry.NNN`, not a copy of the rating/comment one.
 
 6. Rebuild (`python scripts/build_wasm_site.py`) and the box goes live in
-   every chapter. Submissions are anonymous and grouped by chapter via the
-   auto-filled `Chapter` field.
+   every chapter. Submissions are anonymous; each comment is prefixed with
+   `Chapter: <name>` (or the chapter lands in its own column if you wired
+   the optional field), so you can always tell which chapter a note is about.
 
 Note: Google Forms doesn't return CORS headers, so the widget POSTs in
 `no-cors` mode and treats the request resolving as success — it can't read

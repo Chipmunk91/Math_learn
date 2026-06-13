@@ -31,11 +31,14 @@ __all__ = ["spring_grab", "resonance_audio", "solution_anatomy",
 # AUTHORING.md → "Feedback form setup"). Until GFORM_ACTION is set, the
 # widget renders a polite "being set up" placeholder instead of posting
 # nowhere, so the site is safe to ship before the form exists.
-GFORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSf2zkzsTtLGAkbZ6VdiXQqCLYfqPjlPi3ZLIpEs-VLCP_6gHg/formResponse"          # "https://docs.google.com/forms/d/e/<ID>/formResponse"
-GFORM_ENTRY_RATING = "entry.1887182985"    # "entry.<NNN>"  — the 1–5 rating field
-GFORM_ENTRY_COMMENT = "entry.1050269236"   # "entry.<NNN>"  — the paragraph/comment field
-GFORM_ENTRY_CHAPTER = "entry.1540647133=123"   # "entry.<NNN>"  — the (auto-filled) chapter field
-GFORM_VIEW_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf2zkzsTtLGAkbZ6VdiXQqCLYfqPjlPi3ZLIpEs-VLCP_6gHg/viewform"        # optional "…/viewform" for a fallback link
+GFORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSf2zkzsTtLGAkbZ6VdiXQqCLYfqPjlPi3ZLIpEs-VLCP_6gHg/formResponse"
+GFORM_ENTRY_RATING = "entry.1887182985"    # the 1–5 rating field
+GFORM_ENTRY_COMMENT = "entry.1050269236"   # the paragraph/comment field
+# OPTIONAL. Leave "" and the chapter name is folded into the comment instead
+# (so a 2-field form just works). Set it only for a clean, separate chapter
+# column — and use that field's OWN entry ID with NO "=value" suffix.
+GFORM_ENTRY_CHAPTER = "entry.1540647133"   # fixed: had a stray "=123" before
+GFORM_VIEW_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf2zkzsTtLGAkbZ6VdiXQqCLYfqPjlPi3ZLIpEs-VLCP_6gHg/viewform"
 
 
 # ---------------------------------------------------------------------------
@@ -554,10 +557,19 @@ def feedback_form(chapter: str = ""):
               statusEl.textContent = 'Pick a star or jot a note first.';
               return;
             }
+            var eChapter = model.get('e_chapter');
+            // If a dedicated chapter field is wired, send the chapter there
+            // (clean column). If it ISN'T wired, fold the chapter into the
+            // comment so it's never lost — this is the foolproof path that
+            // needs only a 2-field form (rating + comment).
+            var commentToSend = comment;
+            if (chapter && !eChapter) {
+              commentToSend = 'Chapter: ' + chapter + (comment ? '\n\n' + comment : '');
+            }
             var fd = new FormData();
             if (model.get('e_rating') && rating) fd.append(model.get('e_rating'), String(rating));
-            if (model.get('e_comment')) fd.append(model.get('e_comment'), comment);
-            if (model.get('e_chapter')) fd.append(model.get('e_chapter'), chapter);
+            if (model.get('e_comment')) fd.append(model.get('e_comment'), commentToSend);
+            if (eChapter) fd.append(eChapter, chapter);
             sendEl.disabled = true;
             statusEl.style.color = '#56636f';
             statusEl.textContent = 'Sending…';
