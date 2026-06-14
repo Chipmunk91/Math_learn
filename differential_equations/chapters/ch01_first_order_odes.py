@@ -35,20 +35,10 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(delib, go, mo, np):
-    # Beat 1 — the real-world observation that motivates the whole chapter.
-    _t = np.linspace(0, 14, 80)
-    _sol = delib.solve_ode(lambda t, y: 0.9 * y * (1 - y / 1000.0), (0.0, 14.0), 3.0, t_eval=_t)
-    _fig = go.Figure(go.Scatter(x=_sol.t, y=_sol.y[0], mode="lines",
-                                line=dict(color="#2f6fb0", width=3),
-                                hoverinfo="skip", showlegend=False))
-    _fig.update_layout(
-        template="plotly_white",
-        title=dict(text="One rumor on a 1,000-person campus", x=0.02),
-        xaxis=dict(title="day"), yaxis=dict(title="people who've heard it"),
-        height=320, margin=dict(l=60, r=20, t=46, b=42),
-        paper_bgcolor="white", plot_bgcolor="white",
-    )
+def _(delib, mo):
+    # Beat 1 — the real-world observation that motivates the whole chapter,
+    # opened by the interactive crowd hook (delib.rumor_crowd, shared with the
+    # animation Lab): the S-curve emerges from people meeting people.
     mo.vstack([
         mo.md(
             r"""
@@ -65,9 +55,12 @@ def _(delib, go, mo, np):
             The quickest way to *feel* that is with a story. So here's one.
 
             Monday morning, **3 people** on a 1,000-person campus know a juicy rumor. By
-            Friday, *everyone* does. If you plot how many have heard it each day, you
-            don't get a straight line — you get this lazy **S**: a slow start, an
-            explosive middle, and a gentle leveling-off.
+            Friday, *everyone* does. **Watch it happen below** — every figure is a person
+            wandering the campus, and the rumor jumps each time someone who knows crosses
+            paths with someone who doesn't. Plot the fraction who've heard it (right) and
+            you don't get a straight line — you get this lazy **S**: a slow start, an
+            explosive middle, and a gentle leveling-off. *(Click the crowd to start the
+            rumor somewhere new; drag* mingle speed *to make the campus busier.)*
 
             Why that exact shape? Because spreading takes **two** people: one who knows
             and one who doesn't. On Monday there are only a handful of tellers, so it
@@ -76,7 +69,7 @@ def _(delib, go, mo, np):
             anyone left to tell — and it flattens. All the drama lives in the middle.
             """
         ),
-        _fig,
+        delib.rumor_crowd(),
     ])
     return
 

@@ -16,6 +16,8 @@ GSAP timeline) runs client-side at 60 fps with no Python in the loop.
   steady-state amplitude ``A(omega)``. Web Audio. (Ch 7.)
 - :func:`solution_anatomy` — a four-act GSAP choreography of the
   transient + steady-state split ``x = x_h + x_p``. (Ch 7.)
+- :func:`rumor_crowd` — roaming people who pass a rumor on contact;
+  the logistic S-curve emerges and is fit live. (Ch 1.)
 - :func:`feedback_form` — a star + comment box that posts to a Google
   Form (anonymous, lands in a Sheet you own). Replaces the per-chapter
   playground.
@@ -24,7 +26,7 @@ GSAP timeline) runs client-side at 60 fps with no Python in the loop.
 from __future__ import annotations
 
 __all__ = ["spring_grab", "resonance_audio", "solution_anatomy",
-           "feedback_form"]
+           "rumor_crowd", "feedback_form"]
 
 # --- Google Form feedback wiring --------------------------------------------
 # Fill these four in ONCE after creating the feedback Google Form (see
@@ -475,7 +477,249 @@ def solution_anatomy(omega0: float = 2.0, gamma: float = 0.25,
 
 
 # ---------------------------------------------------------------------------
-# 4. Feedback (stars + comment) → Google Form
+# 4. Rumor through a roaming crowd (Canvas 2D agents + live logistic fit)
+# ---------------------------------------------------------------------------
+
+def rumor_crowd(known0: int = 3, speed: int = 80):
+    """A crowd of people who walk around and pass a rumor on contact.
+
+    Every figure strolls the frame; an unaware (grey) person lights up the
+    moment they cross paths with someone who already knows. The graph plots
+    the fraction who know (red) against Chapter 1's logistic law fit live
+    (blue). The S-curve — slow start, eruption, plateau — emerges from
+    individual contacts rather than being assumed; the residual wander and
+    the random ignition time are the honest gap between a well-mixed
+    first-order model and a crowd that actually lives in space.
+
+    ``known0`` seeds the initial number of knowers (the rumor story's
+    "3 people"); ``speed`` is the initial mingle speed, i.e. Chapter 1's
+    spreading-rate constant made physical.
+    """
+    import marimo as mo
+    import anywidget
+    import traitlets
+
+    class _RumorCrowd(anywidget.AnyWidget):
+        _esm = r"""
+        function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <div style="flex:1;min-width:300px">
+                  <canvas data-crowd style="width:100%;height:330px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#eef2f7;touch-action:none;cursor:crosshair"></canvas>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">the crowd · click / drag to plant the rumor</div>
+                </div>
+                <div style="flex:1;min-width:300px">
+                  <canvas data-graph style="width:100%;height:330px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff"></canvas>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">fraction who know · red = crowd, blue = logistic law (Ch 1)</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:18px;margin-top:8px;align-items:center;flex-wrap:wrap">
+                <label>mingle speed <input type="range" min="20" max="200" step="5" value="80" data-k="v"> <span data-v="v">80</span></label>
+                <button data-b="reset" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">↺ new rumor</button>
+                <span data-stat style="color:#7c8aa0"></span>
+              </div>
+            </div>`;
+
+          var crowd = el.querySelector('[data-crowd]');
+          var graph = el.querySelector('[data-graph]');
+          var dpr = window.devicePixelRatio || 1;
+          function fit(c, h) {
+            var w = c.clientWidth || 320;
+            c.width = w * dpr; c.height = h * dpr;
+            var x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+            return { ctx: x, W: w, H: h };
+          }
+          var C = fit(crowd, 330), G = fit(graph, 330);
+
+          // Population scales with floor area to keep the crowd density (and so
+          // the pace) about the same on any screen width.
+          var N = Math.max(70, Math.min(180, Math.round(0.0012 * C.W * C.H)));
+          var RC = 10, RC2 = RC * RC;            // contact radius (px)
+          var GS = 6;                            // person glyph scale (px)
+          var KNOWN0 = Math.max(1, model.get('init_known') || 3);
+          var speed = model.get('init_speed') || 80;   // px/s, from the slider
+          var DT = 1 / 45;                       // model seconds per step
+          var slider = el.querySelector('input');
+          slider.value = speed; el.querySelector('[data-v="v"]').textContent = speed;
+
+          var x = new Float32Array(N), y = new Float32Array(N);
+          var th = new Float32Array(N);
+          var aware = new Uint8Array(N), flash = new Float32Array(N);
+          var yCount = 0, t = 0, aHat = 0, hist = [];
+
+          function recount() { var s = 0; for (var i = 0; i < N; i++) s += aware[i]; yCount = s; }
+          function seed() {
+            for (var i = 0; i < N; i++) {
+              x[i] = Math.random() * C.W; y[i] = Math.random() * C.H;
+              th[i] = Math.random() * 6.2832; aware[i] = 0; flash[i] = 0;
+            }
+            for (var k = 0; k < KNOWN0; k++) { var j = (Math.random()*N)|0; aware[j] = 1; flash[j] = 1; }
+            recount(); t = 0; aHat = 0; hist = [];
+          }
+          seed();   // a few people start out knowing the rumor
+
+          function plantAt(cx, cy) {
+            var rad2 = (RC * 2.6) * (RC * 2.6);
+            for (var i = 0; i < N; i++) {
+              if (!aware[i]) {
+                var dx = x[i]-cx, dy = y[i]-cy;
+                if (dx*dx + dy*dy < rad2) { aware[i] = 1; flash[i] = 1; }
+              }
+            }
+            recount();
+          }
+          var pressing = false;
+          function evToCanvas(e) {
+            var r = crowd.getBoundingClientRect();
+            return [(e.clientX-r.left)*(C.W/r.width), (e.clientY-r.top)*(C.H/r.height)];
+          }
+          crowd.addEventListener('pointerdown', function (e) { pressing = true; var p = evToCanvas(e); plantAt(p[0], p[1]); });
+          crowd.addEventListener('pointermove', function (e) { if (pressing) { var p = evToCanvas(e); plantAt(p[0], p[1]); } });
+          window.addEventListener('pointerup', function () { pressing = false; });
+          el.querySelector('[data-b="reset"]').addEventListener('click', seed);
+          slider.addEventListener('input', function () {
+            speed = parseInt(this.value, 10);
+            el.querySelector('[data-v="v"]').textContent = speed;
+          });
+
+          function lerp(a, b, t) { return a + (b - a) * t; }
+          function mix(c1, c2, t) {
+            return 'rgb(' + Math.round(lerp(c1[0],c2[0],t)) + ',' +
+                            Math.round(lerp(c1[1],c2[1],t)) + ',' +
+                            Math.round(lerp(c1[2],c2[2],t)) + ')';
+          }
+          var BG_LIGHT = [238,242,247], BG_DARK = [12,17,24];
+          var UN_LIGHT = [150,163,178], UN_DARK = [58,70,84];
+
+          function step() {
+            if (yCount >= N) return;   // whole campus knows — settle the scene
+            // Everyone strolls: constant speed, a little random turn each step
+            // (so directions decorrelate and the crowd mixes), bounce off walls.
+            var d = speed * DT;
+            for (var i = 0; i < N; i++) {
+              th[i] += (Math.random()*2 - 1) * 0.4;
+              x[i] += d * Math.cos(th[i]); y[i] += d * Math.sin(th[i]);
+              if (x[i] < 0) { x[i] = -x[i]; th[i] = Math.PI - th[i]; }
+              else if (x[i] > C.W) { x[i] = 2*C.W - x[i]; th[i] = Math.PI - th[i]; }
+              if (y[i] < 0) { y[i] = -y[i]; th[i] = -th[i]; }
+              else if (y[i] > C.H) { y[i] = 2*C.H - y[i]; th[i] = -th[i]; }
+            }
+            // Contagion: an unaware person who is within RC of any knower hears
+            // it and lights up. This is the y·(K−y) "a teller meets an ear"
+            // rule of Chapter 1, but resolved in space, pair by real pair.
+            for (var i = 0; i < N; i++) {
+              if (aware[i]) continue;
+              for (var j = 0; j < N; j++) {
+                if (!aware[j]) continue;
+                var dx = x[i]-x[j], dy = y[i]-y[j];
+                if (dx*dx + dy*dy < RC2) { aware[i] = 1; flash[i] = 1; yCount++; break; }
+              }
+            }
+            t += DT;
+            // Fit Chapter 1's logistic law to the crowd live. For a logistic,
+            // d/dt ln(y/(K−y)) is the constant a, so we can read a straight off
+            // the run: slope in logit space from the start to now (smoothed).
+            if (yCount >= KNOWN0 + 3 && yCount < N && t > 0.3) {
+              var p = yCount / N, p0 = KNOWN0 / N;
+              var aInst = (Math.log(p/(1-p)) - Math.log(p0/(1-p0))) / t;
+              aHat = aHat === 0 ? aInst : (0.92*aHat + 0.08*aInst);
+            }
+            hist.push([t, yCount / N]);
+            if (hist.length > 5000) hist.shift();
+          }
+
+          function person(ctx, cx, cy, s, color) {
+            // a restroom-pictogram figure: trapezoid body + round head
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(cx - s*0.5, cy + s*0.85); ctx.lineTo(cx + s*0.5, cy + s*0.85);
+            ctx.lineTo(cx + s*0.28, cy - s*0.1); ctx.lineTo(cx - s*0.28, cy - s*0.1);
+            ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx, cy - s*0.42, s*0.34, 0, 6.2832); ctx.fill();
+          }
+
+          function drawCrowd() {
+            var f = yCount / N, ease = f*f*(3 - 2*f);   // smoothstep mood
+            C.ctx.fillStyle = mix(BG_LIGHT, BG_DARK, ease);
+            C.ctx.fillRect(0, 0, C.W, C.H);
+            var unColor = mix(UN_LIGHT, UN_DARK, ease);
+            for (var i = 0; i < N; i++) {
+              if (aware[i]) {
+                if (flash[i] > 0.05) {
+                  C.ctx.fillStyle = 'rgba(244,184,96,' + (0.4*flash[i]) + ')';
+                  C.ctx.beginPath(); C.ctx.arc(x[i], y[i], GS*2.0, 0, 6.2832); C.ctx.fill();
+                }
+                person(C.ctx, x[i], y[i], GS, '#f4b860');
+              } else {
+                person(C.ctx, x[i], y[i], GS, unColor);
+              }
+              if (flash[i] > 0.001) flash[i] *= 0.9;
+            }
+          }
+
+          function drawGraph() {
+            var ctx = G.ctx, W = G.W, H = G.H;
+            ctx.clearRect(0, 0, W, H);
+            var pad = { l: 34, r: 12, t: 16, b: 24 };
+            var x0 = pad.l, x1 = W - pad.r, y0 = H - pad.b, y1 = pad.t;
+            ctx.strokeStyle = '#dde4ec'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(x0, y1); ctx.lineTo(x0, y0); ctx.lineTo(x1, y0); ctx.stroke();
+            ctx.fillStyle = '#7c8aa0'; ctx.font = '10px sans-serif';
+            ctx.fillText('1', x0 - 12, y1 + 4); ctx.fillText('0', x0 - 12, y0);
+            ctx.fillText('time →', x1 - 36, y0 + 16);
+            var tmax = Math.max(4, hist.length ? hist[hist.length-1][0] : 4);
+            function X(tt) { return x0 + (tt / tmax) * (x1 - x0); }
+            function Y(ff) { return y0 + ff * (y1 - y0); }
+            if (aHat > 0) {
+              var p0 = KNOWN0 / N, b0 = Math.log(p0/(1-p0));
+              ctx.strokeStyle = '#5b7db1'; ctx.lineWidth = 2; ctx.beginPath();
+              for (var k = 0; k <= 120; k++) {
+                var tt = tmax * k / 120;
+                var yf = 1 / (1 + Math.exp(-(aHat*tt + b0)));
+                if (k === 0) ctx.moveTo(X(tt), Y(yf)); else ctx.lineTo(X(tt), Y(yf));
+              }
+              ctx.stroke();
+            }
+            ctx.strokeStyle = '#d1495b'; ctx.lineWidth = 2; ctx.beginPath();
+            for (var i = 0; i < hist.length; i++) {
+              var hx = X(hist[i][0]), hy = Y(hist[i][1]);
+              if (i === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
+            }
+            ctx.stroke();
+            ctx.fillStyle = '#5b7db1'; ctx.fillRect(x1 - 150, y1 + 2, 14, 3);
+            ctx.fillStyle = '#7c8aa0'; ctx.fillText('logistic law', x1 - 132, y1 + 6);
+            ctx.fillStyle = '#d1495b'; ctx.fillRect(x1 - 150, y1 + 14, 14, 3);
+            ctx.fillStyle = '#7c8aa0'; ctx.fillText('the crowd', x1 - 132, y1 + 18);
+          }
+
+          function updateStat() {
+            el.querySelector('[data-stat]').textContent =
+              yCount + ' / ' + N + ' know  (' + Math.round(100*yCount/N) + '%)';
+          }
+
+          var raf, running = true, acc = 0, last = performance.now();
+          function frame(now) {
+            if (!running) return;
+            acc += Math.min(0.05, (now - last) / 1000); last = now;
+            while (acc > DT) { step(); acc -= DT; }
+            drawCrowd(); drawGraph(); updateStat();
+            raf = requestAnimationFrame(frame);
+          }
+          raf = requestAnimationFrame(frame);
+          return function () { running = false; cancelAnimationFrame(raf); };
+        }
+        export default { render };
+        """
+        init_known = traitlets.Int(3).tag(sync=True)
+        init_speed = traitlets.Int(80).tag(sync=True)
+
+    return mo.ui.anywidget(_RumorCrowd(
+        init_known=int(known0), init_speed=int(speed)))
+
+
+# ---------------------------------------------------------------------------
+# 5. Feedback (stars + comment) → Google Form
 # ---------------------------------------------------------------------------
 
 def feedback_form(chapter: str = ""):
