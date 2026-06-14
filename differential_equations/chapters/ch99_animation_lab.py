@@ -42,7 +42,7 @@ def _(mo):
         | 10 | Drawn vs solved | lottie-web (keyframes) + Canvas 2D (integrated) | $\ddot y = -g$, restitution $e = 0.75$ — Ch 4 parable |
         | 11 | 120,000 particles | WebGPU + WGSL compute shader | Same damped pendulum as #4, RK2 dispatched GPU-side (Ch 13) |
         | 12 | Rumor through a crowd | Canvas 2D roaming agents + live logistic fit | $\dot y = b\,y(K-y)$ — spatial contagion vs. the well-mixed law (Ch 1) |
-        | 13 | Mixing tank | Canvas 2D + live ODE | $c' = \frac{r}{V}(c_\text{in}-c)$ — linear approach to equilibrium (Ch 2) |
+        | 13 | Cooling coffee | Canvas 2D + steam particles | $T' + kT = kT_r$ — Newton's cooling, linear approach (Ch 2) |
 
         If a demo earns its keep, it graduates into a real chapter as a
         `delib` widget. If it doesn't, it dies here, cheaply.
@@ -1541,58 +1541,56 @@ def _(delib):
 
 
 # ============================================================================
-# Demo 13 — A mixing tank (Canvas 2D; linear ODE, exponential approach)
+# Demo 13 — A cup of cooling coffee (Canvas 2D + steam particles;
+#           Newton's cooling, the chapter's own equation)
 # ============================================================================
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
-        ## 13 · A mixing tank
+        ## 13 · A cup of cooling coffee
 
-        Chapter 2 is about **separable** and **linear** first-order
-        equations, and the cleanest place they meet is a tank of water.
-        Clear water starts inside; **coloured dye pours in** at the top,
-        the well-mixed mixture drains out the bottom at the same rate,
-        and the tank's colour chases the colour of the inflow.
+        Chapter 2 introduces **Newton's law of cooling** and notes
+        that the same equation is *both* separable and linear:
 
-        Write $c(t)$ for the tank's concentration and $c_\text{in}$ for
-        the inflow's. Dye arrives at rate $r\,c_\text{in}$ and leaves at
-        rate $r\,c$ (it drains at the tank's *own* concentration,
-        because the tank is well mixed), so for a fixed volume $V$,
+        $$ \frac{dT}{dt} = -k\,(T - T_r). $$
 
-        $$ \frac{dc}{dt} = \frac{r}{V}\,(c_\text{in} - c). $$
+        A hot mug sitting in a cooler room is the chapter's whole
+        story made physical. The mug starts at $90^\circ$C, the room
+        is at $T_r$ — drag $T_r$ and the coffee chases the new room
+        temperature. Drag $k$ to change the insulation (a thick
+        ceramic mug = small $k$; a thin paper cup = big $k$); the
+        coffee chases faster or slower, with time constant
+        $\tau = 1/k$.
 
-        That single equation is **both** of the chapter's recipes at
-        once: *separable* — $\frac{dc}{c_\text{in}-c} = \frac{r}{V}\,dt$
-        — and *linear* — $c' + \frac{r}{V}c = \frac{r}{V}c_\text{in}$.
-        Either way the answer is an **exponential approach** to the
-        inflow colour,
-        $c(t) = c_\text{in} + (c_0 - c_\text{in})\,e^{-(r/V)\,t}$, with
-        time constant $\tau = V/r$.
+        The **steam wisps aren't decoration** — they're a visual
+        proxy for the rate of heat leaving. The bigger the gap
+        $(T - T_r)$, the more steam you see; as the coffee approaches
+        room temperature, the steam dies. That visible rate *is*
+        $-k(T - T_r)$ at work.
 
-        Drag $c_\text{in}$ and watch dye **arrive at the inflow,
-        disperse through the tank, and leave through the drain** —
-        density builds up or thins out until the population matches the
-        inflow. Turn the flow rate $r$ up to chase it faster (smaller
-        $\tau$). Hit **dump dye** for a sudden slug and watch it wash
-        out. The dashed line on the graph is the equilibrium the tank is
-        always heading for — never quite reaching, always closing the
-        remaining gap by the same fraction each $\tau$.
+        Two extra controls cover the equation's other modes:
 
-        *About the visual:* the equation is "well mixed" by assumption —
-        a single number $c$ for the whole tank. Rather than flatten that
-        into a uniform colour wash (which would teleport dye through the
-        liquid the moment $c_\text{in}$ moves), the tank shows a
-        **population of dye particles**: they arrive at the inflow,
-        drift around (well-mixed = active motion, not magic), and exit
-        at the drain. The number of particles tracks $c$; the graph is
-        still the exact ODE.
+        - **🔥 candle warmer** — a heat source under the mug adds
+          energy at a fixed rate $Q$. Turn it on and the equilibrium
+          shifts up to $T_r + Q/k$. With good insulation it can keep
+          the coffee at any temperature you like, up to boiling
+          (capped at $100^\circ$C).
+        - **🥛 pour milk** — adds 25 % cold milk at $5^\circ$C; the
+          temperature *jumps down* instantly by weighted average.
+          After the jump, the same exponential approach picks up
+          from the new starting point.
+
+        *Why a coffee mug and not a tank?* Because heat in a stirred
+        mug is **genuinely well mixed** — you don't see hot spots in
+        coffee — so the scalar $T(t)$ tells the whole story honestly,
+        with no spatial structure to fake.
 
         *Why it matters:* "approach an equilibrium set by the outside
-        world, exponentially" is the shape of *every* linear first-order
-        story — Chapter 2's cooling coffee ($T' + kT = kT_r$ is the same
-        equation), a charging capacitor, a drug clearing your
-        bloodstream. Learn the tank and you've met all of them.
+        world, exponentially" is the shape of every linear first-order
+        story. The same equation governs a charging capacitor, a drug
+        clearing your bloodstream, or a thermostat reaching set-point.
+        Learn the mug and you've met all of them.
         """
     )
     return
@@ -1602,26 +1600,27 @@ def _(mo):
 def _():
     import anywidget as _aw
 
-    class _MixingTank(_aw.AnyWidget):
+    class _CoolingCoffee(_aw.AnyWidget):
         _esm = r"""
         function render({ model, el }) {
           el.innerHTML = `
             <div style="font:13px sans-serif;color:#333">
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <div style="flex:1;min-width:300px">
-                  <canvas data-tank style="width:100%;height:330px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff"></canvas>
-                  <div style="text-align:center;color:#8a96a5;margin-top:4px">dye in at the top · well-mixed mixture out at the bottom</div>
+                  <canvas data-scene style="width:100%;height:330px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fbf6ec"></canvas>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">hot mug in a room · steam = heat leaving · candle adds heat · milk cools fast</div>
                 </div>
                 <div style="flex:1;min-width:300px">
                   <canvas data-graph style="width:100%;height:330px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff"></canvas>
-                  <div style="text-align:center;color:#8a96a5;margin-top:4px">concentration c(t) · dashed = c_in (the equilibrium it chases)</div>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">T(t) · dashed line = the equilibrium it's chasing</div>
                 </div>
               </div>
               <div style="display:flex;gap:18px;margin-top:8px;align-items:center;flex-wrap:wrap">
-                <label>inflow c_in <input type="range" min="0" max="1" step="0.02" value="0.7" data-k="cin"> <span data-v="cin">0.70</span></label>
-                <label>flow rate r <input type="range" min="0.1" max="2" step="0.05" value="0.5" data-k="r"> <span data-v="r">0.50</span></label>
-                <button data-b="dump" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">⬇ dump dye</button>
-                <button data-b="reset" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">↺ clear water</button>
+                <label>room T_r <input type="range" min="0" max="35" step="1" value="22" data-k="Tr"> <span data-v="Tr">22</span>°C</label>
+                <label>cooling rate k <input type="range" min="0.02" max="0.4" step="0.005" value="0.1" data-k="k"> <span data-v="k">0.10</span>/s</label>
+                <button data-b="warmer" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">🔥 candle warmer</button>
+                <button data-b="milk" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">🥛 pour milk</button>
+                <button data-b="reset" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">☕ fresh pour</button>
                 <span data-stat style="color:#7c8aa0"></span>
               </div>
             </div>`;
@@ -1633,144 +1632,207 @@ def _():
             var x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
             return { ctx: x, W: w, H: h };
           }
-          var T = fit(el.querySelector('[data-tank]'), 330);
-          var G = fit(el.querySelector('[data-graph]'), 330);
+          var SC = fit(el.querySelector('[data-scene]'), 330);
+          var GC = fit(el.querySelector('[data-graph]'), 330);
 
-          var V = 1.0;            // tank volume (normalised)
-          var c = 0.0;            // current concentration (deterministic ODE)
-          var cin = 0.7, r = 0.5; // inflow concentration, flow rate
-          var t = 0, hist = [], drops = [];
+          // State — the deterministic ODE  dT/dt = -k(T - Tr) + Q  drives both
+          // the graph and the T readout, so the math you see plotted is exact.
+          // Steam and other visuals are honest proxies layered on top.
+          var temp = 90, Tr = 22, k = 0.10;
+          var warmerOn = false, Q_MAX = 4.0;
+          var t = 0, hist = [], steams = [], milkDrops = [];
+          var steamAcc = 0, flickerPhase = 0;
 
-          // Tank geometry (so we can spawn particles in it)
-          var tx = 60, ty = 54, tw = T.W - 150, th = T.H - 120;
-          var surf = ty + th * 0.16;                 // liquid surface
-          var inX = tx + tw * 0.30, outX = tx + tw;  // pipe x positions
-          var liqTop = surf + 4, liqBot = ty + th - 6;
-          var liqLeft = tx + 6, liqRight = tx + tw - 6;
-          var drainX = outX, drainY = ty + th - 16;
+          // Layout
+          var mugW = 90, mugH = 100, handleR = 18;
+          var mugCx = SC.W * 0.36;
+          var mugX = mugCx - mugW/2;
+          var mugY = 145;
 
-          // Dye particles — a population whose *count* visualises the
-          // scalar concentration c (rather than a flat colour wash, which
-          // would teleport dye through the whole tank instantaneously). The
-          // ODE c' = (r/V)(c_in - c) still runs deterministically and drives
-          // the graph; the particles are an honest visual proxy. Their
-          // mean-field bookkeeping IS that equation: arrivals at rate
-          // r·c_in·N_MAX and per-particle drain probability r·dt give a
-          // steady state of c_in·N_MAX particles.
-          var N_MAX = 320;
-          var particles = [];     // {x, y, state, vx, vy}  state: 0 alive, 1 exiting
-          var arrAcc = 0;
+          function reset() {
+            temp = 90; t = 0; hist = []; steams = []; milkDrops = [];
+          }
+          function pourMilk() {
+            // weighted average: 25% milk at 5°C
+            temp = 0.75 * temp + 0.25 * 5;
+            for (var i = 0; i < 6; i++) {
+              milkDrops.push({
+                x: mugCx + (Math.random()-0.5) * 14,
+                y: mugY - 30 - i * 7,
+                vy: 200 + Math.random() * 40
+              });
+            }
+          }
+          function toggleWarmer() {
+            warmerOn = !warmerOn;
+            el.querySelector('[data-b="warmer"]').style.background =
+              warmerOn ? '#ffe2b3' : '#f3f7fc';
+          }
+          el.querySelector('[data-b="reset"]').addEventListener('click', reset);
+          el.querySelector('[data-b="milk"]').addEventListener('click', pourMilk);
+          el.querySelector('[data-b="warmer"]').addEventListener('click', toggleWarmer);
+          var sTr = el.querySelectorAll('input')[0], sK = el.querySelectorAll('input')[1];
+          sTr.addEventListener('input', function () {
+            Tr = parseFloat(this.value);
+            el.querySelector('[data-v="Tr"]').textContent = Tr.toFixed(0);
+          });
+          sK.addEventListener('input', function () {
+            k = parseFloat(this.value);
+            el.querySelector('[data-v="k"]').textContent = k.toFixed(2);
+          });
 
-          var WATER = [236, 245, 252], DYE = [36, 108, 190];
           function lerp(a,b,t){ return a+(b-a)*t; }
-          function mix(c1, c2, t) {
-            t = t < 0 ? 0 : (t > 1 ? 1 : t);
+          function rgb3(c1,c2,t) {
+            t = Math.max(0, Math.min(1, t));
             return 'rgb(' + Math.round(lerp(c1[0],c2[0],t)) + ',' +
                             Math.round(lerp(c1[1],c2[1],t)) + ',' +
                             Math.round(lerp(c1[2],c2[2],t)) + ')';
           }
+          function tempColor(tt) { return rgb3([66,140,210], [210,72,76], tt/100); }
 
-          function reset() {
-            c = 0; t = 0; hist = []; drops = []; particles = []; arrAcc = 0;
-          }
-          el.querySelector('[data-b="reset"]').addEventListener('click', reset);
-          el.querySelector('[data-b="dump"]').addEventListener('click', function () {
-            var slug = 0.4;
-            c = Math.min(1, c + slug);
-            // and seed the matching number of particles instantly, so the
-            // population catches up with the new concentration.
-            var need = Math.round(slug * N_MAX);
-            for (var k = 0; k < need; k++) {
-              particles.push({
-                x: liqLeft + Math.random() * (liqRight - liqLeft),
-                y: liqTop + Math.random() * (liqBot - liqTop),
-                vx: 0, vy: 0, state: 0
-              });
-            }
-          });
-          var sCin = el.querySelectorAll('input')[0], sR = el.querySelectorAll('input')[1];
-          sCin.addEventListener('input', function () {
-            cin = parseFloat(this.value);
-            el.querySelector('[data-v="cin"]').textContent = cin.toFixed(2);
-          });
-          sR.addEventListener('input', function () {
-            r = parseFloat(this.value);
-            el.querySelector('[data-v="r"]').textContent = r.toFixed(2);
-          });
+          function drawScene() {
+            var ctx = SC.ctx;
+            // Room: warm linear gradient
+            var grd = ctx.createLinearGradient(0, 0, 0, SC.H);
+            grd.addColorStop(0, '#fbf6ec'); grd.addColorStop(1, '#f4eee2');
+            ctx.fillStyle = grd; ctx.fillRect(0, 0, SC.W, SC.H);
+            // Table line under the mug
+            var tableY = mugY + mugH + 38;
+            ctx.strokeStyle = '#cdb98f'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(20, tableY); ctx.lineTo(SC.W - 20, tableY); ctx.stroke();
 
-          var spawnAcc = 0;
+            // Candle (always rendered, lights up when warmerOn)
+            var cdlY = mugY + mugH + 10;
+            ctx.fillStyle = '#b48c5e';
+            ctx.fillRect(mugCx - 7, cdlY, 14, 22);
+            ctx.fillStyle = '#82603c'; ctx.fillRect(mugCx - 7, cdlY, 14, 2);
+            ctx.fillStyle = '#2a1e10'; ctx.fillRect(mugCx - 1, cdlY - 4, 2, 4);
 
-          function drawTank() {
-            var ctx = T.ctx;
-            ctx.clearRect(0, 0, T.W, T.H);
-            // Liquid: pure water + a very faint tint that scales with c —
-            // the dye PARTICLES (drawn below) carry the colour information,
-            // so the wash stays subtle and doesn't lie about uniformity.
-            ctx.fillStyle = mix(WATER, DYE, 0.12 * c);
-            ctx.fillRect(tx, surf, tw, ty + th - surf);
-            // tank walls
-            ctx.strokeStyle = '#9aa7b5'; ctx.lineWidth = 3;
-            ctx.strokeRect(tx, ty, tw, th);
-            ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.moveTo(tx, surf); ctx.lineTo(tx + tw, surf); ctx.stroke();
-            // Dye particles inside the tank — render BEFORE pipes so they
-            // don't overlap the plumbing.
-            ctx.fillStyle = 'rgba(36,108,190,0.78)';
-            for (var i = 0; i < particles.length; i++) {
-              var p = particles[i];
-              ctx.beginPath(); ctx.arc(p.x, p.y, 2.6, 0, 6.2832); ctx.fill();
+            if (warmerOn) {
+              var glow = ctx.createRadialGradient(mugCx, cdlY - 4, 4, mugCx, cdlY - 4, 60);
+              glow.addColorStop(0, 'rgba(255,178,80,0.55)');
+              glow.addColorStop(1, 'rgba(255,178,80,0)');
+              ctx.fillStyle = glow;
+              ctx.fillRect(mugCx - 62, cdlY - 55, 124, 82);
+              var f = 0.85 + 0.15 * Math.sin(flickerPhase);
+              var g = 0.85 + 0.15 * Math.sin(flickerPhase * 1.7 + 1);
+              ctx.fillStyle = '#ff8b3a';
+              ctx.beginPath(); ctx.ellipse(mugCx, cdlY - 8, 5 * f, 12 * g, 0, 0, 6.2832); ctx.fill();
+              ctx.fillStyle = '#ffd585';
+              ctx.beginPath(); ctx.ellipse(mugCx, cdlY - 9, 2.6 * f, 7 * g, 0, 0, 6.2832); ctx.fill();
             }
-            // inflow pipe — stream visibility proportional to cin (no flow
-            // when c_in=0, vivid when c_in=1).
-            ctx.fillStyle = '#7c8aa0'; ctx.fillRect(inX - 8, ty - 30, 16, 30);
-            if (cin > 0.01) {
-              ctx.fillStyle = mix(WATER, DYE, cin);
-              ctx.globalAlpha = Math.min(1, cin * 1.2 + 0.2);
-              ctx.fillRect(inX - 3.5, ty, 7, surf - ty);
-              ctx.globalAlpha = 1;
+
+            // Mug handle (drawn first so body covers its inner edge)
+            ctx.strokeStyle = '#7a6450'; ctx.lineWidth = 9;
+            ctx.beginPath();
+            ctx.arc(mugX + mugW + 4, mugY + mugH * 0.45, handleR, -Math.PI * 0.55, Math.PI * 0.55);
+            ctx.stroke();
+
+            // Mug body (slight trapezoid)
+            ctx.fillStyle = '#a48867';
+            ctx.beginPath();
+            ctx.moveTo(mugX - 2, mugY);
+            ctx.lineTo(mugX + mugW + 2, mugY);
+            ctx.lineTo(mugX + mugW - 4, mugY + mugH);
+            ctx.lineTo(mugX + 4, mugY + mugH);
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = '#7a6450'; ctx.lineWidth = 2; ctx.stroke();
+
+            // Liquid (coffee — colour fixed; story is in temperature)
+            var liqY = mugY + 12, liqB = mugY + mugH - 5;
+            var liqLeft = mugX + 4, liqRight = mugX + mugW - 4;
+            ctx.fillStyle = '#3a2615';
+            ctx.beginPath();
+            ctx.moveTo(liqLeft + 1, liqY);
+            ctx.lineTo(liqRight - 1, liqY);
+            ctx.lineTo(liqRight - 4, liqB);
+            ctx.lineTo(liqLeft + 4, liqB);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#4d3220';
+            ctx.beginPath();
+            ctx.ellipse(mugX + mugW/2, liqY, (mugW - 8) / 2, 4.5, 0, 0, 6.2832);
+            ctx.fill();
+            ctx.strokeStyle = '#291810'; ctx.lineWidth = 1; ctx.stroke();
+
+            // Milk droplets (falling toward the mug)
+            ctx.fillStyle = 'rgba(248,242,228,0.95)';
+            for (var i = 0; i < milkDrops.length; i++) {
+              var d = milkDrops[i];
+              ctx.beginPath(); ctx.arc(d.x, d.y, 3.2, 0, 6.2832); ctx.fill();
             }
-            // outflow pipe — drain stream visibility proportional to c
-            // (nothing leaves when the tank is empty).
-            ctx.fillStyle = '#7c8aa0'; ctx.fillRect(outX, ty + th - 22, 26, 13);
-            if (c > 0.01) {
-              ctx.fillStyle = mix(WATER, DYE, c);
-              ctx.globalAlpha = Math.min(1, c * 1.2 + 0.2);
-              ctx.fillRect(outX + 26 - 7, ty + th - 22, 7, T.H - (ty + th - 22) - 8);
-              ctx.globalAlpha = 1;
+
+            // Steam particles — spawn-rate is proportional to k(T - Tr), so
+            // 'lots of steam' literally means 'lots of heat leaving per second'.
+            for (var i = 0; i < steams.length; i++) {
+              var s = steams[i];
+              var a = 0.42 * s.life;
+              ctx.fillStyle = 'rgba(220,225,232,' + a.toFixed(3) + ')';
+              ctx.beginPath();
+              ctx.arc(s.x, s.y, 4 + (1 - s.life) * 7, 0, 6.2832);
+              ctx.fill();
             }
-            // inflow / drain droplet sprites (the stream's bright bits)
-            for (var i = 0; i < drops.length; i++) {
-              var d = drops[i];
-              ctx.fillStyle = d.col;
-              ctx.beginPath(); ctx.arc(d.x, d.y, 2.6, 0, 6.2832); ctx.fill();
+
+            // Thermometer
+            var thX = mugX + mugW + 50;
+            var thY_top = mugY - 25, thY_bot = mugY + mugH + 5;
+            var thH = thY_bot - thY_top;
+            ctx.fillStyle = '#fff'; ctx.fillRect(thX - 7, thY_top, 14, thH);
+            ctx.strokeStyle = '#b4a890'; ctx.lineWidth = 1.5;
+            ctx.strokeRect(thX - 7, thY_top, 14, thH);
+            var tShown = Math.max(0, Math.min(100, temp));
+            var fillH = (tShown / 100) * thH;
+            ctx.fillStyle = tempColor(tShown);
+            ctx.fillRect(thX - 5, thY_bot - fillH, 10, fillH);
+            ctx.fillStyle = tempColor(tShown);
+            ctx.beginPath(); ctx.arc(thX, thY_bot + 10, 10, 0, 6.2832); ctx.fill();
+            ctx.strokeStyle = '#b4a890'; ctx.lineWidth = 1.5; ctx.stroke();
+            ctx.fillStyle = '#7c8aa0'; ctx.font = '9px sans-serif';
+            for (var tv = 0; tv <= 100; tv += 25) {
+              var y = thY_bot - (tv/100) * thH;
+              ctx.fillRect(thX - 12, y - 0.5, 4, 1);
+              ctx.fillText(tv + '°', thX + 10, y + 3);
             }
-            // labels
+
+            // Big T label above the mug
             ctx.fillStyle = '#33485c';
-            ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText('c = ' + c.toFixed(2), tx + tw/2, (surf + ty + th)/2 + 5);
+            ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('T = ' + temp.toFixed(1) + '°C', mugCx, mugY - 18);
             ctx.textAlign = 'left';
-            ctx.fillStyle = '#8a96a5'; ctx.font = '11px sans-serif';
-            ctx.fillText('in: c_in = ' + cin.toFixed(2), inX - 26, ty - 36);
+            ctx.fillStyle = '#a99072'; ctx.font = '11px sans-serif';
+            ctx.fillText('room T_r = ' + Tr.toFixed(0) + '°C', 16, 20);
           }
 
           function drawGraph() {
-            var ctx = G.ctx, W = G.W, H = G.H;
+            var ctx = GC.ctx, W = GC.W, H = GC.H;
             ctx.clearRect(0, 0, W, H);
-            var pad = { l: 36, r: 12, t: 16, b: 24 };
+            var pad = { l: 44, r: 14, t: 18, b: 28 };
             var x0 = pad.l, x1 = W - pad.r, y0 = H - pad.b, y1 = pad.t;
             ctx.strokeStyle = '#dde4ec'; ctx.lineWidth = 1;
             ctx.beginPath(); ctx.moveTo(x0, y1); ctx.lineTo(x0, y0); ctx.lineTo(x1, y0); ctx.stroke();
             ctx.fillStyle = '#7c8aa0'; ctx.font = '10px sans-serif';
-            ctx.fillText('1', x0 - 12, y1 + 4); ctx.fillText('0', x0 - 12, y0);
-            ctx.fillText('time →', x1 - 36, y0 + 16);
-            var tmax = Math.max(8, hist.length ? hist[hist.length-1][0] : 8);
-            function X(tt){ return x0 + (tt/tmax)*(x1-x0); }
-            function Y(v){ return y0 + v*(y1-y0); }
-            ctx.strokeStyle = mix(WATER, DYE, cin); ctx.setLineDash([5,4]); ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(x0, Y(cin)); ctx.lineTo(x1, Y(cin)); ctx.stroke();
+            ctx.fillText('100°', x0 - 30, y1 + 4);
+            ctx.fillText('0°', x0 - 18, y0);
+            ctx.fillText('time (s) →', x1 - 60, y0 + 18);
+
+            var tmax = Math.max(30, hist.length ? hist[hist.length-1][0] : 30);
+            function X(tt) { return x0 + (tt/tmax)*(x1-x0); }
+            function Y(tt) { return y0 + (tt/100)*(y1-y0); }
+
+            // Equilibrium it's chasing — dashed line in the equilibrium's colour
+            var Q = warmerOn ? Q_MAX : 0;
+            var Teq = Math.min(100, Tr + Q/k);
+            ctx.strokeStyle = tempColor(Teq); ctx.setLineDash([6, 4]); ctx.lineWidth = 1.8;
+            ctx.beginPath(); ctx.moveTo(x0, Y(Teq)); ctx.lineTo(x1, Y(Teq)); ctx.stroke();
             ctx.setLineDash([]);
-            ctx.fillStyle = '#5b7db1'; ctx.fillText('c_in', x1 - 26, Y(cin) - 4);
-            ctx.strokeStyle = '#2f6fb0'; ctx.lineWidth = 2.4; ctx.beginPath();
+            ctx.fillStyle = '#7c8aa0';
+            ctx.fillText('T_eq = ' + Teq.toFixed(0) + '°', x1 - 72, Y(Teq) - 4);
+
+            // Faint room reference line (so you can see the candle's lift)
+            ctx.strokeStyle = '#dde4ec'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(x0, Y(Tr)); ctx.lineTo(x1, Y(Tr)); ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.strokeStyle = '#a13648'; ctx.lineWidth = 2.4; ctx.beginPath();
             for (var i = 0; i < hist.length; i++) {
               var hx = X(hist[i][0]), hy = Y(hist[i][1]);
               if (i === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
@@ -1782,77 +1844,47 @@ def _():
           function frame(now) {
             if (!running) return;
             var dt = Math.min(0.05, (now - last) / 1000); last = now;
+            flickerPhase += dt * 14;
 
-            // (1) Deterministic ODE — drives the graph and the c readout.
-            c += (r / V) * (cin - c) * dt;
-            if (c < 0) c = 0; if (c > 1) c = 1;
-            t += dt; hist.push([t, c]);
+            // (1) Deterministic ODE — exact, drives both graph and readout.
+            var Q = warmerOn ? Q_MAX : 0;
+            temp += (-k * (temp - Tr) + Q) * dt;
+            if (temp > 100) temp = 100;
+            if (temp < -5) temp = -5;
+            t += dt; hist.push([t, temp]);
             if (hist.length > 4000) hist.shift();
 
-            // (2) Particle visualisation. Spawn arrivals at rate r·c_in·N_MAX
-            // (so equilibrium density = c_in·N_MAX), drain each particle with
-            // per-step probability r·dt (so equilibrium = arrivals/rate).
-            arrAcc += r * cin * N_MAX * dt;
-            while (arrAcc >= 1 && particles.length < N_MAX + 40) {
-              arrAcc -= 1;
-              // arrive just under the surface at the inflow x, with a small
-              // sideways nudge so they don't all stack in one column
-              particles.push({
-                x: inX + (Math.random()-0.5) * 12,
-                y: surf + 4 + Math.random() * 6,
-                vx: (Math.random()-0.5) * 18,
-                vy: 12 + Math.random() * 8,
-                state: 0
-              });
+            // (2) Steam: spawn rate ∝ heat-loss rate k(T - Tr), so the visible
+            // 'puffiness' literally is the size of the term -k(T - Tr).
+            var rate = Math.max(0, k * (temp - Tr)) * 6;
+            steamAcc += rate * dt;
+            while (steamAcc >= 1 && steams.length < 140) {
+              steamAcc -= 1;
+              var sx = mugX + 12 + Math.random() * (mugW - 24);
+              steams.push({ x: sx, y: mugY + 6,
+                            vx: (Math.random() - 0.5) * 14,
+                            vy: -22 - Math.random() * 18, life: 1.0 });
             }
-            // mark some alive particles for exit
-            var pExit = Math.min(0.5, r * dt);
-            for (var i = 0; i < particles.length; i++) {
-              if (particles[i].state === 0 && Math.random() < pExit) particles[i].state = 1;
-            }
-            // move particles
-            for (var i = particles.length - 1; i >= 0; i--) {
-              var p = particles[i];
-              if (p.state === 0) {
-                // Brownian drift inside the liquid region
-                p.vx += (Math.random()-0.5) * 80 * dt - 0.6 * p.vx * dt;
-                p.vy += (Math.random()-0.5) * 80 * dt - 0.6 * p.vy * dt;
-                p.x += p.vx * dt; p.y += p.vy * dt;
-                if (p.x < liqLeft) { p.x = liqLeft; p.vx = -p.vx; }
-                else if (p.x > liqRight) { p.x = liqRight; p.vx = -p.vx; }
-                if (p.y < liqTop) { p.y = liqTop; p.vy = -p.vy; }
-                else if (p.y > liqBot) { p.y = liqBot; p.vy = -p.vy; }
-              } else {
-                // exiting: head for the drain
-                var dx = drainX - p.x, dy = drainY - p.y;
-                var len = Math.hypot(dx, dy) || 1;
-                p.x += (dx/len) * 220 * dt; p.y += (dy/len) * 220 * dt;
-                if (len < 6) {
-                  particles.splice(i, 1);
-                  // emit a drain droplet exiting below the pipe
-                  drops.push({ x: outX + 26 - 3.5, y: ty + th - 14,
-                               vy: 130, col: 'rgba(36,108,190,0.85)', kind: 1 });
-                }
-              }
+            for (var i = steams.length - 1; i >= 0; i--) {
+              var s = steams[i];
+              s.vx += (Math.random() - 0.5) * 28 * dt;
+              s.x += s.vx * dt; s.y += s.vy * dt;
+              s.life -= 0.45 * dt;
+              if (s.life <= 0 || s.y < -10) steams.splice(i, 1);
             }
 
-            // (3) Inflow & drain droplet sprites for the visible streams.
-            spawnAcc += r * dt * 9;
-            while (spawnAcc >= 1) {
-              spawnAcc -= 1;
-              if (cin > 0.05)
-                drops.push({ x: inX, y: ty, vy: 150,
-                             col: 'rgba(36,108,190,' + (0.4 + 0.5*cin) + ')', kind: 0 });
-            }
-            for (var i = drops.length - 1; i >= 0; i--) {
-              var d = drops[i]; d.y += d.vy * dt;
-              if ((d.kind === 0 && d.y >= surf) || (d.kind === 1 && d.y >= T.H)) drops.splice(i, 1);
+            // (3) Milk drops (fall, then disappear into the mug)
+            for (var i = milkDrops.length - 1; i >= 0; i--) {
+              var d = milkDrops[i];
+              d.y += d.vy * dt;
+              if (d.y >= mugY + 12) milkDrops.splice(i, 1);
             }
 
-            drawTank(); drawGraph();
+            drawScene(); drawGraph();
+            var Teq = Math.min(100, Tr + (warmerOn ? Q_MAX : 0) / k);
             el.querySelector('[data-stat]').textContent =
-              'τ = V/r = ' + (V/r).toFixed(2) + ' s   ·   gap to c_in: ' + Math.abs(cin - c).toFixed(2) +
-              '   ·   ' + particles.length + ' dye particles';
+              'τ = 1/k = ' + (1/k).toFixed(1) + ' s   ·   T_eq = ' + Teq.toFixed(0) +
+              '°C   ·   gap = ' + (temp - Teq).toFixed(1) + '°';
             raf = requestAnimationFrame(frame);
           }
           raf = requestAnimationFrame(frame);
@@ -1861,13 +1893,13 @@ def _():
         export default { render };
         """
 
-    mixing_tank = _MixingTank()
-    return (mixing_tank,)
+    cooling_coffee = _CoolingCoffee()
+    return (cooling_coffee,)
 
 
 @app.cell(hide_code=True)
-def _(mixing_tank, mo):
-    mo.ui.anywidget(mixing_tank)
+def _(cooling_coffee, mo):
+    mo.ui.anywidget(cooling_coffee)
     return
 
 
@@ -1906,6 +1938,7 @@ def _(mo):
         | Demo | Earns its keep in | Replaces |
         |------|-------------------|----------|
         | 12 · rumor crowd | Ch 1 (where the logistic law is born) | the S-curve handed over as a formula, never *grown* from interactions |
+        | 13 · cooling coffee | Ch 2 (Newton's cooling, the chapter's own equation) | the cooling derivation shown only as a static Manim clip |
         | 1 · grab the mass | Ch 6 / Ch 7 | "imagine pulling it down…" prose |
         | 2 · hear resonance | Ch 7 | the $A(\omega)$ peak as a visual abstraction |
         | 7 · D3 bifurcation | Ch 10 | static bifurcation diagrams without a slider |
