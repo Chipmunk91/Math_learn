@@ -7,18 +7,25 @@ slider, watch the field / phase portrait / solution respond instantly.
 The first subject is **differential equations**, under
 [`differential_equations/`](differential_equations/).
 
-## Run one chapter with one command (zero install)
+## Run one chapter with two commands (zero install)
 
 If you just want to try the project — no clone, no install:
 
 ```bash
-uv run marimo edit https://raw.githubusercontent.com/Chipmunk91/Math_learn/main/examples/spotlight_resonance.py
+curl -O https://raw.githubusercontent.com/Chipmunk91/Math_learn/main/examples/spotlight_resonance.py
+uvx marimo edit --sandbox spotlight_resonance.py
 ```
 
 That's a single-file standalone notebook (Ch 7, damping/forcing/resonance)
-with everything inlined and a PEP 723 header — uv builds a temporary venv
-and launches marimo. See [`examples/`](examples/) for the list and a fuller
-explanation.
+with everything — even our local `delib` package — baked in. `uvx` runs
+marimo in a temporary tool env; `--sandbox` tells it to read the PEP 723
+header in the notebook and provision a second temp venv with the
+notebook's own dependencies. First launch takes ~30s; subsequent ones are
+instant. See [`examples/`](examples/) for the list and the longer story.
+
+> Common gotcha: `uv run marimo edit …` won't work — `uv run` expects
+> `marimo` to already be on PATH. Use `uvx marimo edit --sandbox …`
+> instead, which installs marimo ephemerally first.
 
 ## Quickstart (full repo)
 

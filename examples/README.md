@@ -2,15 +2,28 @@
 
 These are single-file marimo notebooks that bundle everything they need
 inline — no local package install, no virtualenv, no clone-and-pip. Anyone
-with [uv](https://docs.astral.sh/uv/) can run one with **one command**:
+with [uv](https://docs.astral.sh/uv/) can run one with **two commands**:
 
 ```sh
-uv run marimo edit examples/spotlight_resonance.py
+curl -O https://raw.githubusercontent.com/Chipmunk91/Math_learn/main/examples/spotlight_resonance.py
+uvx marimo edit --sandbox spotlight_resonance.py
 ```
 
-uv reads the PEP 723 `# /// script` header at the top of the file, builds a
-temporary venv with the listed dependencies, and launches marimo with the
-notebook open. Nothing is installed on your machine outside that venv.
+`uvx` (= `uv tool run`) installs marimo into a temporary tool env and
+runs it. The `--sandbox` flag tells marimo to read the PEP 723 header at
+the top of the file and provision a *second* ephemeral venv with the
+notebook's own dependencies (numpy, sympy, plotly, anywidget). Nothing is
+installed on your machine outside those temp venvs; the first launch
+takes about 30 seconds to populate them, then it's snappy.
+
+> **Common gotcha.** `uv run marimo edit …` looks like the natural
+> command, but it fails with *"program not found"*. That's because
+> `uv run <cmd>` doesn't install `<cmd>` — it expects `marimo` to be on
+> PATH already. The recipe above (`uvx marimo edit --sandbox …`) is the
+> uv-idiomatic way to launch a sandboxed marimo notebook.
+
+On Windows PowerShell the download line is the same (`curl.exe -O …`);
+the rest is identical.
 
 ## What's here
 
