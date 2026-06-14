@@ -1570,12 +1570,23 @@ def _(mo):
         $c(t) = c_\text{in} + (c_0 - c_\text{in})\,e^{-(r/V)\,t}$, with
         time constant $\tau = V/r$.
 
-        Drag $c_\text{in}$ and watch the tank chase the new colour; turn
-        the flow rate $r$ up to chase it faster (smaller $\tau$). Hit
-        **dump dye** for a sudden slug and watch it wash out. The dashed
-        line on the graph is the equilibrium the tank is always heading
-        for — never quite reaching, always closing the remaining gap by
-        the same fraction each $\tau$.
+        Drag $c_\text{in}$ and watch dye **arrive at the inflow,
+        disperse through the tank, and leave through the drain** —
+        density builds up or thins out until the population matches the
+        inflow. Turn the flow rate $r$ up to chase it faster (smaller
+        $\tau$). Hit **dump dye** for a sudden slug and watch it wash
+        out. The dashed line on the graph is the equilibrium the tank is
+        always heading for — never quite reaching, always closing the
+        remaining gap by the same fraction each $\tau$.
+
+        *About the visual:* the equation is "well mixed" by assumption —
+        a single number $c$ for the whole tank. Rather than flatten that
+        into a uniform colour wash (which would teleport dye through the
+        liquid the moment $c_\text{in}$ moves), the tank shows a
+        **population of dye particles**: they arrive at the inflow,
+        drift around (well-mixed = active motion, not magic), and exit
+        at the drain. The number of particles tracks $c$; the graph is
+        still the exact ODE.
 
         *Why it matters:* "approach an equilibrium set by the outside
         world, exponentially" is the shape of *every* linear first-order
@@ -1626,9 +1637,29 @@ def _():
           var G = fit(el.querySelector('[data-graph]'), 330);
 
           var V = 1.0;            // tank volume (normalised)
-          var c = 0.0;            // current concentration
+          var c = 0.0;            // current concentration (deterministic ODE)
           var cin = 0.7, r = 0.5; // inflow concentration, flow rate
           var t = 0, hist = [], drops = [];
+
+          // Tank geometry (so we can spawn particles in it)
+          var tx = 60, ty = 54, tw = T.W - 150, th = T.H - 120;
+          var surf = ty + th * 0.16;                 // liquid surface
+          var inX = tx + tw * 0.30, outX = tx + tw;  // pipe x positions
+          var liqTop = surf + 4, liqBot = ty + th - 6;
+          var liqLeft = tx + 6, liqRight = tx + tw - 6;
+          var drainX = outX, drainY = ty + th - 16;
+
+          // Dye particles — a population whose *count* visualises the
+          // scalar concentration c (rather than a flat colour wash, which
+          // would teleport dye through the whole tank instantaneously). The
+          // ODE c' = (r/V)(c_in - c) still runs deterministically and drives
+          // the graph; the particles are an honest visual proxy. Their
+          // mean-field bookkeeping IS that equation: arrivals at rate
+          // r·c_in·N_MAX and per-particle drain probability r·dt give a
+          // steady state of c_in·N_MAX particles.
+          var N_MAX = 320;
+          var particles = [];     // {x, y, state, vx, vy}  state: 0 alive, 1 exiting
+          var arrAcc = 0;
 
           var WATER = [236, 245, 252], DYE = [36, 108, 190];
           function lerp(a,b,t){ return a+(b-a)*t; }
@@ -1639,10 +1670,23 @@ def _():
                             Math.round(lerp(c1[2],c2[2],t)) + ')';
           }
 
-          function reset() { c = 0; t = 0; hist = []; drops = []; }
+          function reset() {
+            c = 0; t = 0; hist = []; drops = []; particles = []; arrAcc = 0;
+          }
           el.querySelector('[data-b="reset"]').addEventListener('click', reset);
           el.querySelector('[data-b="dump"]').addEventListener('click', function () {
-            c = Math.min(1, c + 0.4);   // a sudden slug of dye
+            var slug = 0.4;
+            c = Math.min(1, c + slug);
+            // and seed the matching number of particles instantly, so the
+            // population catches up with the new concentration.
+            var need = Math.round(slug * N_MAX);
+            for (var k = 0; k < need; k++) {
+              particles.push({
+                x: liqLeft + Math.random() * (liqRight - liqLeft),
+                y: liqTop + Math.random() * (liqBot - liqTop),
+                vx: 0, vy: 0, state: 0
+              });
+            }
           });
           var sCin = el.querySelectorAll('input')[0], sR = el.querySelectorAll('input')[1];
           sCin.addEventListener('input', function () {
@@ -1654,35 +1698,54 @@ def _():
             el.querySelector('[data-v="r"]').textContent = r.toFixed(2);
           });
 
-          // tank geometry
-          var tx = 60, ty = 54, tw = T.W - 150, th = T.H - 120;
-          var surf = ty + th * 0.16;                 // liquid surface (volume fixed)
-          var inX = tx + tw * 0.30, outX = tx + tw;  // pipe x positions
           var spawnAcc = 0;
 
           function drawTank() {
             var ctx = T.ctx;
             ctx.clearRect(0, 0, T.W, T.H);
-            ctx.fillStyle = mix(WATER, DYE, c);
+            // Liquid: pure water + a very faint tint that scales with c —
+            // the dye PARTICLES (drawn below) carry the colour information,
+            // so the wash stays subtle and doesn't lie about uniformity.
+            ctx.fillStyle = mix(WATER, DYE, 0.12 * c);
             ctx.fillRect(tx, surf, tw, ty + th - surf);
+            // tank walls
             ctx.strokeStyle = '#9aa7b5'; ctx.lineWidth = 3;
             ctx.strokeRect(tx, ty, tw, th);
             ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1.5;
             ctx.beginPath(); ctx.moveTo(tx, surf); ctx.lineTo(tx + tw, surf); ctx.stroke();
-            // inflow pipe + stream
+            // Dye particles inside the tank — render BEFORE pipes so they
+            // don't overlap the plumbing.
+            ctx.fillStyle = 'rgba(36,108,190,0.78)';
+            for (var i = 0; i < particles.length; i++) {
+              var p = particles[i];
+              ctx.beginPath(); ctx.arc(p.x, p.y, 2.6, 0, 6.2832); ctx.fill();
+            }
+            // inflow pipe — stream visibility proportional to cin (no flow
+            // when c_in=0, vivid when c_in=1).
             ctx.fillStyle = '#7c8aa0'; ctx.fillRect(inX - 8, ty - 30, 16, 30);
-            ctx.fillStyle = mix(WATER, DYE, cin);
-            ctx.fillRect(inX - 3.5, ty, 7, surf - ty);
-            // outflow pipe + drain
+            if (cin > 0.01) {
+              ctx.fillStyle = mix(WATER, DYE, cin);
+              ctx.globalAlpha = Math.min(1, cin * 1.2 + 0.2);
+              ctx.fillRect(inX - 3.5, ty, 7, surf - ty);
+              ctx.globalAlpha = 1;
+            }
+            // outflow pipe — drain stream visibility proportional to c
+            // (nothing leaves when the tank is empty).
             ctx.fillStyle = '#7c8aa0'; ctx.fillRect(outX, ty + th - 22, 26, 13);
-            ctx.fillStyle = mix(WATER, DYE, c);
-            ctx.fillRect(outX + 26 - 7, ty + th - 22, 7, T.H - (ty + th - 22) - 8);
+            if (c > 0.01) {
+              ctx.fillStyle = mix(WATER, DYE, c);
+              ctx.globalAlpha = Math.min(1, c * 1.2 + 0.2);
+              ctx.fillRect(outX + 26 - 7, ty + th - 22, 7, T.H - (ty + th - 22) - 8);
+              ctx.globalAlpha = 1;
+            }
+            // inflow / drain droplet sprites (the stream's bright bits)
             for (var i = 0; i < drops.length; i++) {
               var d = drops[i];
               ctx.fillStyle = d.col;
               ctx.beginPath(); ctx.arc(d.x, d.y, 2.6, 0, 6.2832); ctx.fill();
             }
-            ctx.fillStyle = c > 0.5 ? 'rgba(255,255,255,0.92)' : '#33485c';
+            // labels
+            ctx.fillStyle = '#33485c';
             ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
             ctx.fillText('c = ' + c.toFixed(2), tx + tw/2, (surf + ty + th)/2 + 5);
             ctx.textAlign = 'left';
@@ -1719,24 +1782,77 @@ def _():
           function frame(now) {
             if (!running) return;
             var dt = Math.min(0.05, (now - last) / 1000); last = now;
-            // the linear ODE, integrated at 60 fps
+
+            // (1) Deterministic ODE — drives the graph and the c readout.
             c += (r / V) * (cin - c) * dt;
             if (c < 0) c = 0; if (c > 1) c = 1;
             t += dt; hist.push([t, c]);
             if (hist.length > 4000) hist.shift();
+
+            // (2) Particle visualisation. Spawn arrivals at rate r·c_in·N_MAX
+            // (so equilibrium density = c_in·N_MAX), drain each particle with
+            // per-step probability r·dt (so equilibrium = arrivals/rate).
+            arrAcc += r * cin * N_MAX * dt;
+            while (arrAcc >= 1 && particles.length < N_MAX + 40) {
+              arrAcc -= 1;
+              // arrive just under the surface at the inflow x, with a small
+              // sideways nudge so they don't all stack in one column
+              particles.push({
+                x: inX + (Math.random()-0.5) * 12,
+                y: surf + 4 + Math.random() * 6,
+                vx: (Math.random()-0.5) * 18,
+                vy: 12 + Math.random() * 8,
+                state: 0
+              });
+            }
+            // mark some alive particles for exit
+            var pExit = Math.min(0.5, r * dt);
+            for (var i = 0; i < particles.length; i++) {
+              if (particles[i].state === 0 && Math.random() < pExit) particles[i].state = 1;
+            }
+            // move particles
+            for (var i = particles.length - 1; i >= 0; i--) {
+              var p = particles[i];
+              if (p.state === 0) {
+                // Brownian drift inside the liquid region
+                p.vx += (Math.random()-0.5) * 80 * dt - 0.6 * p.vx * dt;
+                p.vy += (Math.random()-0.5) * 80 * dt - 0.6 * p.vy * dt;
+                p.x += p.vx * dt; p.y += p.vy * dt;
+                if (p.x < liqLeft) { p.x = liqLeft; p.vx = -p.vx; }
+                else if (p.x > liqRight) { p.x = liqRight; p.vx = -p.vx; }
+                if (p.y < liqTop) { p.y = liqTop; p.vy = -p.vy; }
+                else if (p.y > liqBot) { p.y = liqBot; p.vy = -p.vy; }
+              } else {
+                // exiting: head for the drain
+                var dx = drainX - p.x, dy = drainY - p.y;
+                var len = Math.hypot(dx, dy) || 1;
+                p.x += (dx/len) * 220 * dt; p.y += (dy/len) * 220 * dt;
+                if (len < 6) {
+                  particles.splice(i, 1);
+                  // emit a drain droplet exiting below the pipe
+                  drops.push({ x: outX + 26 - 3.5, y: ty + th - 14,
+                               vy: 130, col: 'rgba(36,108,190,0.85)', kind: 1 });
+                }
+              }
+            }
+
+            // (3) Inflow & drain droplet sprites for the visible streams.
             spawnAcc += r * dt * 9;
             while (spawnAcc >= 1) {
               spawnAcc -= 1;
-              drops.push({ x: inX, y: ty, vy: 150, col: mix(WATER, DYE, cin), kind: 0 });
-              drops.push({ x: outX + 26 - 3.5, y: ty + th - 14, vy: 120, col: mix(WATER, DYE, c), kind: 1 });
+              if (cin > 0.05)
+                drops.push({ x: inX, y: ty, vy: 150,
+                             col: 'rgba(36,108,190,' + (0.4 + 0.5*cin) + ')', kind: 0 });
             }
             for (var i = drops.length - 1; i >= 0; i--) {
               var d = drops[i]; d.y += d.vy * dt;
               if ((d.kind === 0 && d.y >= surf) || (d.kind === 1 && d.y >= T.H)) drops.splice(i, 1);
             }
+
             drawTank(); drawGraph();
             el.querySelector('[data-stat]').textContent =
-              'τ = V/r = ' + (V/r).toFixed(2) + ' s   ·   gap to c_in: ' + Math.abs(cin - c).toFixed(2);
+              'τ = V/r = ' + (V/r).toFixed(2) + ' s   ·   gap to c_in: ' + Math.abs(cin - c).toFixed(2) +
+              '   ·   ' + particles.length + ' dye particles';
             raf = requestAnimationFrame(frame);
           }
           raf = requestAnimationFrame(frame);
