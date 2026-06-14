@@ -42,6 +42,7 @@ def _(mo):
         | 10 | Drawn vs solved | lottie-web (keyframes) + Canvas 2D (integrated) | $\ddot y = -g$, restitution $e = 0.75$ — Ch 4 parable |
         | 11 | 120,000 particles | WebGPU + WGSL compute shader | Same damped pendulum as #4, RK2 dispatched GPU-side (Ch 13) |
         | 12 | Rumor through a crowd | Canvas 2D roaming agents + live logistic fit | $\dot y = b\,y(K-y)$ — spatial contagion vs. the well-mixed law (Ch 1) |
+        | 13 | Mixing tank | Canvas 2D + live ODE | $c' = \frac{r}{V}(c_\text{in}-c)$ — linear approach to equilibrium (Ch 2) |
 
         If a demo earns its keep, it graduates into a real chapter as a
         `delib` widget. If it doesn't, it dies here, cheaply.
@@ -1539,6 +1540,221 @@ def _(delib):
     return
 
 
+# ============================================================================
+# Demo 13 — A mixing tank (Canvas 2D; linear ODE, exponential approach)
+# ============================================================================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## 13 · A mixing tank
+
+        Chapter 2 is about **separable** and **linear** first-order
+        equations, and the cleanest place they meet is a tank of water.
+        Clear water starts inside; **coloured dye pours in** at the top,
+        the well-mixed mixture drains out the bottom at the same rate,
+        and the tank's colour chases the colour of the inflow.
+
+        Write $c(t)$ for the tank's concentration and $c_\text{in}$ for
+        the inflow's. Dye arrives at rate $r\,c_\text{in}$ and leaves at
+        rate $r\,c$ (it drains at the tank's *own* concentration,
+        because the tank is well mixed), so for a fixed volume $V$,
+
+        $$ \frac{dc}{dt} = \frac{r}{V}\,(c_\text{in} - c). $$
+
+        That single equation is **both** of the chapter's recipes at
+        once: *separable* — $\frac{dc}{c_\text{in}-c} = \frac{r}{V}\,dt$
+        — and *linear* — $c' + \frac{r}{V}c = \frac{r}{V}c_\text{in}$.
+        Either way the answer is an **exponential approach** to the
+        inflow colour,
+        $c(t) = c_\text{in} + (c_0 - c_\text{in})\,e^{-(r/V)\,t}$, with
+        time constant $\tau = V/r$.
+
+        Drag $c_\text{in}$ and watch the tank chase the new colour; turn
+        the flow rate $r$ up to chase it faster (smaller $\tau$). Hit
+        **dump dye** for a sudden slug and watch it wash out. The dashed
+        line on the graph is the equilibrium the tank is always heading
+        for — never quite reaching, always closing the remaining gap by
+        the same fraction each $\tau$.
+
+        *Why it matters:* "approach an equilibrium set by the outside
+        world, exponentially" is the shape of *every* linear first-order
+        story — Chapter 2's cooling coffee ($T' + kT = kT_r$ is the same
+        equation), a charging capacitor, a drug clearing your
+        bloodstream. Learn the tank and you've met all of them.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    import anywidget as _aw
+
+    class _MixingTank(_aw.AnyWidget):
+        _esm = r"""
+        function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <div style="flex:1;min-width:300px">
+                  <canvas data-tank style="width:100%;height:330px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff"></canvas>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">dye in at the top · well-mixed mixture out at the bottom</div>
+                </div>
+                <div style="flex:1;min-width:300px">
+                  <canvas data-graph style="width:100%;height:330px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff"></canvas>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">concentration c(t) · dashed = c_in (the equilibrium it chases)</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:18px;margin-top:8px;align-items:center;flex-wrap:wrap">
+                <label>inflow c_in <input type="range" min="0" max="1" step="0.02" value="0.7" data-k="cin"> <span data-v="cin">0.70</span></label>
+                <label>flow rate r <input type="range" min="0.1" max="2" step="0.05" value="0.5" data-k="r"> <span data-v="r">0.50</span></label>
+                <button data-b="dump" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">⬇ dump dye</button>
+                <button data-b="reset" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">↺ clear water</button>
+                <span data-stat style="color:#7c8aa0"></span>
+              </div>
+            </div>`;
+
+          var dpr = window.devicePixelRatio || 1;
+          function fit(c, h) {
+            var w = c.clientWidth || 320;
+            c.width = w * dpr; c.height = h * dpr;
+            var x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+            return { ctx: x, W: w, H: h };
+          }
+          var T = fit(el.querySelector('[data-tank]'), 330);
+          var G = fit(el.querySelector('[data-graph]'), 330);
+
+          var V = 1.0;            // tank volume (normalised)
+          var c = 0.0;            // current concentration
+          var cin = 0.7, r = 0.5; // inflow concentration, flow rate
+          var t = 0, hist = [], drops = [];
+
+          var WATER = [236, 245, 252], DYE = [36, 108, 190];
+          function lerp(a,b,t){ return a+(b-a)*t; }
+          function mix(c1, c2, t) {
+            t = t < 0 ? 0 : (t > 1 ? 1 : t);
+            return 'rgb(' + Math.round(lerp(c1[0],c2[0],t)) + ',' +
+                            Math.round(lerp(c1[1],c2[1],t)) + ',' +
+                            Math.round(lerp(c1[2],c2[2],t)) + ')';
+          }
+
+          function reset() { c = 0; t = 0; hist = []; drops = []; }
+          el.querySelector('[data-b="reset"]').addEventListener('click', reset);
+          el.querySelector('[data-b="dump"]').addEventListener('click', function () {
+            c = Math.min(1, c + 0.4);   // a sudden slug of dye
+          });
+          var sCin = el.querySelectorAll('input')[0], sR = el.querySelectorAll('input')[1];
+          sCin.addEventListener('input', function () {
+            cin = parseFloat(this.value);
+            el.querySelector('[data-v="cin"]').textContent = cin.toFixed(2);
+          });
+          sR.addEventListener('input', function () {
+            r = parseFloat(this.value);
+            el.querySelector('[data-v="r"]').textContent = r.toFixed(2);
+          });
+
+          // tank geometry
+          var tx = 60, ty = 54, tw = T.W - 150, th = T.H - 120;
+          var surf = ty + th * 0.16;                 // liquid surface (volume fixed)
+          var inX = tx + tw * 0.30, outX = tx + tw;  // pipe x positions
+          var spawnAcc = 0;
+
+          function drawTank() {
+            var ctx = T.ctx;
+            ctx.clearRect(0, 0, T.W, T.H);
+            ctx.fillStyle = mix(WATER, DYE, c);
+            ctx.fillRect(tx, surf, tw, ty + th - surf);
+            ctx.strokeStyle = '#9aa7b5'; ctx.lineWidth = 3;
+            ctx.strokeRect(tx, ty, tw, th);
+            ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(tx, surf); ctx.lineTo(tx + tw, surf); ctx.stroke();
+            // inflow pipe + stream
+            ctx.fillStyle = '#7c8aa0'; ctx.fillRect(inX - 8, ty - 30, 16, 30);
+            ctx.fillStyle = mix(WATER, DYE, cin);
+            ctx.fillRect(inX - 3.5, ty, 7, surf - ty);
+            // outflow pipe + drain
+            ctx.fillStyle = '#7c8aa0'; ctx.fillRect(outX, ty + th - 22, 26, 13);
+            ctx.fillStyle = mix(WATER, DYE, c);
+            ctx.fillRect(outX + 26 - 7, ty + th - 22, 7, T.H - (ty + th - 22) - 8);
+            for (var i = 0; i < drops.length; i++) {
+              var d = drops[i];
+              ctx.fillStyle = d.col;
+              ctx.beginPath(); ctx.arc(d.x, d.y, 2.6, 0, 6.2832); ctx.fill();
+            }
+            ctx.fillStyle = c > 0.5 ? 'rgba(255,255,255,0.92)' : '#33485c';
+            ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('c = ' + c.toFixed(2), tx + tw/2, (surf + ty + th)/2 + 5);
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#8a96a5'; ctx.font = '11px sans-serif';
+            ctx.fillText('in: c_in = ' + cin.toFixed(2), inX - 26, ty - 36);
+          }
+
+          function drawGraph() {
+            var ctx = G.ctx, W = G.W, H = G.H;
+            ctx.clearRect(0, 0, W, H);
+            var pad = { l: 36, r: 12, t: 16, b: 24 };
+            var x0 = pad.l, x1 = W - pad.r, y0 = H - pad.b, y1 = pad.t;
+            ctx.strokeStyle = '#dde4ec'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(x0, y1); ctx.lineTo(x0, y0); ctx.lineTo(x1, y0); ctx.stroke();
+            ctx.fillStyle = '#7c8aa0'; ctx.font = '10px sans-serif';
+            ctx.fillText('1', x0 - 12, y1 + 4); ctx.fillText('0', x0 - 12, y0);
+            ctx.fillText('time →', x1 - 36, y0 + 16);
+            var tmax = Math.max(8, hist.length ? hist[hist.length-1][0] : 8);
+            function X(tt){ return x0 + (tt/tmax)*(x1-x0); }
+            function Y(v){ return y0 + v*(y1-y0); }
+            ctx.strokeStyle = mix(WATER, DYE, cin); ctx.setLineDash([5,4]); ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(x0, Y(cin)); ctx.lineTo(x1, Y(cin)); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#5b7db1'; ctx.fillText('c_in', x1 - 26, Y(cin) - 4);
+            ctx.strokeStyle = '#2f6fb0'; ctx.lineWidth = 2.4; ctx.beginPath();
+            for (var i = 0; i < hist.length; i++) {
+              var hx = X(hist[i][0]), hy = Y(hist[i][1]);
+              if (i === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
+            }
+            ctx.stroke();
+          }
+
+          var raf, running = true, last = performance.now();
+          function frame(now) {
+            if (!running) return;
+            var dt = Math.min(0.05, (now - last) / 1000); last = now;
+            // the linear ODE, integrated at 60 fps
+            c += (r / V) * (cin - c) * dt;
+            if (c < 0) c = 0; if (c > 1) c = 1;
+            t += dt; hist.push([t, c]);
+            if (hist.length > 4000) hist.shift();
+            spawnAcc += r * dt * 9;
+            while (spawnAcc >= 1) {
+              spawnAcc -= 1;
+              drops.push({ x: inX, y: ty, vy: 150, col: mix(WATER, DYE, cin), kind: 0 });
+              drops.push({ x: outX + 26 - 3.5, y: ty + th - 14, vy: 120, col: mix(WATER, DYE, c), kind: 1 });
+            }
+            for (var i = drops.length - 1; i >= 0; i--) {
+              var d = drops[i]; d.y += d.vy * dt;
+              if ((d.kind === 0 && d.y >= surf) || (d.kind === 1 && d.y >= T.H)) drops.splice(i, 1);
+            }
+            drawTank(); drawGraph();
+            el.querySelector('[data-stat]').textContent =
+              'τ = V/r = ' + (V/r).toFixed(2) + ' s   ·   gap to c_in: ' + Math.abs(cin - c).toFixed(2);
+            raf = requestAnimationFrame(frame);
+          }
+          raf = requestAnimationFrame(frame);
+          return function () { running = false; cancelAnimationFrame(raf); };
+        }
+        export default { render };
+        """
+
+    mixing_tank = _MixingTank()
+    return (mixing_tank,)
+
+
+@app.cell(hide_code=True)
+def _(mixing_tank, mo):
+    mo.ui.anywidget(mixing_tank)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
@@ -1546,7 +1762,7 @@ def _(mo):
         ---
         ## The full bench has now played
 
-        Twelve demos, ten technologies (Canvas 2D keeps earning its
+        Thirteen demos, ten technologies (Canvas 2D keeps earning its
         keep). The only candidate left unbuilt is **CodeMirror 6**
         (embedded code editing inside a
         widget) — skipped deliberately, because marimo already gives
