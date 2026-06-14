@@ -41,6 +41,7 @@ def _(mo):
         | 9 | Anatomy of a solution | GSAP 3 timeline + SVG | $x(t) = x_h(t) + x_p(t)$, choreographed (Ch 7) |
         | 10 | Drawn vs solved | lottie-web (keyframes) + Canvas 2D (integrated) | $\ddot y = -g$, restitution $e = 0.75$ — Ch 4 parable |
         | 11 | 120,000 particles | WebGPU + WGSL compute shader | Same damped pendulum as #4, RK2 dispatched GPU-side (Ch 13) |
+        | 12 | Rumor through a crowd | Canvas 2D agent sim + live ODE | $\dot y = b\,y(K-y)$ — logistic spread emerging from whispers (Ch 1) |
 
         If a demo earns its keep, it graduates into a real chapter as a
         `delib` widget. If it doesn't, it dies here, cheaply.
@@ -1483,6 +1484,262 @@ def _(mo, webgpu_flow):
     return
 
 
+# ============================================================================
+# Demo 12 — A rumor through a crowd (Canvas 2D; agent sim vs. live logistic ODE)
+# ============================================================================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## 12 · A rumor through a crowd
+
+        Chapter 1 opens with a rumor tearing across a 1,000-person
+        campus and turns it into the **logistic equation**
+        $\dot y = b\,y\,(K - y)$ — knowers $y$ times fresh ears
+        $(K - y)$, because spreading takes a *pair*. This demo lets
+        you watch that product do its work, one whisper at a time.
+
+        Every dot is a person. **Click or drag across the crowd to
+        plant the rumor** — that's choosing the initial condition
+        $y_0$. Then each frame, random people cross paths, and
+        whenever someone who *knows* meets someone who *doesn't*, the
+        rumor jumps and the whole room slowly **darkens into the mood
+        of the thing everyone now knows**. The amber arcs are
+        individual tellings.
+
+        The graph tracks the fraction who know: the **dots are the
+        actual crowd**, the **line is Chapter 1's logistic ODE
+        integrated live at the same rate**. The dots wiggle right
+        along the curve — and that's the punchline. Nobody programmed
+        an S-curve; it *emerges* from a thousand random pairwise
+        whispers. The logistic law isn't an assumption *about* the
+        crowd, it's just the bookkeeping of $y \times (K - y)$
+        encounters, and the smooth curve is what that bookkeeping
+        looks like *on average*.
+
+        Hit **↺ new rumor** a few times. The curve keeps the same
+        shape every run, but the *moment it ignites* jitters — because
+        when only three people know, sheer chance decides how quickly
+        it catches. That gap between one noisy run and the smooth
+        average **is** the difference between a real crowd and the ODE
+        that models it: the equation is the large-crowd limit.
+
+        *Why it matters:* this is where a first-order ODE *comes
+        from*. The crawling start (few tellers), the eruption in the
+        middle (the product $y(K-y)$ peaks), and the plateau (no fresh
+        ears left) are the three acts of Chapter 1 — here you trigger
+        them with your own finger and watch the equation keep pace.
+
+        *(With a nod to Nicky Case's "We Become What We Behold" — the
+        same darkening-crowd feel, repurposed for contagion.)*
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    import anywidget as _aw
+
+    class _RumorCrowd(_aw.AnyWidget):
+        _esm = r"""
+        function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <div style="flex:1;min-width:300px">
+                  <canvas data-crowd style="width:100%;height:320px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#eef2f7;touch-action:none;cursor:crosshair"></canvas>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">the crowd · click / drag to plant the rumor (choose y₀)</div>
+                </div>
+                <div style="flex:1;min-width:300px">
+                  <canvas data-graph style="width:100%;height:320px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff"></canvas>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">fraction who know · dots = crowd, line = logistic ODE</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:18px;margin-top:8px;align-items:center;flex-wrap:wrap">
+                <label>spread rate <input type="range" min="1" max="40" step="1" value="25" data-k="rate"> <span data-v="rate">25</span></label>
+                <button data-b="reset" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">↺ new rumor</button>
+                <span data-stat style="color:#7c8aa0"></span>
+              </div>
+            </div>`;
+
+          var crowd = el.querySelector('[data-crowd]');
+          var graph = el.querySelector('[data-graph]');
+          var dpr = window.devicePixelRatio || 1;
+          function fit(c) {
+            var w = c.clientWidth || 320, h = 320;
+            c.width = w * dpr; c.height = h * dpr;
+            var x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+            return { ctx: x, W: w, H: h };
+          }
+          var C = fit(crowd), G = fit(graph);
+
+          var COLS = 40, ROWS = 25, N = COLS * ROWS;   // a 1,000-person campus
+          var aware = new Uint8Array(N);
+          var glow = new Float32Array(N);
+          var px = new Float32Array(N), py = new Float32Array(N);
+          (function layout() {
+            var m = 16;
+            var sx = (C.W - 2*m) / (COLS - 1), sy = (C.H - 2*m) / (ROWS - 1);
+            for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) {
+              var i = r*COLS + c; px[i] = m + c*sx; py[i] = m + r*sy;
+            }
+          })();
+          var dotR = Math.max(2.4, Math.min((C.W-32)/COLS, (C.H-32)/ROWS) * 0.34);
+
+          var rate = 25, yCount = 0, yOde = 0, t = 0;
+          var hist = [], whispers = [];
+
+          function recount() { var s = 0; for (var i = 0; i < N; i++) s += aware[i]; yCount = s; }
+          function seed(k) {
+            aware.fill(0); glow.fill(0);
+            for (var n = 0; n < k; n++) { var i = (Math.random()*N)|0; aware[i] = 1; glow[i] = 1; }
+            recount(); yOde = yCount; t = 0; hist = []; whispers = [];
+          }
+          seed(3);   // "3 people know a juicy rumor"
+
+          function plantAt(cx, cy) {
+            var rad = dotR * 3.2, rad2 = rad*rad;
+            for (var i = 0; i < N; i++) {
+              if (!aware[i]) {
+                var dx = px[i]-cx, dy = py[i]-cy;
+                if (dx*dx + dy*dy < rad2) { aware[i] = 1; glow[i] = 1; }
+              }
+            }
+            recount();
+          }
+          var pressing = false;
+          function evToCanvas(e) {
+            var r = crowd.getBoundingClientRect();
+            return [(e.clientX-r.left)*(C.W/r.width), (e.clientY-r.top)*(C.H/r.height)];
+          }
+          crowd.addEventListener('pointerdown', function (e) { pressing = true; var p = evToCanvas(e); plantAt(p[0], p[1]); });
+          crowd.addEventListener('pointermove', function (e) { if (pressing) { var p = evToCanvas(e); plantAt(p[0], p[1]); } });
+          window.addEventListener('pointerup', function () { pressing = false; });
+          el.querySelector('[data-b="reset"]').addEventListener('click', function () { seed(3); });
+          el.querySelector('input').addEventListener('input', function () {
+            rate = parseInt(this.value, 10);
+            el.querySelector('[data-v="rate"]').textContent = rate;
+          });
+
+          function lerp(a, b, t) { return a + (b - a) * t; }
+          function mix(c1, c2, t) {
+            return 'rgb(' + Math.round(lerp(c1[0],c2[0],t)) + ',' +
+                            Math.round(lerp(c1[1],c2[1],t)) + ',' +
+                            Math.round(lerp(c1[2],c2[2],t)) + ')';
+          }
+          var BG_LIGHT = [238,242,247], BG_DARK = [12,17,24];
+          var UN_LIGHT = [154,167,181], UN_DARK = [44,56,70];
+
+          function step() {
+            // Pairwise encounters: a random teller meets a random ear. The
+            // chance an encounter spreads is (y/N)·((N-y)/N), so the expected
+            // gain per frame is rate·y(N-y)/N² — i.e. dy = (rate/N)·y(1-y/N),
+            // the logistic law, emerging from individual whispers.
+            for (var e = 0; e < rate; e++) {
+              if (yCount === 0 || yCount === N) break;
+              var a = (Math.random()*N)|0; if (!aware[a]) continue;
+              var b = (Math.random()*N)|0; if (aware[b]) continue;
+              aware[b] = 1; glow[b] = 1; yCount++;
+              if (whispers.length < 80)
+                whispers.push({ ax:px[a], ay:py[a], bx:px[b], by:py[b], life:1 });
+            }
+            // The same logistic ODE, integrated live at the current rate.
+            var aEff = rate / N;
+            yOde = yOde + aEff * yOde * (1 - yOde / N);
+            if (yOde > N) yOde = N;
+            t++; hist.push([t, yCount/N, yOde/N]);
+            if (hist.length > 4000) hist.shift();
+          }
+
+          function drawCrowd() {
+            var f = yCount / N, ease = f*f*(3 - 2*f);   // smoothstep mood
+            C.ctx.fillStyle = mix(BG_LIGHT, BG_DARK, ease);
+            C.ctx.fillRect(0, 0, C.W, C.H);
+            for (var w = whispers.length - 1; w >= 0; w--) {
+              var s = whispers[w];
+              C.ctx.strokeStyle = 'rgba(244,184,96,' + (0.55*s.life) + ')';
+              C.ctx.lineWidth = 1.2;
+              C.ctx.beginPath(); C.ctx.moveTo(s.ax, s.ay); C.ctx.lineTo(s.bx, s.by); C.ctx.stroke();
+              s.life -= 0.06; if (s.life <= 0) whispers.splice(w, 1);
+            }
+            var unColor = mix(UN_LIGHT, UN_DARK, ease);
+            for (var i = 0; i < N; i++) {
+              if (glow[i] > 0.001) glow[i] *= 0.92;
+              if (aware[i]) {
+                if (glow[i] > 0.05) {
+                  C.ctx.fillStyle = 'rgba(244,184,96,' + (0.35*glow[i]) + ')';
+                  C.ctx.beginPath(); C.ctx.arc(px[i], py[i], dotR*2.4, 0, 6.2832); C.ctx.fill();
+                }
+                C.ctx.fillStyle = '#f4b860';
+                C.ctx.beginPath(); C.ctx.arc(px[i], py[i], dotR, 0, 6.2832); C.ctx.fill();
+              } else {
+                C.ctx.fillStyle = unColor;
+                C.ctx.beginPath(); C.ctx.arc(px[i], py[i], dotR*0.82, 0, 6.2832); C.ctx.fill();
+              }
+            }
+          }
+
+          function drawGraph() {
+            var ctx = G.ctx, W = G.W, H = G.H;
+            ctx.clearRect(0, 0, W, H);
+            var pad = { l: 34, r: 12, t: 16, b: 24 };
+            var x0 = pad.l, x1 = W - pad.r, y0 = H - pad.b, y1 = pad.t;
+            ctx.strokeStyle = '#dde4ec'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(x0, y1); ctx.lineTo(x0, y0); ctx.lineTo(x1, y0); ctx.stroke();
+            ctx.fillStyle = '#7c8aa0'; ctx.font = '10px sans-serif';
+            ctx.fillText('1', x0 - 12, y1 + 4); ctx.fillText('0', x0 - 12, y0);
+            ctx.fillText('time →', x1 - 36, y0 + 16);
+            var tmax = Math.max(60, hist.length ? hist[hist.length-1][0] : 60);
+            function X(tt) { return x0 + (tt / tmax) * (x1 - x0); }
+            function Y(ff) { return y0 + ff * (y1 - y0); }
+            ctx.strokeStyle = '#5b7db1'; ctx.lineWidth = 2; ctx.beginPath();
+            for (var i = 0; i < hist.length; i++) {
+              var hx = X(hist[i][0]), hy = Y(hist[i][2]);
+              if (i === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
+            }
+            ctx.stroke();
+            ctx.fillStyle = '#d1495b';
+            var stepN = Math.max(1, Math.floor(hist.length / 130));
+            for (var i = 0; i < hist.length; i += stepN) {
+              ctx.beginPath(); ctx.arc(X(hist[i][0]), Y(hist[i][1]), 1.8, 0, 6.2832); ctx.fill();
+            }
+            ctx.fillStyle = '#5b7db1'; ctx.fillRect(x1 - 148, y1 + 2, 14, 3);
+            ctx.fillStyle = '#7c8aa0'; ctx.fillText('logistic ODE', x1 - 130, y1 + 6);
+            ctx.fillStyle = '#d1495b';
+            ctx.beginPath(); ctx.arc(x1 - 141, y1 + 16, 2.2, 0, 6.2832); ctx.fill();
+            ctx.fillStyle = '#7c8aa0'; ctx.fillText('the crowd', x1 - 130, y1 + 19);
+          }
+
+          function updateStat() {
+            el.querySelector('[data-stat]').textContent =
+              yCount + ' / ' + N + ' know  (' + Math.round(100*yCount/N) + '%)';
+          }
+
+          var raf, running = true, acc = 0, last = performance.now();
+          function frame(now) {
+            if (!running) return;
+            acc += Math.min(0.05, (now - last) / 1000); last = now;
+            while (acc > 1/45) { step(); acc -= 1/45; }   // ~45 model steps/sec
+            drawCrowd(); drawGraph(); updateStat();
+            raf = requestAnimationFrame(frame);
+          }
+          raf = requestAnimationFrame(frame);
+          return function () { running = false; cancelAnimationFrame(raf); };
+        }
+        export default { render };
+        """
+
+    rumor_crowd = _RumorCrowd()
+    return (rumor_crowd,)
+
+
+@app.cell(hide_code=True)
+def _(mo, rumor_crowd):
+    mo.ui.anywidget(rumor_crowd)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
@@ -1490,8 +1747,9 @@ def _(mo):
         ---
         ## The full bench has now played
 
-        Eleven demos, ten technologies. The only candidate left
-        unbuilt is **CodeMirror 6** (embedded code editing inside a
+        Twelve demos, ten technologies (Canvas 2D keeps earning its
+        keep). The only candidate left unbuilt is **CodeMirror 6**
+        (embedded code editing inside a
         widget) — skipped deliberately, because marimo already gives
         every chapter cell-level code editing; duplicating it inside
         a widget adds machinery without adding capability.
@@ -1516,6 +1774,7 @@ def _(mo):
 
         | Demo | Earns its keep in | Replaces |
         |------|-------------------|----------|
+        | 12 · rumor crowd | Ch 1 (where the logistic law is born) | the S-curve handed over as a formula, never *grown* from interactions |
         | 1 · grab the mass | Ch 6 / Ch 7 | "imagine pulling it down…" prose |
         | 2 · hear resonance | Ch 7 | the $A(\omega)$ peak as a visual abstraction |
         | 7 · D3 bifurcation | Ch 10 | static bifurcation diagrams without a slider |
