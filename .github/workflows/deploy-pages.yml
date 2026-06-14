@@ -12,6 +12,7 @@ on:
       - "scripts/build_wasm_site.py"
       - "manim/**"
       - "assets/**"
+      - "examples/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
@@ -114,6 +115,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install .
+
+      # Stale-examples guard. The standalone notebooks in examples/ are
+      # regenerated from the chapter source on every build; if a chapter
+      # was edited without re-running the build locally, the committed
+      # copy will be out of sync. This step regenerates them in memory
+      # and fails (with a unified diff) if anything differs.
+      - name: Check standalone examples are in sync
+        run: python scripts/build_wasm_site.py --check-examples
 
       - name: Build interactive WASM site
         run: python scripts/build_wasm_site.py

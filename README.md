@@ -7,7 +7,20 @@ slider, watch the field / phase portrait / solution respond instantly.
 The first subject is **differential equations**, under
 [`differential_equations/`](differential_equations/).
 
-## Quickstart
+## Run one chapter with one command (zero install)
+
+If you just want to try the project — no clone, no install:
+
+```bash
+uv run marimo edit https://raw.githubusercontent.com/Chipmunk91/Math_learn/main/examples/spotlight_resonance.py
+```
+
+That's a single-file standalone notebook (Ch 7, damping/forcing/resonance)
+with everything inlined and a PEP 723 header — uv builds a temporary venv
+and launches marimo. See [`examples/`](examples/) for the list and a fuller
+explanation.
+
+## Quickstart (full repo)
 
 ```bash
 uv sync                       # create the env and install deps + delib

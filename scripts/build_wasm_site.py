@@ -35,6 +35,7 @@ DELIB_DIR = REPO / "differential_equations" / "delib"
 ASSETS_DIR = REPO / "assets"  # pre-rendered media (e.g. Manim clips) -> site/assets/
 SITE = REPO / "site"
 WEB = REPO / "web"            # static templates/assets (landing.html, …)
+EXAMPLES_DIR = REPO / "examples"  # standalone `uv run` notebooks (auto-generated)
 
 # Absolute base URL for share-card (Open Graph) tags. Default to the
 # GitHub Pages project-page convention; override with SITE_BASE_URL for a
@@ -574,7 +575,111 @@ def build_index(names: list[str]) -> str:
     )
 
 
+# ----------------------------------------------------------------------------
+# Standalone `uv run` notebooks for marimo-team/spotlights and similar
+# external links. Each entry pre-bundles delib (via inline_delib) and prepends
+# a PEP 723 header, so anyone with uv can run the chapter with one command:
+#
+#     uv run marimo edit examples/<file>
+#
+# Regenerated on every build from the live chapter source; if the committed
+# file ever drifts from a regen, CI's `--check` mode prints what changed and
+# exits 1 (see .github/workflows/deploy-pages.yml). To add a flagship later:
+# append (slug, out-filename, headline) here.
+EXAMPLES: list[tuple[str, str, str]] = [
+    (
+        "ch07_damping_forcing_resonance",
+        "spotlight_resonance.py",
+        "Ch 7 — Damping, forcing, resonance",
+    ),
+]
+
+
+def _example_banner(slug: str, headline: str) -> str:
+    """Top-of-file docstring for a generated example notebook."""
+    return (
+        '"""' + headline + '\n\n'
+        f'A standalone, single-file marimo notebook from the Math Learn\n'
+        f'differential-equations course. Run it with one command:\n\n'
+        f'    uv run marimo edit examples/{Path(slug).name}\n\n'
+        f'(uv reads the PEP 723 header below to fetch marimo and the\n'
+        f'minimal scientific stack into a temporary venv — no install,\n'
+        f'no virtualenv to manage.)\n\n'
+        f'The full course (eight chapters and an animation lab) is at\n'
+        f'    {SITE_BASE_URL}/\n\n'
+        f'-----------------------------------------------------------------\n'
+        f'AUTO-GENERATED. Do not edit by hand. This file is inlined from\n'
+        f'  differential_equations/chapters/{slug}.py\n'
+        f'with the local `delib` package baked into the import statement\n'
+        f'via `inline_delib()`. Regenerated on every site build by\n'
+        f'`python scripts/build_wasm_site.py`; CI fails if the committed\n'
+        f'copy is stale.\n'
+        f'-----------------------------------------------------------------\n'
+        f'"""\n\n'
+    )
+
+
+def render_example(slug: str, headline: str) -> str:
+    """Return the standalone-`.py` content for a chapter slug.
+
+    Same transform export() applies for HTML: PEP 723 header + delib
+    inlined. The banner docstring is squeezed in after the header so uv
+    still finds the script metadata at the top.
+    """
+    src_path = CHAPTERS_DIR / f"{slug}.py"
+    transformed = PEP723_HEADER + _example_banner(slug, headline) + inline_delib(
+        src_path.read_text(encoding="utf-8")
+    )
+    return transformed
+
+
+def build_examples(check: bool = False) -> int:
+    """Generate every standalone notebook listed in EXAMPLES.
+
+    With ``check=True``, regenerate in-memory and compare against the
+    committed file. If they differ (or the file is missing), print a
+    diff and return 1 — the CI guard against silent drift. Returns 0
+    on success.
+    """
+    EXAMPLES_DIR.mkdir(parents=True, exist_ok=True)
+    drifted: list[str] = []
+    for slug, out_name, headline in EXAMPLES:
+        new = render_example(slug, headline)
+        out = EXAMPLES_DIR / out_name
+        if check:
+            old = out.read_text(encoding="utf-8") if out.exists() else ""
+            if old != new:
+                drifted.append(out_name)
+                import difflib
+
+                d = difflib.unified_diff(
+                    old.splitlines(keepends=True),
+                    new.splitlines(keepends=True),
+                    fromfile=f"examples/{out_name} (committed)",
+                    tofile=f"examples/{out_name} (regenerated)",
+                    n=2,
+                )
+                sys.stderr.write("".join(list(d)[:80]))
+            continue
+        out.write_text(new, encoding="utf-8")
+        print(f"Wrote examples/{out_name}  ({len(new):,} bytes)  from {slug}.py")
+
+    if check and drifted:
+        sys.stderr.write(
+            f"\nexamples/ is stale ({', '.join(drifted)}). "
+            f"Run `python scripts/build_wasm_site.py` and commit the result.\n"
+        )
+        return 1
+    return 0
+
+
 def main() -> int:
+    # CI guard mode: regenerate the standalone examples in memory and fail
+    # loudly if the committed copy is out of date. The deploy workflow runs
+    # this before the real build to surface stale examples in the PR.
+    if "--check-examples" in sys.argv:
+        return build_examples(check=True)
+
     nbs = chapters()
     if not nbs:
         print("No chapter notebooks found.", file=sys.stderr)
@@ -598,6 +703,10 @@ def main() -> int:
 
     (SITE / "index.html").write_text(build_index(names), encoding="utf-8")
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
+
+    # Standalone example notebooks (kept in sync with the chapter source).
+    build_examples(check=False)
+
     print(f"Built site with {len(names)} chapter(s) at {SITE}")
     return 0
 
