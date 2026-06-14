@@ -595,40 +595,50 @@ EXAMPLES: list[tuple[str, str, str]] = [
 ]
 
 
-def _example_banner(slug: str, headline: str) -> str:
-    """Top-of-file docstring for a generated example notebook."""
+def _example_banner(slug: str, headline: str, out_name: str) -> str:
+    """Banner inserted between the PEP 723 header and `import marimo`.
+
+    Comment-only on purpose: a module-level docstring would sit at the
+    top of the AST and cause marimo's notebook parser to silently fall
+    back to "blank notebook" instead of recognising our @app.cell
+    structure — the file would open in marimo edit with no content.
+    """
     return (
-        '"""' + headline + '\n\n'
-        f'A standalone, single-file marimo notebook from the Math Learn\n'
-        f'differential-equations course. Run it with one command:\n\n'
-        f'    uv run marimo edit examples/{Path(slug).name}\n\n'
-        f'(uv reads the PEP 723 header below to fetch marimo and the\n'
-        f'minimal scientific stack into a temporary venv — no install,\n'
-        f'no virtualenv to manage.)\n\n'
-        f'The full course (eight chapters and an animation lab) is at\n'
-        f'    {SITE_BASE_URL}/\n\n'
-        f'-----------------------------------------------------------------\n'
-        f'AUTO-GENERATED. Do not edit by hand. This file is inlined from\n'
-        f'  differential_equations/chapters/{slug}.py\n'
-        f'with the local `delib` package baked into the import statement\n'
-        f'via `inline_delib()`. Regenerated on every site build by\n'
-        f'`python scripts/build_wasm_site.py`; CI fails if the committed\n'
-        f'copy is stale.\n'
-        f'-----------------------------------------------------------------\n'
-        f'"""\n\n'
+        "#\n"
+        f"# {headline}\n"
+        f"# {'=' * len(headline)}\n"
+        f"# A standalone, single-file marimo notebook from the Math\n"
+        f"# Learn differential-equations course. Run it with:\n"
+        f"#\n"
+        f"#     uvx marimo edit --sandbox {out_name}\n"
+        f"#\n"
+        f"# uvx provisions an ephemeral marimo; --sandbox tells it to\n"
+        f"# read the PEP 723 header above and install the notebook's\n"
+        f"# own deps (numpy, sympy, plotly, anywidget) in a second\n"
+        f"# ephemeral venv. Full course (8 chapters + an animation lab):\n"
+        f"#     {SITE_BASE_URL}/\n"
+        f"#\n"
+        f"# AUTO-GENERATED. Do not edit by hand. Regenerated on every\n"
+        f"# site build from\n"
+        f"#   differential_equations/chapters/{slug}.py\n"
+        f"# with the local `delib` package baked into the import via\n"
+        f"# inline_delib(); CI fails the deploy if this file is stale.\n"
+        f"#\n"
     )
 
 
-def render_example(slug: str, headline: str) -> str:
+def render_example(slug: str, headline: str, out_name: str) -> str:
     """Return the standalone-`.py` content for a chapter slug.
 
     Same transform export() applies for HTML: PEP 723 header + delib
-    inlined. The banner docstring is squeezed in after the header so uv
-    still finds the script metadata at the top.
+    inlined. The comment-only banner sits between them so marimo's
+    notebook parser still sees `import marimo` as the first statement.
     """
     src_path = CHAPTERS_DIR / f"{slug}.py"
-    transformed = PEP723_HEADER + _example_banner(slug, headline) + inline_delib(
-        src_path.read_text(encoding="utf-8")
+    transformed = (
+        PEP723_HEADER
+        + _example_banner(slug, headline, out_name)
+        + inline_delib(src_path.read_text(encoding="utf-8"))
     )
     return transformed
 
@@ -644,7 +654,7 @@ def build_examples(check: bool = False) -> int:
     EXAMPLES_DIR.mkdir(parents=True, exist_ok=True)
     drifted: list[str] = []
     for slug, out_name, headline in EXAMPLES:
-        new = render_example(slug, headline)
+        new = render_example(slug, headline, out_name)
         out = EXAMPLES_DIR / out_name
         if check:
             old = out.read_text(encoding="utf-8") if out.exists() else ""

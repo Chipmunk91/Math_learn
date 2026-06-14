@@ -8,30 +8,26 @@
 #     "plotly",
 # ]
 # ///
-"""Ch 7 — Damping, forcing, resonance
-
-A standalone, single-file marimo notebook from the Math Learn
-differential-equations course. Run it with one command:
-
-    uv run marimo edit examples/ch07_damping_forcing_resonance
-
-(uv reads the PEP 723 header below to fetch marimo and the
-minimal scientific stack into a temporary venv — no install,
-no virtualenv to manage.)
-
-The full course (eight chapters and an animation lab) is at
-    https://chipmunk91.github.io/Math_learn/
-
------------------------------------------------------------------
-AUTO-GENERATED. Do not edit by hand. This file is inlined from
-  differential_equations/chapters/ch07_damping_forcing_resonance.py
-with the local `delib` package baked into the import statement
-via `inline_delib()`. Regenerated on every site build by
-`python scripts/build_wasm_site.py`; CI fails if the committed
-copy is stale.
------------------------------------------------------------------
-"""
-
+#
+# Ch 7 — Damping, forcing, resonance
+# ==================================
+# A standalone, single-file marimo notebook from the Math
+# Learn differential-equations course. Run it with:
+#
+#     uvx marimo edit --sandbox spotlight_resonance.py
+#
+# uvx provisions an ephemeral marimo; --sandbox tells it to
+# read the PEP 723 header above and install the notebook's
+# own deps (numpy, sympy, plotly, anywidget) in a second
+# ephemeral venv. Full course (8 chapters + an animation lab):
+#     https://chipmunk91.github.io/Math_learn/
+#
+# AUTO-GENERATED. Do not edit by hand. Regenerated on every
+# site build from
+#   differential_equations/chapters/ch07_damping_forcing_resonance.py
+# with the local `delib` package baked into the import via
+# inline_delib(); CI fails the deploy if this file is stale.
+#
 import marimo
 
 __generated_with = "0.9.0"
