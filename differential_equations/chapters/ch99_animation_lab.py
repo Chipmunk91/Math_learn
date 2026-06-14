@@ -41,7 +41,7 @@ def _(mo):
         | 9 | Anatomy of a solution | GSAP 3 timeline + SVG | $x(t) = x_h(t) + x_p(t)$, choreographed (Ch 7) |
         | 10 | Drawn vs solved | lottie-web (keyframes) + Canvas 2D (integrated) | $\ddot y = -g$, restitution $e = 0.75$ — Ch 4 parable |
         | 11 | 120,000 particles | WebGPU + WGSL compute shader | Same damped pendulum as #4, RK2 dispatched GPU-side (Ch 13) |
-        | 12 | Rumor through a crowd | Canvas 2D agent sim + live ODE | $\dot y = b\,y(K-y)$ — logistic spread emerging from whispers (Ch 1) |
+        | 12 | Rumor through a crowd | Canvas 2D roaming agents + live logistic fit | $\dot y = b\,y(K-y)$ — spatial contagion vs. the well-mixed law (Ch 1) |
 
         If a demo earns its keep, it graduates into a real chapter as a
         `delib` widget. If it doesn't, it dies here, cheaply.
@@ -1493,45 +1493,39 @@ def _(mo):
         r"""
         ## 12 · A rumor through a crowd
 
-        Chapter 1 opens with a rumor tearing across a 1,000-person
-        campus and turns it into the **logistic equation**
-        $\dot y = b\,y\,(K - y)$ — knowers $y$ times fresh ears
-        $(K - y)$, because spreading takes a *pair*. This demo lets
-        you watch that product do its work, one whisper at a time.
+        Chapter 1 turns a rumor on a campus into the **logistic
+        equation** $\dot y = b\,y\,(K - y)$ — knowers $y$ times fresh
+        ears $(K - y)$, because spreading takes a *pair*. Here that
+        happens for real, one person at a time.
 
-        Every dot is a person. **Click or drag across the crowd to
-        plant the rumor** — that's choosing the initial condition
-        $y_0$. Then each frame, random people cross paths, and
-        whenever someone who *knows* meets someone who *doesn't*, the
-        rumor jumps and the whole room slowly **darkens into the mood
-        of the thing everyone now knows**. The amber arcs are
-        individual tellings.
+        Every figure is someone walking around. Three start knowing
+        (amber); everyone else (grey) is still in the dark. **Click or
+        drag across the crowd to plant the rumor** wherever you like —
+        that's choosing the initial condition. Whenever a knower bumps
+        into someone who hasn't heard, the rumor jumps and they light
+        up, and with each telling the room **darkens into the mood of
+        the thing everyone now knows**.
 
-        The graph tracks the fraction who know: the **dots are the
-        actual crowd**, the **line is Chapter 1's logistic ODE
-        integrated live at the same rate**. The dots wiggle right
-        along the curve — and that's the punchline. Nobody programmed
-        an S-curve; it *emerges* from a thousand random pairwise
-        whispers. The logistic law isn't an assumption *about* the
-        crowd, it's just the bookkeeping of $y \times (K - y)$
-        encounters, and the smooth curve is what that bookkeeping
-        looks like *on average*.
+        The graph tracks the fraction who know (red), with **Chapter
+        1's logistic law fit to the crowd in real time** (blue). That
+        S-shape — slow start, middle eruption, plateau — *emerges*;
+        nobody imposed it. It's just the bookkeeping of $y \times
+        (K - y)$ encounters playing out on the floor in front of you.
 
-        Hit **↺ new rumor** a few times. The curve keeps the same
-        shape every run, but the *moment it ignites* jitters — because
-        when only three people know, sheer chance decides how quickly
-        it catches. That gap between one noisy run and the smooth
-        average **is** the difference between a real crowd and the ODE
-        that models it: the equation is the large-crowd limit.
-
-        *Why it matters:* this is where a first-order ODE *comes
-        from*. The crawling start (few tellers), the eruption in the
-        middle (the product $y(K-y)$ peaks), and the plateau (no fresh
-        ears left) are the three acts of Chapter 1 — here you trigger
-        them with your own finger and watch the equation keep pace.
+        *Why it matters — honestly:* **mingle speed is Chapter 1's rate
+        constant $b$ made physical** — faster walking means more bumps
+        per minute, a steeper climb, a quicker campus-wide rumor. The
+        blue law keeps up because we fit it live, and it tracks the
+        crowd to within a few percent. What it *can't* fully capture is
+        that a real crowd lives in space, not in a well-mixed jar: the
+        rumor travels as a *front*, so the red curve wanders a little
+        off the ideal and **ignites at a different moment every run** —
+        when only three people know, sheer chance decides how fast it
+        catches. That wander is the honest gap between a tidy
+        first-order model and a messy world.
 
         *(With a nod to Nicky Case's "We Become What We Behold" — the
-        same darkening-crowd feel, repurposed for contagion.)*
+        same darkening crowd, repurposed for contagion.)*
         """
     )
     return
@@ -1548,16 +1542,16 @@ def _():
             <div style="font:13px sans-serif;color:#333">
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <div style="flex:1;min-width:300px">
-                  <canvas data-crowd style="width:100%;height:320px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#eef2f7;touch-action:none;cursor:crosshair"></canvas>
-                  <div style="text-align:center;color:#8a96a5;margin-top:4px">the crowd · click / drag to plant the rumor (choose y₀)</div>
+                  <canvas data-crowd style="width:100%;height:330px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#eef2f7;touch-action:none;cursor:crosshair"></canvas>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">the crowd · click / drag to plant the rumor</div>
                 </div>
                 <div style="flex:1;min-width:300px">
-                  <canvas data-graph style="width:100%;height:320px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff"></canvas>
-                  <div style="text-align:center;color:#8a96a5;margin-top:4px">fraction who know · dots = crowd, line = logistic ODE</div>
+                  <canvas data-graph style="width:100%;height:330px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff"></canvas>
+                  <div style="text-align:center;color:#8a96a5;margin-top:4px">fraction who know · red = crowd, blue = logistic law (Ch 1)</div>
                 </div>
               </div>
               <div style="display:flex;gap:18px;margin-top:8px;align-items:center;flex-wrap:wrap">
-                <label>spread rate <input type="range" min="1" max="40" step="1" value="25" data-k="rate"> <span data-v="rate">25</span></label>
+                <label>mingle speed <input type="range" min="20" max="200" step="5" value="80" data-k="v"> <span data-v="v">80</span></label>
                 <button data-b="reset" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">↺ new rumor</button>
                 <span data-stat style="color:#7c8aa0"></span>
               </div>
@@ -1566,44 +1560,44 @@ def _():
           var crowd = el.querySelector('[data-crowd]');
           var graph = el.querySelector('[data-graph]');
           var dpr = window.devicePixelRatio || 1;
-          function fit(c) {
-            var w = c.clientWidth || 320, h = 320;
+          function fit(c, h) {
+            var w = c.clientWidth || 320;
             c.width = w * dpr; c.height = h * dpr;
             var x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
             return { ctx: x, W: w, H: h };
           }
-          var C = fit(crowd), G = fit(graph);
+          var C = fit(crowd, 330), G = fit(graph, 330);
 
-          var COLS = 40, ROWS = 25, N = COLS * ROWS;   // a 1,000-person campus
-          var aware = new Uint8Array(N);
-          var glow = new Float32Array(N);
-          var px = new Float32Array(N), py = new Float32Array(N);
-          (function layout() {
-            var m = 16;
-            var sx = (C.W - 2*m) / (COLS - 1), sy = (C.H - 2*m) / (ROWS - 1);
-            for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) {
-              var i = r*COLS + c; px[i] = m + c*sx; py[i] = m + r*sy;
-            }
-          })();
-          var dotR = Math.max(2.4, Math.min((C.W-32)/COLS, (C.H-32)/ROWS) * 0.34);
+          // Population scales with floor area to keep the crowd density (and so
+          // the pace) about the same on any screen width.
+          var N = Math.max(70, Math.min(180, Math.round(0.0012 * C.W * C.H)));
+          var RC = 10, RC2 = RC * RC;            // contact radius (px)
+          var GS = 6;                            // person glyph scale (px)
+          var speed = 80;                        // px/s, from the slider
+          var DT = 1 / 45;                       // model seconds per step
 
-          var rate = 25, yCount = 0, yOde = 0, t = 0;
-          var hist = [], whispers = [];
+          var x = new Float32Array(N), y = new Float32Array(N);
+          var th = new Float32Array(N);
+          var aware = new Uint8Array(N), flash = new Float32Array(N);
+          var yCount = 0, t = 0, aHat = 0, hist = [];
 
           function recount() { var s = 0; for (var i = 0; i < N; i++) s += aware[i]; yCount = s; }
-          function seed(k) {
-            aware.fill(0); glow.fill(0);
-            for (var n = 0; n < k; n++) { var i = (Math.random()*N)|0; aware[i] = 1; glow[i] = 1; }
-            recount(); yOde = yCount; t = 0; hist = []; whispers = [];
+          function seed() {
+            for (var i = 0; i < N; i++) {
+              x[i] = Math.random() * C.W; y[i] = Math.random() * C.H;
+              th[i] = Math.random() * 6.2832; aware[i] = 0; flash[i] = 0;
+            }
+            for (var k = 0; k < 3; k++) { var j = (Math.random()*N)|0; aware[j] = 1; flash[j] = 1; }
+            recount(); t = 0; aHat = 0; hist = [];
           }
-          seed(3);   // "3 people know a juicy rumor"
+          seed();   // "Monday morning, 3 people know a juicy rumor"
 
           function plantAt(cx, cy) {
-            var rad = dotR * 3.2, rad2 = rad*rad;
+            var rad2 = (RC * 2.6) * (RC * 2.6);
             for (var i = 0; i < N; i++) {
               if (!aware[i]) {
-                var dx = px[i]-cx, dy = py[i]-cy;
-                if (dx*dx + dy*dy < rad2) { aware[i] = 1; glow[i] = 1; }
+                var dx = x[i]-cx, dy = y[i]-cy;
+                if (dx*dx + dy*dy < rad2) { aware[i] = 1; flash[i] = 1; }
               }
             }
             recount();
@@ -1616,10 +1610,10 @@ def _():
           crowd.addEventListener('pointerdown', function (e) { pressing = true; var p = evToCanvas(e); plantAt(p[0], p[1]); });
           crowd.addEventListener('pointermove', function (e) { if (pressing) { var p = evToCanvas(e); plantAt(p[0], p[1]); } });
           window.addEventListener('pointerup', function () { pressing = false; });
-          el.querySelector('[data-b="reset"]').addEventListener('click', function () { seed(3); });
+          el.querySelector('[data-b="reset"]').addEventListener('click', seed);
           el.querySelector('input').addEventListener('input', function () {
-            rate = parseInt(this.value, 10);
-            el.querySelector('[data-v="rate"]').textContent = rate;
+            speed = parseInt(this.value, 10);
+            el.querySelector('[data-v="v"]').textContent = speed;
           });
 
           function lerp(a, b, t) { return a + (b - a) * t; }
@@ -1629,54 +1623,71 @@ def _():
                             Math.round(lerp(c1[2],c2[2],t)) + ')';
           }
           var BG_LIGHT = [238,242,247], BG_DARK = [12,17,24];
-          var UN_LIGHT = [154,167,181], UN_DARK = [44,56,70];
+          var UN_LIGHT = [150,163,178], UN_DARK = [58,70,84];
 
           function step() {
-            // Pairwise encounters: a random teller meets a random ear. The
-            // chance an encounter spreads is (y/N)·((N-y)/N), so the expected
-            // gain per frame is rate·y(N-y)/N² — i.e. dy = (rate/N)·y(1-y/N),
-            // the logistic law, emerging from individual whispers.
-            for (var e = 0; e < rate; e++) {
-              if (yCount === 0 || yCount === N) break;
-              var a = (Math.random()*N)|0; if (!aware[a]) continue;
-              var b = (Math.random()*N)|0; if (aware[b]) continue;
-              aware[b] = 1; glow[b] = 1; yCount++;
-              if (whispers.length < 80)
-                whispers.push({ ax:px[a], ay:py[a], bx:px[b], by:py[b], life:1 });
+            if (yCount >= N) return;   // whole campus knows — settle the scene
+            // Everyone strolls: constant speed, a little random turn each step
+            // (so directions decorrelate and the crowd mixes), bounce off walls.
+            var d = speed * DT;
+            for (var i = 0; i < N; i++) {
+              th[i] += (Math.random()*2 - 1) * 0.4;
+              x[i] += d * Math.cos(th[i]); y[i] += d * Math.sin(th[i]);
+              if (x[i] < 0) { x[i] = -x[i]; th[i] = Math.PI - th[i]; }
+              else if (x[i] > C.W) { x[i] = 2*C.W - x[i]; th[i] = Math.PI - th[i]; }
+              if (y[i] < 0) { y[i] = -y[i]; th[i] = -th[i]; }
+              else if (y[i] > C.H) { y[i] = 2*C.H - y[i]; th[i] = -th[i]; }
             }
-            // The same logistic ODE, integrated live at the current rate.
-            var aEff = rate / N;
-            yOde = yOde + aEff * yOde * (1 - yOde / N);
-            if (yOde > N) yOde = N;
-            t++; hist.push([t, yCount/N, yOde/N]);
-            if (hist.length > 4000) hist.shift();
+            // Contagion: an unaware person who is within RC of any knower hears
+            // it and lights up. This is the y·(K−y) "a teller meets an ear"
+            // rule of Chapter 1, but resolved in space, pair by real pair.
+            for (var i = 0; i < N; i++) {
+              if (aware[i]) continue;
+              for (var j = 0; j < N; j++) {
+                if (!aware[j]) continue;
+                var dx = x[i]-x[j], dy = y[i]-y[j];
+                if (dx*dx + dy*dy < RC2) { aware[i] = 1; flash[i] = 1; yCount++; break; }
+              }
+            }
+            t += DT;
+            // Fit Chapter 1's logistic law to the crowd live. For a logistic,
+            // d/dt ln(y/(K−y)) is the constant a, so we can read a straight off
+            // the run: slope in logit space from the start to now (smoothed).
+            if (yCount >= 6 && yCount < N && t > 0.3) {
+              var p = yCount / N, p0 = 3 / N;
+              var aInst = (Math.log(p/(1-p)) - Math.log(p0/(1-p0))) / t;
+              aHat = aHat === 0 ? aInst : (0.92*aHat + 0.08*aInst);
+            }
+            hist.push([t, yCount / N]);
+            if (hist.length > 5000) hist.shift();
+          }
+
+          function person(ctx, cx, cy, s, color) {
+            // a restroom-pictogram figure: trapezoid body + round head
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(cx - s*0.5, cy + s*0.85); ctx.lineTo(cx + s*0.5, cy + s*0.85);
+            ctx.lineTo(cx + s*0.28, cy - s*0.1); ctx.lineTo(cx - s*0.28, cy - s*0.1);
+            ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx, cy - s*0.42, s*0.34, 0, 6.2832); ctx.fill();
           }
 
           function drawCrowd() {
             var f = yCount / N, ease = f*f*(3 - 2*f);   // smoothstep mood
             C.ctx.fillStyle = mix(BG_LIGHT, BG_DARK, ease);
             C.ctx.fillRect(0, 0, C.W, C.H);
-            for (var w = whispers.length - 1; w >= 0; w--) {
-              var s = whispers[w];
-              C.ctx.strokeStyle = 'rgba(244,184,96,' + (0.55*s.life) + ')';
-              C.ctx.lineWidth = 1.2;
-              C.ctx.beginPath(); C.ctx.moveTo(s.ax, s.ay); C.ctx.lineTo(s.bx, s.by); C.ctx.stroke();
-              s.life -= 0.06; if (s.life <= 0) whispers.splice(w, 1);
-            }
             var unColor = mix(UN_LIGHT, UN_DARK, ease);
             for (var i = 0; i < N; i++) {
-              if (glow[i] > 0.001) glow[i] *= 0.92;
               if (aware[i]) {
-                if (glow[i] > 0.05) {
-                  C.ctx.fillStyle = 'rgba(244,184,96,' + (0.35*glow[i]) + ')';
-                  C.ctx.beginPath(); C.ctx.arc(px[i], py[i], dotR*2.4, 0, 6.2832); C.ctx.fill();
+                if (flash[i] > 0.05) {
+                  C.ctx.fillStyle = 'rgba(244,184,96,' + (0.4*flash[i]) + ')';
+                  C.ctx.beginPath(); C.ctx.arc(x[i], y[i], GS*2.0, 0, 6.2832); C.ctx.fill();
                 }
-                C.ctx.fillStyle = '#f4b860';
-                C.ctx.beginPath(); C.ctx.arc(px[i], py[i], dotR, 0, 6.2832); C.ctx.fill();
+                person(C.ctx, x[i], y[i], GS, '#f4b860');
               } else {
-                C.ctx.fillStyle = unColor;
-                C.ctx.beginPath(); C.ctx.arc(px[i], py[i], dotR*0.82, 0, 6.2832); C.ctx.fill();
+                person(C.ctx, x[i], y[i], GS, unColor);
               }
+              if (flash[i] > 0.001) flash[i] *= 0.9;
             }
           }
 
@@ -1690,25 +1701,31 @@ def _():
             ctx.fillStyle = '#7c8aa0'; ctx.font = '10px sans-serif';
             ctx.fillText('1', x0 - 12, y1 + 4); ctx.fillText('0', x0 - 12, y0);
             ctx.fillText('time →', x1 - 36, y0 + 16);
-            var tmax = Math.max(60, hist.length ? hist[hist.length-1][0] : 60);
+            var tmax = Math.max(4, hist.length ? hist[hist.length-1][0] : 4);
             function X(tt) { return x0 + (tt / tmax) * (x1 - x0); }
             function Y(ff) { return y0 + ff * (y1 - y0); }
-            ctx.strokeStyle = '#5b7db1'; ctx.lineWidth = 2; ctx.beginPath();
+            // Logistic fit (blue): the law that best matches the crowd so far.
+            if (aHat > 0) {
+              var p0 = 3 / N, b0 = Math.log(p0/(1-p0));
+              ctx.strokeStyle = '#5b7db1'; ctx.lineWidth = 2; ctx.beginPath();
+              for (var k = 0; k <= 120; k++) {
+                var tt = tmax * k / 120;
+                var yf = 1 / (1 + Math.exp(-(aHat*tt + b0)));
+                if (k === 0) ctx.moveTo(X(tt), Y(yf)); else ctx.lineTo(X(tt), Y(yf));
+              }
+              ctx.stroke();
+            }
+            // The actual crowd (red).
+            ctx.strokeStyle = '#d1495b'; ctx.lineWidth = 2; ctx.beginPath();
             for (var i = 0; i < hist.length; i++) {
-              var hx = X(hist[i][0]), hy = Y(hist[i][2]);
+              var hx = X(hist[i][0]), hy = Y(hist[i][1]);
               if (i === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
             }
             ctx.stroke();
-            ctx.fillStyle = '#d1495b';
-            var stepN = Math.max(1, Math.floor(hist.length / 130));
-            for (var i = 0; i < hist.length; i += stepN) {
-              ctx.beginPath(); ctx.arc(X(hist[i][0]), Y(hist[i][1]), 1.8, 0, 6.2832); ctx.fill();
-            }
-            ctx.fillStyle = '#5b7db1'; ctx.fillRect(x1 - 148, y1 + 2, 14, 3);
-            ctx.fillStyle = '#7c8aa0'; ctx.fillText('logistic ODE', x1 - 130, y1 + 6);
-            ctx.fillStyle = '#d1495b';
-            ctx.beginPath(); ctx.arc(x1 - 141, y1 + 16, 2.2, 0, 6.2832); ctx.fill();
-            ctx.fillStyle = '#7c8aa0'; ctx.fillText('the crowd', x1 - 130, y1 + 19);
+            ctx.fillStyle = '#5b7db1'; ctx.fillRect(x1 - 150, y1 + 2, 14, 3);
+            ctx.fillStyle = '#7c8aa0'; ctx.fillText('logistic law', x1 - 132, y1 + 6);
+            ctx.fillStyle = '#d1495b'; ctx.fillRect(x1 - 150, y1 + 14, 14, 3);
+            ctx.fillStyle = '#7c8aa0'; ctx.fillText('the crowd', x1 - 132, y1 + 18);
           }
 
           function updateStat() {
@@ -1720,7 +1737,7 @@ def _():
           function frame(now) {
             if (!running) return;
             acc += Math.min(0.05, (now - last) / 1000); last = now;
-            while (acc > 1/45) { step(); acc -= 1/45; }   // ~45 model steps/sec
+            while (acc > DT) { step(); acc -= DT; }
             drawCrowd(); drawGraph(); updateStat();
             raf = requestAnimationFrame(frame);
           }
