@@ -379,13 +379,28 @@ def delib_bootstrap() -> str:
         parts.append(_FUTURE.sub("", src))
     combined = "\n\n".join(parts)
     encoded = base64.b64encode(combined.encode("utf-8")).decode("ascii")
+    # Rebuild the `delib` package from a base64 string at runtime, since the
+    # Pyodide runtime can't `import delib` from disk. Wrapped with timing so
+    # the ?diag=1 overlay can show how long b64-decode / exec / import take.
     return (
-        "    import base64 as _b64, sys as _sys, types as _types\n"
+        "    import base64 as _b64, sys as _sys, types as _types, time as _tm\n"
+        "    _t0 = _tm.perf_counter()\n"
         '    _delib = _types.ModuleType("delib")\n'
         f'    _delib_src = _b64.b64decode("{encoded}").decode("utf-8")\n'
-        '    exec(compile(_delib_src, "delib (inlined for WASM)", "exec"), _delib.__dict__)\n'
+        "    _t1 = _tm.perf_counter()\n"
+        '    exec(compile(_delib_src, "delib (inlined for WASM)", "exec"),\n'
+        "         _delib.__dict__)\n"
+        "    _t2 = _tm.perf_counter()\n"
         '    _sys.modules["delib"] = _delib\n'
         "    import delib\n"
+        "    _t3 = _tm.perf_counter()\n"
+        "    try:  # surface to the ?diag=1 overlay via the JS console\n"
+        "        import js as _js  # only present in Pyodide\n"
+        "        _js.console.log(f'[diag] delib b64-decode: {(_t1-_t0)*1000:.0f}ms')\n"
+        "        _js.console.log(f'[diag] delib exec: {(_t2-_t1)*1000:.0f}ms')\n"
+        "        _js.console.log(f'[diag] delib import: {(_t3-_t2)*1000:.0f}ms')\n"
+        "    except Exception:\n"
+        "        pass\n"
     )
 
 
@@ -506,6 +521,180 @@ def inject_tutor(page: Path, name: str) -> None:
     page.write_text(html, encoding="utf-8")
 
 
+# ---------------------------------------------------------------------------
+# ?diag=1 load-time diagnostic overlay.
+#
+# Pyodide does the bulk of its work in a Web Worker AFTER the main document's
+# `load` event fires, so the browser's normal indicators don't reflect what's
+# really happening. This overlay captures three slowness sources:
+#
+#   1. Network — hooks window.fetch to log every request with bytes + duration
+#      (wheels, Pyodide bootstrap, anywidget esm.sh modules).
+#   2. DOM milestones — MutationObserver for first marimo element, first cell,
+#      first canvas, first Plotly chart.
+#   3. Python-side phases — parses `[diag] <name>: <Nms>` lines from console.log
+#      (emitted by the delib bootstrap; further phases can be added the same way).
+#
+# Visible only when the URL has `?diag=1`. Production loads are unaffected.
+# ---------------------------------------------------------------------------
+DIAG_SCRIPT = r"""<script>(function () {
+  if (new URLSearchParams(location.search).get('diag') !== '1') return;
+  var t0 = performance.now(), events = [], network = [];
+  function rel() { return performance.now() - t0; }
+  function logEvent(name, detail) { events.push({ t: rel(), name: name, detail: detail || '' }); schedRender(); }
+
+  // ---- Network: hook fetch (Pyodide uses fetch under the hood) ----
+  var origFetch = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    var url = typeof input === 'string' ? input : (input && input.url) || '<unknown>';
+    var tStart = rel();
+    return origFetch(input, init).then(function (res) {
+      try {
+        var cloned = res.clone();
+        cloned.arrayBuffer().then(function (buf) {
+          network.push({ url: shortUrl(url), bytes: buf.byteLength, ms: rel() - tStart });
+          schedRender();
+        }).catch(function () {
+          var cl = parseInt(res.headers.get('content-length') || '0', 10);
+          network.push({ url: shortUrl(url), bytes: cl, ms: rel() - tStart });
+          schedRender();
+        });
+      } catch (e) {}
+      return res;
+    });
+  };
+  function shortUrl(u) {
+    try { var p = new URL(u, location.href); return p.hostname + p.pathname; }
+    catch (e) { return String(u).slice(0, 80); }
+  }
+
+  // ---- DOM milestones ----
+  var milestones = [
+    { sel: 'iframe, [data-testid]', name: 'first marimo DOM element' },
+    { sel: '[data-testid="cell"], .marimo-cell, [data-cell-id]', name: 'first marimo cell' },
+    { sel: '.js-plotly-plot, .plotly-graph-div', name: 'first Plotly chart' },
+    { sel: 'canvas', name: 'first canvas (anywidget)' }
+  ];
+  var seen = {};
+  function checkMilestones() {
+    for (var i = 0; i < milestones.length; i++) {
+      var m = milestones[i];
+      if (seen[m.name]) continue;
+      if (document.querySelector(m.sel)) { seen[m.name] = true; logEvent(m.name); }
+    }
+  }
+  function startObserving() {
+    logEvent('DOMContentLoaded');
+    new MutationObserver(checkMilestones).observe(document.body, { childList: true, subtree: true });
+    checkMilestones();
+  }
+  if (document.body) startObserving();
+  else document.addEventListener('DOMContentLoaded', startObserving);
+  window.addEventListener('load', function () { logEvent('window load'); });
+
+  // ---- Python-side timing: parse `[diag] name: Nms` console.log lines ----
+  var origLog = console.log.bind(console);
+  console.log = function () {
+    try {
+      var msg = arguments[0];
+      if (typeof msg === 'string' && msg.indexOf('[diag]') === 0) {
+        var m = msg.match(/^\\[diag\\]\\s+(.+?):\\s+(\\d+(?:\\.\\d+)?)\\s*(ms|s)?$/);
+        if (m) {
+          var ms = parseFloat(m[2]) * (m[3] === 's' ? 1000 : 1);
+          logEvent('py: ' + m[1], ms.toFixed(0) + 'ms');
+        }
+      }
+    } catch (e) {}
+    return origLog.apply(console, arguments);
+  };
+
+  // ---- Overlay ----
+  var overlay = document.createElement('div');
+  overlay.id = 'ml-diag';
+  overlay.style.cssText =
+    'position:fixed;top:8px;right:8px;width:440px;max-height:88vh;overflow:auto;' +
+    'background:rgba(15,18,24,0.95);color:#dfe5ed;font:11px/1.35 ui-monospace,Menlo,monospace;' +
+    'padding:10px 12px;border-radius:8px;z-index:2147483647;box-shadow:0 6px 28px rgba(0,0,0,0.4);';
+  overlay.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+      '<div style="font-weight:bold;color:#9cf">Load diagnostics (?diag=1)</div>' +
+      '<button id="ml-diag-close" style="background:transparent;border:0;color:#9ab;cursor:pointer;font-size:14px">\\u00d7</button>' +
+    '</div>' +
+    '<div data-time style="color:#9ab;margin-bottom:6px"></div>' +
+    '<div data-events></div>' +
+    '<div data-net></div>';
+  function attach() {
+    (document.body || document.documentElement).appendChild(overlay);
+    overlay.querySelector('#ml-diag-close').onclick = function () { overlay.remove(); };
+  }
+  if (document.body) attach(); else document.addEventListener('DOMContentLoaded', attach);
+
+  setInterval(function () {
+    var el = overlay.querySelector('[data-time]');
+    if (el) el.textContent = 'elapsed: ' + (rel() / 1000).toFixed(1) + 's';
+  }, 200);
+
+  var renderScheduled = false;
+  function schedRender() {
+    if (renderScheduled) return;
+    renderScheduled = true;
+    requestAnimationFrame(function () { renderScheduled = false; render(); });
+  }
+  function fmtMs(ms) { return ms < 1000 ? ms.toFixed(0) + 'ms' : (ms / 1000).toFixed(2) + 's'; }
+  function fmtBytes(b) {
+    if (b < 1024) return b + 'B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + 'KB';
+    return (b / 1048576).toFixed(2) + 'MB';
+  }
+  function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;' }[c]; }); }
+  function render() {
+    var ee = overlay.querySelector('[data-events]');
+    if (ee) ee.innerHTML =
+      '<div style="color:#9cf;font-weight:bold;margin-bottom:2px">Phases</div>' +
+      events.map(function (e) {
+        return '<div><span style="color:#fc9">' + (e.t / 1000).toFixed(2) + 's</span>  ' + esc(e.name) +
+               (e.detail ? '  <span style="color:#9ab">' + esc(e.detail) + '</span>' : '') + '</div>';
+      }).join('');
+    var ne = overlay.querySelector('[data-net]');
+    if (ne) {
+      var top = network.slice().sort(function (a, b) { return b.bytes - a.bytes; }).slice(0, 25);
+      var totalB = network.reduce(function (s, n) { return s + n.bytes; }, 0);
+      var totalMs = network.reduce(function (s, n) { return s + n.ms; }, 0);
+      ne.innerHTML =
+        '<div style="color:#9cf;font-weight:bold;margin:8px 0 2px">Network (top 25 by size \\u2014 ' +
+        fmtBytes(totalB) + ', ' + network.length + ' req, ~' + fmtMs(totalMs) + ' cumulative)</div>' +
+        top.map(function (n) {
+          return '<div><span style="color:#fc9">' + fmtBytes(n.bytes) + '</span>' +
+                 '  <span style="color:#9ab">' + fmtMs(n.ms) + '</span>  ' + esc(n.url) + '</div>';
+        }).join('');
+    }
+  }
+  setTimeout(function () {
+    console.group('[diag] 60s snapshot');
+    console.table(events);
+    console.table(network.slice().sort(function (a, b) { return b.bytes - a.bytes; }).slice(0, 40));
+    console.log('Total bytes:', (network.reduce(function (s, n) { return s + n.bytes; }, 0) / 1048576).toFixed(2) + 'MB');
+    console.log('Total requests:', network.length);
+    console.groupEnd();
+  }, 60000);
+  setTimeout(render, 50);
+})();</script>"""
+
+
+def inject_diag(page: Path) -> None:
+    """Insert the ?diag=1 load-time instrumentation into a chapter page.
+
+    Invisible unless the URL contains ?diag=1; safe to ship to production.
+    Adds the overlay just before </body> so it doesn't compete with marimo's
+    runtime boot for parse time.
+    """
+    html = page.read_text(encoding="utf-8")
+    if "</body>" not in html:
+        return
+    html = html.replace("</body>", DIAG_SCRIPT + "</body>", 1)
+    page.write_text(html, encoding="utf-8")
+
+
 def _is_lab(slug: str) -> bool:
     return slug.startswith("ch99") or "animation_lab" in slug
 
@@ -595,6 +784,7 @@ def main() -> int:
         export(nb, SITE / name)
         inject_tutor(SITE / name / "index.html", name)
         inject_nav(SITE / name / "index.html", names, idx)
+        inject_diag(SITE / name / "index.html")
 
     (SITE / "index.html").write_text(build_index(names), encoding="utf-8")
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
