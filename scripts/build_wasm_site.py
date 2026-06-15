@@ -213,30 +213,84 @@ LOADING_CSS = (
     "animation:ml-spin .9s linear infinite;}"
     ".ml-loading .t{margin-top:1.1rem;font-size:1.15rem;font-weight:600;}"
     ".ml-loading .s{margin-top:.4rem;font-size:.95rem;color:#56636f;max-width:24rem;line-height:1.5;}"
-    ".ml-loading .b{margin-top:1.2rem;font-size:.82rem;color:#9aa7b5;}"
+    ".ml-loading .b{margin-top:1.2rem;font-size:.82rem;color:#9aa7b5;max-width:26rem;line-height:1.5;}"
+    # Indeterminate progress bar (we can't read true % from the Pyodide worker,
+    # so honest continuous motion beats a faked percentage).
+    ".ml-loading .bar{margin-top:1.25rem;width:240px;max-width:70vw;height:6px;"
+    "border-radius:3px;background:#e7ecf2;overflow:hidden;position:relative;}"
+    ".ml-loading .bar i{position:absolute;top:0;left:-42%;height:100%;width:40%;"
+    "background:#5b7db1;border-radius:3px;animation:ml-slide 1.25s ease-in-out infinite;}"
+    ".ml-loading .el{margin-top:.5rem;font-size:.8rem;color:#9aa7b5;"
+    "font-variant-numeric:tabular-nums;}"
+    # Small non-blocking pill shown after the splash lifts, until the first
+    # interactive demo (canvas / Plotly) renders.
+    ".ml-warm{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);"
+    "z-index:2900;background:#16223a;color:#dfe7f2;font:13px/1.3 -apple-system,"
+    "BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;padding:9px 16px;"
+    "border-radius:999px;box-shadow:0 6px 22px rgba(0,0,0,.22);display:flex;"
+    "align-items:center;gap:9px;opacity:0;transition:opacity .4s ease;}"
+    ".ml-warm.show{opacity:1;}"
+    ".ml-warm .d{width:9px;height:9px;border-radius:50%;border:2px solid #6f86ad;"
+    "border-top-color:#dfe7f2;animation:ml-spin .8s linear infinite;}"
+    "@keyframes ml-slide{0%{left:-42%;}100%{left:104%;}}"
     "@keyframes ml-spin{to{transform:rotate(360deg);}}"
     "</style>"
 )
 
-# Hides the splash once a real notebook cell has rendered (polls for a
-# non-empty .marimo-cell), with a small settle delay so layout finishes
-# first. Hard 75s cap so a future marimo selector change can never trap a
-# visitor behind the splash.
-LOADING_JS = (
-    "<script>(function(){"
-    "var ov=document.getElementById('ml-loading');if(!ov)return;"
-    "var done=false;"
-    "function hide(){if(done)return;done=true;ov.classList.add('ml-hide');"
-    "setTimeout(function(){if(ov&&ov.parentNode)ov.parentNode.removeChild(ov);},700);}"
-    "function ready(){var c=document.querySelector('.marimo-cell');"
-    "return !!(c&&(c.textContent||'').trim().length>0);}"
-    "var t0=Date.now();"
-    "var iv=setInterval(function(){"
-    "if(ready()){clearInterval(iv);setTimeout(hide,500);return;}"
-    "if(Date.now()-t0>75000){clearInterval(iv);hide();}"
-    "},200);"
-    "})();</script>"
-)
+# Drives the splash: honest phased status messages + an elapsed counter while
+# Pyodide boots (the real cost is package install/import in a Web Worker, which
+# we can't read directly, so phases are time-estimated and the bar is
+# indeterminate). Lifts the splash once the intro is readable (a non-empty
+# .marimo-cell) so reading can start immediately, then shows a small
+# non-blocking pill until the first interactive demo renders. Hard 180s cap
+# (real loads run ~60-90s, so the old 75s cap could uncover a half-built page).
+LOADING_JS = r"""<script>(function () {
+  var ov = document.getElementById('ml-loading'); if (!ov) return;
+  var st = document.getElementById('ml-status'), el = document.getElementById('ml-elapsed');
+  var t0 = Date.now(), done = false;
+  var phases = [
+    [0,  'Starting Python in your browser (Pyodide)…'],
+    [6,  'Loading the scientific stack — NumPy, Plotly…'],
+    [18, 'Unpacking and importing packages (the slow part)…'],
+    [40, 'Booting the notebook kernel…'],
+    [60, 'Almost there — rendering the chapter…']
+  ];
+  function tick() {
+    var s = (Date.now() - t0) / 1000, msg = phases[0][1];
+    for (var i = 0; i < phases.length; i++) { if (s >= phases[i][0]) msg = phases[i][1]; }
+    if (st) st.textContent = msg;
+    if (el) el.textContent = s.toFixed(0) + 's';
+  }
+  function ready() { var c = document.querySelector('.marimo-cell'); return !!(c && (c.textContent || '').trim().length > 0); }
+  function hasDemo() { return !!document.querySelector('canvas, .js-plotly-plot, .plotly-graph-div'); }
+  function warm() {
+    if (hasDemo()) return;
+    var w = document.createElement('div');
+    w.className = 'ml-warm';
+    w.innerHTML = '<span class="d"></span>warming up the interactive demos…';
+    document.body.appendChild(w);
+    requestAnimationFrame(function () { w.classList.add('show'); });
+    var wt = Date.now();
+    var wi = setInterval(function () {
+      if (hasDemo() || Date.now() - wt > 150000) {
+        clearInterval(wi); w.classList.remove('show');
+        setTimeout(function () { if (w.parentNode) w.parentNode.removeChild(w); }, 450);
+      }
+    }, 400);
+  }
+  function hide() {
+    if (done) return; done = true;
+    ov.classList.add('ml-hide');
+    setTimeout(function () { if (ov && ov.parentNode) ov.parentNode.removeChild(ov); }, 700);
+    warm();
+  }
+  tick();
+  var iv = setInterval(function () {
+    tick();
+    if (ready()) { if (st) st.textContent = 'Rendering the chapter…'; clearInterval(iv); setTimeout(hide, 500); return; }
+    if (Date.now() - t0 > 180000) { clearInterval(iv); hide(); }
+  }, 250);
+})();</script>"""
 
 
 def _loading_overlay(name: str) -> str:
@@ -251,9 +305,12 @@ def _loading_overlay(name: str) -> str:
         '<div class="ml-loading" id="ml-loading">'
         '<div class="ring"></div>'
         f'<div class="t">Loading {what}…</div>'
-        '<div class="s">Starting Python in your browser — about 10 seconds the '
-        'first time, then instant.</div>'
-        '<div class="b">Everything runs locally. There is no server.</div>'
+        '<div class="s" id="ml-status">Starting Python in your browser…</div>'
+        '<div class="bar"><i></i></div>'
+        '<div class="el" id="ml-elapsed">0s</div>'
+        '<div class="b">This page runs a full Python runtime (Pyodide) right in '
+        'your browser — no server, nothing installed. The first load can take up '
+        "to a minute; it's working even when it looks still.</div>"
         '</div>'
     )
 
