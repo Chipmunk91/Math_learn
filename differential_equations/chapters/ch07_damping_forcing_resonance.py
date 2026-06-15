@@ -134,92 +134,97 @@ def _(delib, mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 2 — concept bridge. From Ch 6 (homogeneous, decays) to
-    # Ch 7 (driven, doesn't). Earn the transient + steady-state
-    # decomposition by *looking at the previous figure*.
+    # Section 2 — concept bridge, assumption-first. Recall Ch 6's unforced
+    # equation (always decays), add the forcing term, then ASSUME a steady
+    # oscillation (x_p) and discover x_h is forced on us to fix the start.
+    # Linearity is a one-line justification, not the headline.
     mo.md(
         r"""
         ## The decay we lost, and the rhythm we gained
 
-        Take a quick look back at Chapter 6's recap. There, every
-        damped equation we wrote down had the same fate: the motion
-        eventually **decayed** to zero. Friction always won; given
-        enough time, the swing came to rest no matter what.
+        The two panels above showed something Chapter 6 never did: a
+        swing that **refuses to die**. To explain that — and why the
+        *rhythm* of the push decides how big it grows — we need to know
+        what a driven motion is actually *made of*. We can build it out
+        of what we already know.
 
-        So why doesn't a **driven** swing just decay too? Same
-        damping! What's different is that **something keeps adding
-        energy to it**. The forcing term — the new $F_0\cos(\omega t)$
-        on the right-hand side of the equation — is the parent pumping
-        in fresh energy every cycle.
+        **Start with Chapter 6.** With nobody pushing, the swing obeys
 
-        Now the full motion **splits into two pieces** — and it's
-        worth seeing *why*, because it isn't a trick. The equation
-        forces it.
+        $$
+        \ddot x + 2\gamma\dot x + \omega_0^2 x \;=\; 0,
+        $$
 
-        **The picture first.** A pushed swing lives two lives at once:
+        and Chapter 6's verdict was absolute: with any damping
+        ($\gamma > 0$), every solution **decays to zero**. Left alone,
+        the swing always coasts to rest.
 
-        - the **rhythm the pushing locks it into** — a steady
-          back-and-forth at the parent's pace, which it would keep up
-          forever; and
-        - the **leftover wobble from how it happened to start** — the
-          same free, dying motion as Chapter 6.
+        **Now add the push.** Chapter 7 changes exactly one thing — a
+        driver on the right-hand side:
 
-        What you see is just these two **added together**: one stays,
-        one fades.
+        $$
+        \ddot x + 2\gamma\dot x + \omega_0^2 x \;=\; F_0\cos(\omega t).
+        $$
 
-        **Why we're allowed to add them.** The left side, $\ddot x +
-        2\gamma\dot x + \omega_0^2 x$, only ever differentiates,
-        scales, and adds. Do any of those to a *sum* and you get the
-        *sum* of the results — so two motions stacked on top of each
-        other still obey the law. (That property has a name:
-        **linearity**.)
+        Fresh energy arrives every cycle, and the animation showed the
+        result: the motion no longer dies. After a brief settling-in it
+        locks into a steady swing that just keeps going.
 
-        That lets us build the hard motion out of two easy ones:
+        **That steady swing is our clue — so let's *assume* it.**
+        Suppose that, long after the start, the system simply moves *in
+        step with the push*: a steady oscillation at the drive frequency
+        $\omega$, with some amplitude and some lag. Call it $x_p(t)$,
+        the **steady state**. We don't know its amplitude or lag yet —
+        pinning those down is the next section — we're assuming only its
+        *shape*: a cosine at the drive's rhythm.
 
-        - $x_p$ **rides the forcing** — feed it into the left side and
-          out comes exactly $F_0\cos(\omega t)$;
-        - $x_h$ is a **correction** we lay on top to fix the start.
+        **But one piece can't be the whole story.** $x_p$ describes the
+        *ending*, not the *beginning*. It is already in full swing at
+        $t = 0$, so it almost never matches the exact position and speed
+        you *released the swing from*. Something has to bridge the gap
+        between your particular start and that steady rhythm.
 
-        Stack them, $x = x_p + x_h$, and the left side returns
-        $F_0\cos(\omega t) + (\text{what } x_h \text{ gives})$. For
-        the total to stay correct, $x_h$ must give **zero** — it must
-        solve the *unforced* equation
+        **The bridge is Chapter 6's motion.** Lay a correction $x_h$ on
+        top, $x = x_h + x_p$. For the sum to still satisfy the *driven*
+        equation, the correction must not disturb the balance $x_p$
+        already strikes — it has to add **nothing** to the right-hand
+        side, i.e. solve the **unforced** equation
 
         $$
         \ddot x_h + 2\gamma\dot x_h + \omega_0^2 x_h \;=\; 0.
         $$
 
-        Those are exactly **Chapter 6's free motions** — what the
-        swing does on its own, nobody pushing — and they come with
-        **two spare constants**: precisely the freedom to set the
-        starting position and velocity right.
+        (Adding it is legal because the left side is *linear* — feed it
+        a sum, get the sum of the results.) But that unforced equation
+        is **exactly Chapter 6**, whose free motions come with two spare
+        constants — precisely the freedom to set the starting position
+        and velocity right.
 
-        That's the whole decomposition, and now it's earned:
+        So every driven motion is the sum of the two:
 
         $$
         x(t) \;=\; \underbrace{x_h(t)}_{\text{transient}}
         \;+\; \underbrace{x_p(t)}_{\text{steady state}}.
         $$
 
-        The piece $x_h$ — Chapter 6's free motion — had roots with
-        negative real part whenever $\gamma > 0$, so it **decays
-        away**. It's a fleeting adjustment that fixes the start and
-        then dies: the "transient." In the first few seconds of a
-        driven swing the motion wobbles and twitches as the initial
-        conditions get sorted, then settles into a clean steady
-        oscillation. That early wobble *is* $x_h$, dying off.
+        And there's the twist that names this section. The transient
+        $x_h$ is Chapter 6's motion, so it **decays away** — the decay
+        we knew is still here, just demoted to a fleeting opening
+        adjustment that fixes the start and then dies. What *survives*
+        is $x_p$, the **rhythm we gained** from the push: it never
+        decays, locking onto the drive for as long as the pushing
+        lasts. The early wobble in the panels above is $x_h$ dying off;
+        the clean swing left behind is $x_p$.
 
-        The piece $x_p$ is the genuinely new thing the forcing makes
-        possible. It doesn't decay; it locks onto the drive's rhythm
-        and keeps going as long as the push keeps coming. After the
-        transient has died, **all that's left is the steady state**.
+        Once the transient is gone, **all that's left is the steady
+        state** — and the hook's question, *why the right rhythm climbs
+        so high*, is entirely a question about the **size** of $x_p$.
 
         Watch the split *happen* in the panel just below. The
         choreography plays it as a four-act story: the full solution
-        draws in, separates into its transient and steady-state
-        pieces, the transient fades to nothing as time sweeps, and the
-        steady state returns alone. Press ▶, or drag the scrubber to
-        move through it at your own pace.
+        draws in, separates into its transient and steady-state pieces,
+        the transient fades to nothing as time sweeps, and the steady
+        state returns alone. Press ▶, or drag the scrubber to move
+        through it at your own pace.
         """
     )
     return
