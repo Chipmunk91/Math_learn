@@ -106,66 +106,18 @@ CHAPTER_CARDS = {
 DELIB_MODULES = ["solvers", "fields", "animate", "oscillators", "widgets", "ui"]
 _FUTURE = re.compile(r"^from __future__ import .*$", re.MULTILINE)
 
-# Per-chapter PEP 723 header. Until June 2026 this was a single constant
-# listing every package every chapter might possibly need (marimo, anywidget,
-# numpy, sympy, plotly). That cost ~10-15s of Pyodide install+import time per
-# unused package on every page load — sympy and plotly are particularly slow
-# under WASM. The big offender was the animation lab, which doesn't use either
-# but was paying for both. chapter_deps() now reads the chapter's AST and lists
-# only what it actually imports; pep723_header() formats the header.
-_PEP_PYPI = {
-    # python-module-name -> PyPI package name (same in every case so far).
-    "plotly": "plotly",
-    "sympy": "sympy",
-    "scipy": "scipy",
-    "anywidget": "anywidget",
-}
-# delib widget factories: a chapter that calls any of these will pull
-# anywidget transitively even without `import anywidget` in the chapter file.
-_WIDGET_FACTORIES = (
-    "delib.spring_grab", "delib.resonance_audio", "delib.solution_anatomy",
-    "delib.rumor_crowd", "delib.cooling_coffee", "delib.feedback_form",
-)
-
-
-def chapter_deps(source: str) -> list[str]:
-    """Return the PEP 723 dependency list for a chapter, from its AST.
-
-    Always includes marimo + numpy (delib's own minimum at module load).
-    Adds plotly / sympy / scipy / anywidget only if the chapter actually
-    imports them, OR (for anywidget) calls a delib widget factory that
-    pulls anywidget transitively. Order is stable so the generated header
-    is deterministic across builds.
-    """
-    import ast
-
-    deps: list[str] = ["marimo", "numpy"]
-    imported: set[str] = set()
-    for node in ast.walk(ast.parse(source)):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                imported.add(alias.name.split(".")[0])
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            imported.add(node.module.split(".")[0])
-    for mod in ("plotly", "sympy", "scipy", "anywidget"):
-        if mod in imported and _PEP_PYPI[mod] not in deps:
-            deps.append(_PEP_PYPI[mod])
-    if "anywidget" not in deps and any(w in source for w in _WIDGET_FACTORIES):
-        deps.append("anywidget")
-    return deps
-
-
-def pep723_header(deps: list[str]) -> str:
-    """Format a PEP 723 inline-script header from a dependency list."""
-    body = "\n".join(f'#     "{d}",' for d in deps)
-    return (
-        "# /// script\n"
-        '# requires-python = ">=3.12"\n'
-        "# dependencies = [\n"
-        f"{body}\n"
-        "# ]\n"
-        "# ///\n"
-    )
+PEP723_HEADER = """\
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "marimo",
+#     "anywidget",
+#     "numpy",
+#     "sympy",
+#     "plotly",
+# ]
+# ///
+"""
 
 # Strip marimo's editor chrome down to just the notebook. The cells and their
 # per-cell controls (run, add, delete, edit) live outside these wrappers, so
@@ -462,10 +414,7 @@ def inline_delib(source: str) -> str:
 
 def export(notebook: Path, out_dir: Path) -> None:
     """Export a chapter to a single WASM HTML page (run mode: auto-runs, code hidden)."""
-    source = notebook.read_text(encoding="utf-8")
-    deps = chapter_deps(source)
-    print(f"  deps for {notebook.stem}: {', '.join(deps)}")
-    transformed = pep723_header(deps) + inline_delib(source)
+    transformed = PEP723_HEADER + inline_delib(notebook.read_text(encoding="utf-8"))
     with tempfile.TemporaryDirectory() as tmp:
         staged = Path(tmp) / notebook.name
         staged.write_text(transformed, encoding="utf-8")
