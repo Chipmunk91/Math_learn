@@ -158,25 +158,137 @@ def _(mo):
         ($\gamma > 0$), every solution **decays to zero**. Left alone,
         the swing always coasts to rest.
 
-        **Now add the push.** Chapter 7 changes exactly one thing — a
-        driver on the right-hand side:
+        **Now add the push.** Where does a push even *enter* the
+        equation? Read the whole thing as a **balance of the swing's
+        tendencies**. The left side, $\ddot x + 2\gamma\dot x +
+        \omega_0^2 x$, gathers everything the swing does *on its own*:
+        it has inertia ($\ddot x$), it loses speed to friction
+        ($2\gamma\dot x$), and it's pulled back toward the bottom
+        ($\omega_0^2 x$). With nobody helping, those are the whole
+        story, so together they come to nothing — that's the $= 0$ of
+        Chapter 6.
+
+        A parent's push is a force from **outside** that list, so it
+        lands on the **other side** of the equals sign:
 
         $$
         \ddot x + 2\gamma\dot x + \omega_0^2 x \;=\; F_0\cos(\omega t).
         $$
 
-        Fresh energy arrives every cycle, and the animation showed the
-        result: the motion no longer dies. After a brief settling-in it
-        locks into a steady swing that just keeps going.
+        Why a *cosine* on the right? Because the parent pushes
+        **rhythmically** — shove, let it swing out and back, shove
+        again — so the outside force rises, falls, and repeats, which is
+        exactly the shape a cosine draws. $F_0$ sets **how hard** each
+        shove is; $\omega$ sets **how often** the shoves come. The
+        animation showed the result: with energy topped up every cycle,
+        the motion no longer dies — after a brief settling-in it locks
+        into a steady swing that just keeps going.
 
-        **That steady swing is our clue — so let's *assume* it.**
-        Suppose that, long after the start, the system simply moves *in
-        step with the push*: a steady oscillation at the drive frequency
-        $\omega$, with some amplitude and some lag. Call it $x_p(t)$,
-        the **steady state**. We don't know its amplitude or lag yet —
-        pinning those down is the next section — we're assuming only its
-        *shape*: a cosine at the drive's rhythm.
+        **That steady swing is our clue — so let's *assume* it.** Long
+        after the start, the swing simply *follows the parent*: it goes
+        back and forth at the **same rate the parent pushes**, settling
+        into a repeating motion that holds its shape. Two things about
+        that motion we don't yet know — both drawn in the picture below:
 
+        - **how far it swings** — its *amplitude* (a clumsy rhythm
+          barely moves it; the right rhythm sends it soaring); and
+        - **how late it runs** — its *lag* (the swing doesn't reach the
+          top at the instant the parent shoves; it peaks a moment
+          after).
+
+        Call this steady motion $x_p(t)$. We're assuming only its
+        *shape* — a back-and-forth at the parent's rate — and we'll pin
+        down the amplitude and the lag in the very next section.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    # Small static diagram grounding "amplitude" and "lag": the push
+    # (dashed) and the swing it produces (solid) — same rhythm, bigger
+    # size, shifted later.
+    import anywidget as _aw
+
+    class _PushResponse(_aw.AnyWidget):
+        _esm = r"""
+        function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <canvas style="width:100%;max-width:640px;border:1px solid #dde4ec;border-radius:8px;background:#fff;display:block"></canvas>
+              <div style="color:#8a96a5;margin-top:4px;text-align:center">the parent's push (grey, dashed) and the swing it produces (blue): <b>same rhythm</b>, a bigger <b>amplitude</b>, and a <b>lag</b> behind the push</div>
+            </div>`;
+          var cv = el.querySelector('canvas'), W = 640, H = 220, dpr = window.devicePixelRatio || 1;
+          cv.width = W * dpr; cv.height = H * dpr;
+          var ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          var x0 = 56, x1 = W - 18, padT = 34, padB = 30, mid = (padT + (H - padB)) / 2;
+          var ampP = 24, ampR = 52, lag = Math.PI * 0.5, k = 2 * Math.PI / 120, per = 2 * Math.PI / k;
+          function pY(px) { var th = (px - x0) * k; return mid - ampP * Math.cos(th); }
+          function rY(px) { var th = (px - x0) * k; return mid - ampR * Math.cos(th - lag); }
+          function vArrow(x, ya, yb) {
+            ctx.beginPath(); ctx.moveTo(x, ya); ctx.lineTo(x, yb); ctx.stroke();
+            var d = ya < yb ? 1 : -1;
+            [[ya, d], [yb, -d]].forEach(function (p) {
+              ctx.beginPath(); ctx.moveTo(x, p[0]); ctx.lineTo(x - 3, p[0] + p[1] * 5);
+              ctx.moveTo(x, p[0]); ctx.lineTo(x + 3, p[0] + p[1] * 5); ctx.stroke();
+            });
+          }
+          function hArrow(xa, xb, y) {
+            ctx.beginPath(); ctx.moveTo(xa, y); ctx.lineTo(xb, y); ctx.stroke();
+            [[xa, 1], [xb, -1]].forEach(function (p) {
+              ctx.beginPath(); ctx.moveTo(p[0], y); ctx.lineTo(p[0] + p[1] * 5, y - 3);
+              ctx.moveTo(p[0], y); ctx.lineTo(p[0] + p[1] * 5, y + 3); ctx.stroke();
+            });
+          }
+          ctx.strokeStyle = '#e3e9f0'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(x0, mid); ctx.lineTo(x1, mid); ctx.stroke();
+          // push (dashed)
+          ctx.strokeStyle = '#9aa7b5'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.beginPath();
+          for (var px = x0; px <= x1; px++) { var y = pY(px); if (px === x0) ctx.moveTo(px, y); else ctx.lineTo(px, y); }
+          ctx.stroke(); ctx.setLineDash([]);
+          // response (solid)
+          ctx.strokeStyle = '#2f6fb0'; ctx.lineWidth = 2.6; ctx.beginPath();
+          for (var px = x0; px <= x1; px++) { var y = rY(px); if (px === x0) ctx.moveTo(px, y); else ctx.lineTo(px, y); }
+          ctx.stroke();
+          // amplitude marker at a response peak
+          var rpk = x0 + lag / k + 2 * per;
+          ctx.strokeStyle = '#2f6fb0'; ctx.lineWidth = 1.3; vArrow(rpk, mid, mid - ampR);
+          ctx.fillStyle = '#2f6fb0'; ctx.font = '12px sans-serif'; ctx.fillText('amplitude', rpk + 7, mid - ampR / 2 + 4);
+          // lag marker: push peak -> next response peak
+          var ppk = x0 + 2 * per, ty = padT - 6;
+          ctx.strokeStyle = 'rgba(120,130,145,0.55)'; ctx.setLineDash([2, 3]);
+          ctx.beginPath(); ctx.moveTo(ppk, ty); ctx.lineTo(ppk, pY(ppk));
+          ctx.moveTo(rpk, ty); ctx.lineTo(rpk, rY(rpk)); ctx.stroke(); ctx.setLineDash([]);
+          ctx.strokeStyle = '#16223a'; ctx.lineWidth = 1.3; hArrow(ppk, rpk, ty);
+          ctx.fillStyle = '#16223a'; ctx.fillText('lag', (ppk + rpk) / 2 - 9, ty - 4);
+          // axis hint + legend
+          ctx.fillStyle = '#9aa7b5'; ctx.font = '11px sans-serif'; ctx.fillText('time →', x1 - 42, mid + 14);
+          ctx.strokeStyle = '#9aa7b5'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+          ctx.beginPath(); ctx.moveTo(x0, H - 9); ctx.lineTo(x0 + 22, H - 9); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = '#7c8aa0'; ctx.fillText('the push', x0 + 27, H - 5);
+          ctx.strokeStyle = '#2f6fb0'; ctx.lineWidth = 2.6;
+          ctx.beginPath(); ctx.moveTo(x0 + 92, H - 9); ctx.lineTo(x0 + 114, H - 9); ctx.stroke();
+          ctx.fillStyle = '#7c8aa0'; ctx.fillText('the swing', x0 + 119, H - 5);
+          return function () {};
+        }
+        export default { render };
+        """
+
+    push_response = _PushResponse()
+    return (push_response,)
+
+
+@app.cell(hide_code=True)
+def _(mo, push_response):
+    mo.ui.anywidget(push_response)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
         **But one piece can't be the whole story.** $x_p$ describes the
         *ending*, not the *beginning*. It is already in full swing at
         $t = 0$, so it almost never matches the exact position and speed
