@@ -146,11 +146,11 @@ def _(mo):
         eventually **decayed** to zero. Friction always won; given
         enough time, the swing came to rest no matter what.
 
-        So why doesn't the left-hand swing above just decay too?
-        Same damping! What's different is that **something keeps
-        adding energy to it**. The forcing term — the new $F_0
-        \cos(\omega t)$ on the right-hand side of the equation —
-        is the parent pumping in fresh energy every cycle.
+        So why doesn't a **driven** swing just decay too? Same
+        damping! What's different is that **something keeps adding
+        energy to it**. The forcing term — the new $F_0\cos(\omega t)$
+        on the right-hand side of the equation — is the parent pumping
+        in fresh energy every cycle.
 
         Now the full motion **splits into two pieces** — and it's
         worth seeing *why*, because it isn't a trick. The equation
@@ -204,36 +204,22 @@ def _(mo):
         The piece $x_h$ — Chapter 6's free motion — had roots with
         negative real part whenever $\gamma > 0$, so it **decays
         away**. It's a fleeting adjustment that fixes the start and
-        then dies: the "transient." Watch the right-hand panel above
-        carefully: in the first few seconds it wobbles and twitches
-        as the initial conditions get sorted, then settles into a
-        clean steady oscillation. That early wobble *is* $x_h$,
-        dying off.
+        then dies: the "transient." In the first few seconds of a
+        driven swing the motion wobbles and twitches as the initial
+        conditions get sorted, then settles into a clean steady
+        oscillation. That early wobble *is* $x_h$, dying off.
 
         The piece $x_p$ is the genuinely new thing the forcing makes
         possible. It doesn't decay; it locks onto the drive's rhythm
         and keeps going as long as the push keeps coming. After the
-        transient has died, **all that's left is the steady
-        state** — and the steady state is what we'll spend the rest
-        of the chapter pinning down.
+        transient has died, **all that's left is the steady state**.
 
-        Two questions follow immediately:
-
-        1. *What does the steady state look like?* It will turn
-           out to be a cosine at the drive frequency, with some
-           amplitude $A$ and some phase lag $\varphi$ relative to
-           the push. Both are determined by the equation.
-        2. *How big is $A$, and how does it depend on $\omega$?*
-           That dependence is the resonance story. The right-hand
-           panel above has small $A$; the left-hand panel has huge
-           $A$. We want the formula.
-
-        Before the formula, watch the decomposition *happen*. The
-        choreography below plays the split as a four-act story:
-        the full solution draws in, separates into its transient and
-        steady-state pieces, the transient fades to nothing as time
-        sweeps, and the steady state returns alone. Press ▶, or drag
-        the scrubber to move through it at your own pace.
+        Watch the split *happen* in the panel just below. The
+        choreography plays it as a four-act story: the full solution
+        draws in, separates into its transient and steady-state
+        pieces, the transient fades to nothing as time sweeps, and the
+        steady state returns alone. Press ▶, or drag the scrubber to
+        move through it at your own pace.
         """
     )
     return
@@ -245,6 +231,32 @@ def _(delib):
     # graduated from the animation lab. Same constants as the prose
     # discusses (lightly damped, driven off-resonance).
     delib.solution_anatomy(omega0=2.0, gamma=0.25, omega=1.2, F0=1.0)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Section 2 (wrap-up) — the two forward questions that motivate the
+    # amplitude/phase story, placed AFTER the split animation so the
+    # reader has just watched the decomposition they refer to.
+    mo.md(
+        r"""
+        With the split in hand, two questions set up the rest of the
+        chapter:
+
+        1. *What does the steady state look like?* It will turn out to
+           be a cosine at the drive frequency, with some amplitude $A$
+           and some phase lag $\varphi$ relative to the push. Both are
+           determined by the equation.
+        2. *How big is $A$, and how does it depend on $\omega$?* That
+           dependence is the resonance story. The off-rhythm swing
+           settles to a small $A$; the resonant swing climbs to a huge
+           one. We want the formula.
+
+        The steady state is what we'll spend the rest of the chapter
+        pinning down.
+        """
+    )
     return
 
 
