@@ -158,31 +158,35 @@ def _(mo):
         ($\gamma > 0$), every solution **decays to zero**. Left alone,
         the swing always coasts to rest.
 
-        **Now add the push.** Where does a push even *enter* the
-        equation? Read the whole thing as a **balance of the swing's
-        tendencies**. The left side, $\ddot x + 2\gamma\dot x +
-        \omega_0^2 x$, gathers everything the swing does *on its own*:
-        it has inertia ($\ddot x$), it loses speed to friction
-        ($2\gamma\dot x$), and it's pulled back toward the bottom
-        ($\omega_0^2 x$). With nobody helping, those are the whole
-        story, so together they come to nothing — that's the $= 0$ of
-        Chapter 6.
-
-        A parent's push is a force from **outside** that list, so it
-        lands on the **other side** of the equals sign:
+        **Now add the push.** Here's where it goes — and it is *not* by
+        adding a term to both sides. Newton's law for the swing reads
+        *(the swing's own response) = (whatever pushes it from
+        outside)*. Everything on the left — inertia ($\ddot x$),
+        friction ($2\gamma\dot x$), the pull back to the bottom
+        ($\omega_0^2 x$) — is how the swing **responds**; the right-hand
+        side is a single **slot for the outside push**. In Chapter 6 no
+        one pushed, so that slot was just zero:
 
         $$
-        \ddot x + 2\gamma\dot x + \omega_0^2 x \;=\; F_0\cos(\omega t).
+        \ddot x + 2\gamma\dot x + \omega_0^2 x \;=\;
+        \underbrace{0}_{\text{Ch 6: nobody pushing}}.
         $$
 
-        Why a *cosine* on the right? Because the parent pushes
-        **rhythmically** — shove, let it swing out and back, shove
-        again — so the outside force rises, falls, and repeats, which is
-        exactly the shape a cosine draws. $F_0$ sets **how hard** each
-        shove is; $\omega$ sets **how often** the shoves come. The
-        animation showed the result: with energy topped up every cycle,
-        the motion no longer dies — after a brief settling-in it locks
-        into a steady swing that just keeps going.
+        A parent pushing simply **fills the slot** — the zero becomes
+        the push:
+
+        $$
+        \ddot x + 2\gamma\dot x + \omega_0^2 x \;=\;
+        \underbrace{F_0\cos(\omega t)}_{\text{Ch 7: the parent's push}}.
+        $$
+
+        Nothing cancels and nothing is doubled — we only changed what
+        sits in the right-hand slot. It's a *cosine* because the parent
+        pushes **rhythmically** — shove, let it swing out and back,
+        shove again; $F_0$ is how hard each shove is, $\omega$ how often
+        they come. With energy topped up every cycle, the motion no
+        longer dies: after a brief settling-in it locks into a steady
+        swing that just keeps going.
 
         **That steady swing is our clue — so let's *assume* it.** Long
         after the start, the swing simply *follows the parent*: it goes
@@ -289,27 +293,33 @@ def _(mo, push_response):
 def _(mo):
     mo.md(
         r"""
-        **But one piece can't be the whole story.** $x_p$ describes the
-        *ending*, not the *beginning*. It is already in full swing at
-        $t = 0$, so it almost never matches the exact position and speed
-        you *released the swing from*. Something has to bridge the gap
-        between your particular start and that steady rhythm.
+        **But this steady swing can't be the whole story.** Keep in
+        mind $x_p$ is a *motion*, not a force — a fixed back-and-forth
+        whose entire shape is dictated by the push. So its position and
+        speed at the starting instant are already decided *for* it. But
+        **you** decide how the swing actually starts — say you release
+        it from rest at the bottom. Those two starts almost never agree:
+        at $t = 0$ the steady motion $x_p$ is typically caught mid-swing
+        with some speed, while your swing began still. The equation has
+        to honour **your** start, not $x_p$'s — so one steady motion
+        alone can't be the answer. Something has to make up the
+        difference at the very beginning, then bow out.
 
         **The bridge is Chapter 6's motion.** Lay a correction $x_h$ on
-        top, $x = x_h + x_p$. For the sum to still satisfy the *driven*
-        equation, the correction must not disturb the balance $x_p$
-        already strikes — it has to add **nothing** to the right-hand
-        side, i.e. solve the **unforced** equation
+        top, $x = x_h + x_p$. For the sum to still solve the *driven*
+        equation, the correction must leave the right-hand slot alone —
+        it must carry **no outside push of its own** — so it solves the
+        **unforced** equation, the slot back to zero:
 
         $$
         \ddot x_h + 2\gamma\dot x_h + \omega_0^2 x_h \;=\; 0.
         $$
 
-        (Adding it is legal because the left side is *linear* — feed it
-        a sum, get the sum of the results.) But that unforced equation
-        is **exactly Chapter 6**, whose free motions come with two spare
-        constants — precisely the freedom to set the starting position
-        and velocity right.
+        (We may simply *add* it because the left side is **linear** —
+        feed it a sum and you get the sum of the results.) But that
+        unforced equation is **exactly Chapter 6's**, whose free motions
+        come with two adjustable constants — precisely the freedom to
+        fix the starting position and velocity.
 
         So every driven motion is the sum of the two:
 
