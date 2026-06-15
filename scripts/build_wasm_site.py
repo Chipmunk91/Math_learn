@@ -197,6 +197,31 @@ MATH_RENDER_JS = (
 )
 
 
+# marimo's bundled Plotly throws a non-fatal TypeError reading
+# '_redrawFromAutoMarginCount' when a chart's container is resized before the
+# chart is fully drawn (rampant during our load-time layout thrash + the
+# chrome-hiding observer). The chart still renders fine; marimo's plugin just
+# catches it and console.errors a red "PlotlyPlugin: ..." line. This filter
+# drops exactly that one message (matched by the property name) so real errors
+# are untouched. Belt-and-suspenders with the build-time bundle guard in
+# patch_plotly_assets(); this version-independent filter is the robust backstop.
+PLOTLY_GUARD_JS = (
+    "<script>(function(){"
+    "var KEY='_redrawFromAutoMarginCount';"
+    "function hit(s){return !!(s&&s.indexOf&&s.indexOf(KEY)>=0);}"
+    "var oe=console.error.bind(console);"
+    "console.error=function(){try{var s='';for(var i=0;i<arguments.length;i++){"
+    "var a=arguments[i];s+=' '+((a&&a.message)||a);}if(hit(s))return;}catch(e){}"
+    "return oe.apply(console,arguments);};"
+    "window.addEventListener('error',function(e){"
+    "if(hit(e&&e.message)||(e&&e.error&&hit(String(e.error.message)))){"
+    "e.preventDefault();e.stopImmediatePropagation();}},true);"
+    "window.addEventListener('unhandledrejection',function(e){"
+    "var r=e&&e.reason;if(r&&hit(String((r&&r.message)||r)))e.preventDefault();});"
+    "})();</script>"
+)
+
+
 # A branded splash shown immediately on a chapter page, covering everything
 # (z-index above the nav) until marimo's WASM runtime has booted Pyodide and
 # rendered the first cell. Without it, a cold visitor stares at a blank page
@@ -562,6 +587,7 @@ def inject_tutor(page: Path, name: str) -> None:
     head = LOADING_CSS + KATEX_CSS + MARIMO_CHROME_CSS + "</head>"
     body = (
         f"<script>window.TUTOR_CONFIG = {config};</script>"
+        + PLOTLY_GUARD_JS
         + MATH_RENDER_JS
         + MARIMO_HIDE_JS
         + LOADING_JS
@@ -708,6 +734,33 @@ def inject_diag(page: Path) -> None:
     page.write_text(html, encoding="utf-8")
 
 
+def patch_plotly_assets() -> None:
+    """Null-guard marimo's bundled Plotly ``doAutoMargin`` at the source.
+
+    It does ``J._fullLayout._redrawFromAutoMarginCount++`` without checking
+    that ``_fullLayout`` exists, which throws (non-fatally) when a chart is
+    resized before it's drawn. We insert an early ``if(!J||!J._fullLayout)
+    return;`` guard into the vendored ``Plot-*.js``. Idempotent. Warns (does
+    not fail) if the anchor moves in a future marimo release — the
+    PLOTLY_GUARD_JS console filter is the version-independent backstop.
+    """
+    anchor = "doAutoMargin=function(J){var st=J._fullLayout,"
+    guard = "doAutoMargin=function(J){if(!J||!J._fullLayout)return;var st=J._fullLayout,"
+    n = 0
+    for js in SITE.glob("*/assets/Plot-*.js"):
+        text = js.read_text(encoding="utf-8")
+        if guard in text:
+            continue  # already patched
+        if anchor in text:
+            js.write_text(text.replace(anchor, guard), encoding="utf-8")
+            n += 1
+    if n:
+        print(f"Patched Plotly doAutoMargin guard in {n} asset file(s).")
+    else:
+        print("NOTE: Plotly doAutoMargin anchor not found; relying on the "
+              "PLOTLY_GUARD_JS console filter.", file=sys.stderr)
+
+
 def _is_lab(slug: str) -> bool:
     return slug.startswith("ch99") or "animation_lab" in slug
 
@@ -798,6 +851,8 @@ def main() -> int:
         inject_tutor(SITE / name / "index.html", name)
         inject_nav(SITE / name / "index.html", names, idx)
         inject_diag(SITE / name / "index.html")
+
+    patch_plotly_assets()
 
     (SITE / "index.html").write_text(build_index(names), encoding="utf-8")
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
