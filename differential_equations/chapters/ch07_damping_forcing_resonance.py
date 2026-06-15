@@ -152,46 +152,47 @@ def _(mo):
         \cos(\omega t)$ on the right-hand side of the equation —
         is the parent pumping in fresh energy every cycle.
 
-        Now, the full solution is going to split into two pieces,
-        and that split is worth *deriving* rather than just
-        announcing — because it's not a lucky coincidence, it's
-        forced on us by one property of the equation.
+        Now the full motion **splits into two pieces** — and it's
+        worth seeing *why*, because it isn't a trick. The equation
+        forces it.
 
-        Here's the property. Look at the left-hand side,
-        $\ddot x + 2\gamma\dot x + \omega_0^2 x$. Every operation in
-        it — differentiate, multiply by a constant, add — treats a
-        sum **piece by piece**: the derivative of a sum is the sum
-        of the derivatives, and so on. So if you feed a *sum* of two
-        functions into the left side, what comes out is the sum of
-        what each function would have produced separately. (This is
-        the property called **linearity**, and we'll lean on it
-        again in a moment.)
+        **The picture first.** A pushed swing lives two lives at once:
 
-        Watch what that buys us. Suppose — never mind how yet — we
-        manage to find just **one** motion $x_p$ that satisfies the
-        full forced equation: feeding $x_p$ into the left side
-        produces exactly $F_0\cos(\omega t)$. That single solution
-        almost certainly starts at the wrong place: its position and
-        velocity at $t = 0$ won't match the swing we actually
-        released. We need to *fix the start* without breaking the
-        forced equation.
+        - the **rhythm the pushing locks it into** — a steady
+          back-and-forth at the parent's pace, which it would keep up
+          forever; and
+        - the **leftover wobble from how it happened to start** — the
+          same free, dying motion as Chapter 6.
 
-        So add a correction $x_h$ on top: $x = x_p + x_h$. Feed this
-        sum into the left side and, piece by piece, it produces
-        (what $x_p$ produces) $+$ (what $x_h$ produces) $= F_0
-        \cos(\omega t) + (\text{whatever } x_h \text{ gives})$. For
-        the total to still satisfy the forced equation, the
-        correction must contribute **zero** — that is, $x_h$ must
+        What you see is just these two **added together**: one stays,
+        one fades.
+
+        **Why we're allowed to add them.** The left side, $\ddot x +
+        2\gamma\dot x + \omega_0^2 x$, only ever differentiates,
+        scales, and adds. Do any of those to a *sum* and you get the
+        *sum* of the results — so two motions stacked on top of each
+        other still obey the law. (That property has a name:
+        **linearity**.)
+
+        That lets us build the hard motion out of two easy ones:
+
+        - $x_p$ **rides the forcing** — feed it into the left side and
+          out comes exactly $F_0\cos(\omega t)$;
+        - $x_h$ is a **correction** we lay on top to fix the start.
+
+        Stack them, $x = x_p + x_h$, and the left side returns
+        $F_0\cos(\omega t) + (\text{what } x_h \text{ gives})$. For
+        the total to stay correct, $x_h$ must give **zero** — it must
         solve the *unforced* equation
 
         $$
         \ddot x_h + 2\gamma\dot x_h + \omega_0^2 x_h \;=\; 0.
         $$
 
-        And those are **exactly Chapter 6's solutions** — the free
-        motions the system makes on its own with no one pushing.
-        They come with two free constants, which is precisely the
-        freedom we needed to fix the starting position and velocity.
+        Those are exactly **Chapter 6's free motions** — what the
+        swing does on its own, nobody pushing — and they come with
+        **two spare constants**: precisely the freedom to set the
+        starting position and velocity right.
 
         That's the whole decomposition, and now it's earned:
 

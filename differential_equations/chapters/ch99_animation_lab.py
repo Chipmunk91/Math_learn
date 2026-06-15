@@ -28,24 +28,27 @@ def _(mo):
         integrating a differential equation from this course, in
         JavaScript, at 60 frames per second, right in your browser.
 
-        | # | Demo | Tech stack | Underlying DE |
-        |---|------|-----------|---------------|
-        | 1 | Grab the mass | Canvas 2D + Pointer Events, RK4 in JS | $\ddot x = -\omega_0^2 x - 2\gamma\dot x$ — damped oscillator (Ch 6) |
-        | 2 | Hear resonance | Web Audio (OscillatorNode + GainNode) | $\ddot x + 2\gamma\dot x + \omega_0^2 x = F_0\cos(\omega t)$; loudness $\propto A(\omega)$ (Ch 7) |
-        | 3 | Lorenz butterfly | Three.js + WebGL + OrbitControls | $\dot x = \sigma(y-x),\ \dot y = x(\rho-z)-y,\ \dot z = xy - \beta z$ (Ch 20) |
-        | 4 | Flow you can touch | Canvas 2D + RK2 particle advection | $\ddot\theta = -\sin\theta - 0.15\,\dot\theta$ — damped pendulum (Ch 13) |
-        | 5 | A tiny game engine | Matter.js rigid-body engine | $m\ddot{\mathbf x} = \mathbf F$ per body + collision constraints (Ch 4) |
-        | 6 | Field, GPU-rendered | WebGL2 + GLSL fragment shader (per-pixel) | $\dot x = y,\ \dot y = \mu(1-x^2)\,y - x$ — Van der Pol (Ch 14) |
-        | 7 | Smooth bifurcation | D3.js + SVG `d3.transition()` | $\dot x = r x - x^3$ — pitchfork (Ch 10) |
-        | 8 | Sync you can hear | Tone.js (PolySynth) + Canvas 2D | $\dot\theta_i = \omega_i + (K/N)\sum_j \sin(\theta_j - \theta_i)$ — Kuramoto (Ch 14) |
-        | 9 | Anatomy of a solution | GSAP 3 timeline + SVG | $x(t) = x_h(t) + x_p(t)$, choreographed (Ch 7) |
-        | 10 | Drawn vs solved | lottie-web (keyframes) + Canvas 2D (integrated) | $\ddot y = -g$, restitution $e = 0.75$ — Ch 4 parable |
-        | 11 | 120,000 particles | WebGPU + WGSL compute shader | Same damped pendulum as #4, RK2 dispatched GPU-side (Ch 13) |
-        | 12 | Rumor through a crowd | Canvas 2D roaming agents + live logistic fit | $\dot y = b\,y(K-y)$ — spatial contagion vs. the well-mixed law (Ch 1) |
-        | 13 | Cooling coffee | Canvas 2D + steam particles | $T' + kT = kT_r$ — Newton's cooling, linear approach (Ch 2) |
+        | # | Demo | Tech stack | Underlying DE | Status |
+        |---|------|-----------|---------------|--------|
+        | 1 | Grab the mass | Canvas 2D + Pointer Events, RK4 in JS | $\ddot x = -\omega_0^2 x - 2\gamma\dot x$ — damped oscillator | ✅ `spring_grab` · Ch 6 |
+        | 2 | Hear resonance | Web Audio (Oscillator + Gain) | $\ddot x + 2\gamma\dot x + \omega_0^2 x = F_0\cos\omega t$; loudness $\propto A(\omega)$ | ✅ `resonance_audio` · Ch 7 |
+        | 3 | Lorenz butterfly | Three.js + WebGL + OrbitControls | $\dot x=\sigma(y-x),\ \dot y=x(\rho-z)-y,\ \dot z=xy-\beta z$ | ○ candidate · Ch 20 |
+        | 4 | Flow you can touch | Canvas 2D + RK2 particle advection | $\ddot\theta = -\sin\theta - 0.15\,\dot\theta$ — damped pendulum | ○ candidate · Ch 12/13 |
+        | 5 | A tiny game engine | Matter.js rigid-body engine | $m\ddot{\mathbf x} = \mathbf F$ per body + collisions | ○ thesis demo (no chapter) |
+        | 6 | Field, GPU-rendered | WebGL2 + GLSL fragment shader | $\dot x = y,\ \dot y = \mu(1-x^2)\,y - x$ — Van der Pol | ○ candidate · Ch 12/13 |
+        | 7 | Smooth bifurcation | D3.js + SVG `d3.transition()` | $\dot x = r x - x^3$ — pitchfork | ○ candidate · Ch 10 |
+        | 8 | Sync you can hear | Tone.js (PolySynth) + Canvas 2D | $\dot\theta_i = \omega_i + (K/N)\sum_j \sin(\theta_j-\theta_i)$ — Kuramoto | ○ candidate · Ch 14 |
+        | 9 | Anatomy of a solution | GSAP 3 timeline + SVG | $x(t) = x_h(t) + x_p(t)$, choreographed | ✅ `solution_anatomy` · Ch 7 |
+        | 10 | Drawn vs solved | lottie-web + Canvas 2D (integrated) | $\ddot y = -g$, restitution $e = 0.75$ | ○ candidate · Ch 4 |
+        | 11 | 120,000 particles | WebGPU + WGSL compute shader | damped pendulum (as #4), GPU-side | ○ candidate · Ch 12/13 |
+        | 12 | Rumor through a crowd | Canvas 2D agents + live logistic fit | $\dot y = b\,y(K-y)$ — spatial vs. well-mixed | ✅ `rumor_crowd` · Ch 1 hook |
+        | 13 | Cooling coffee | Canvas 2D + steam particles | $T' + kT = kT_r$ — Newton's cooling | ✅ `cooling_coffee` · Ch 2 hook |
 
-        If a demo earns its keep, it graduates into a real chapter as a
-        `delib` widget. If it doesn't, it dies here, cheaply.
+        The **Status** column is the single place this page tracks
+        graduation: ✅ means the demo has moved into `delib` and now
+        powers a real chapter; ○ means it's still a candidate, waiting
+        on the chapter that will host it. If a demo earns its keep it
+        graduates; if it doesn't, it dies here, cheaply.
         """
     )
     return
@@ -1634,23 +1637,16 @@ def _(mo):
         chapter as a `delib` widget when (1) the chapter's core idea
         is about *feel* (initial conditions, basins, resonance,
         bifurcation, sync, chaos sensitivity), and (2) the static
-        alternative demonstrably fails. Current ranked candidates:
-
-        | Demo | Earns its keep in | Replaces |
-        |------|-------------------|----------|
-        | 12 · rumor crowd | Ch 1 (where the logistic law is born) | the S-curve handed over as a formula, never *grown* from interactions |
-        | 13 · cooling coffee | Ch 2 (Newton's cooling, the chapter's own equation) | the cooling derivation shown only as a static Manim clip |
-        | 1 · grab the mass | Ch 6 / Ch 7 | "imagine pulling it down…" prose |
-        | 2 · hear resonance | Ch 7 | the $A(\omega)$ peak as a visual abstraction |
-        | 7 · D3 bifurcation | Ch 10 | static bifurcation diagrams without a slider |
-        | 6 · shader slope field | Ch 12 / Ch 13 | sparse arrow grids |
-        | 8 · Kuramoto sync | Ch 14 (coupled oscillators) | "they synchronize" stated, never shown |
-        | 9 · GSAP anatomy | Ch 7 / Ch 8 | the $x_h + x_p$ split as static stacked plots |
-        | 4 · touchable flow | Ch 12 / Ch 13 | a phase plane you can't seed by hand |
-        | 11 · WebGPU swarm | Ch 12 / Ch 13 (deluxe) | Demo 6's hybrid, where supported |
-        | 3 · Lorenz butterfly | Ch 20 | a static 2-D projection of a 3-D attractor |
-        | 10 · drawn vs solved | Ch 4 (epigraph material) | — it's a *parable*, not a tool |
-        | 5 · tiny game engine | nowhere — it's the *thesis*, not a chapter | |
+        alternative demonstrably fails. Where each demo stands lives in
+        the **Status** column of the table up top — no second list to
+        keep in sync. So far **five have graduated**: `spring_grab`
+        (Ch 6), `resonance_audio` and `solution_anatomy` (Ch 7),
+        `rumor_crowd` (Ch 1), and `cooling_coffee` (Ch 2) — each one
+        retiring a paragraph of "imagine it…" prose or a static plot.
+        The rest are ranked candidates waiting on the chapters that
+        will host them. Demo 5, the tiny game engine, graduates nowhere
+        on purpose: it's the *thesis* of this whole page, not a single
+        chapter.
         """
     )
     return
