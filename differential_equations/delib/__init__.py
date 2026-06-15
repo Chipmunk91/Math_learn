@@ -34,6 +34,7 @@ from delib.widgets import (
     resonance_audio,
     solution_anatomy,
     rumor_crowd,
+    cooling_coffee,
 )
 from delib.animate import (
     animate_time,
@@ -89,6 +90,7 @@ __all__ = [
     "resonance_audio",
     "solution_anatomy",
     "rumor_crowd",
+    "cooling_coffee",
     "animate_time",
     "animate_plotly",
     "flow_field",

@@ -34,21 +34,10 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(delib, go, mo, np):
-    # Beat 1 — the observation.
-    _t = np.linspace(0, 30, 80)
-    _sol = delib.solve_ode(lambda t, T: -0.2 * (T - 20.0), (0.0, 30.0), 90.0, t_eval=_t)
-    _fig = go.Figure(go.Scatter(x=_sol.t, y=_sol.y[0], mode="lines",
-                                line=dict(color="#b5651d", width=3),
-                                hoverinfo="skip", showlegend=False))
-    _fig.add_hline(y=20, line=dict(color="#9aa7b5", dash="dot", width=1),
-                   annotation_text="room 20°C", annotation_position="bottom right")
-    _fig.update_layout(
-        template="plotly_white", title=dict(text="A cup of coffee cooling", x=0.02),
-        xaxis=dict(title="minutes"), yaxis=dict(title="temperature (°C)"),
-        height=320, margin=dict(l=60, r=20, t=46, b=42),
-        paper_bgcolor="white", plot_bgcolor="white",
-    )
+def _(delib, mo):
+    # Beat 1 — the observation, opened by the live cooling-coffee hook
+    # (delib.cooling_coffee, shared with the animation Lab): drag the room,
+    # toggle the candle, pour milk — the curve is the exact ODE.
     mo.vstack([
         mo.md(
             r"""
@@ -62,10 +51,12 @@ def _(delib, go, mo, np):
             different phenomena. And this time we won't stop at the picture — we'll get
             an exact formula.
 
-            Pour a coffee at **90°C** in a **20°C** room and it cools — fast at first,
-            then ever more slowly, easing toward room temperature but (in principle)
-            never quite arriving. The curve is a **decaying exponential**, the mirror
-            image of Chapter 1's S-curve.
+            Pour a coffee at **90°C** in a **20°C** room and watch it cool below —
+            fast at first, then ever more slowly, easing toward room temperature but
+            (in principle) never quite arriving. The curve is a **decaying
+            exponential**, the mirror image of Chapter 1's S-curve. *(Drag* room T_r
+            *to change the room; tap* candle warmer *to add a heater; tap* pour milk
+            *for a sudden mix — the same equation handles every move.)*
 
             Why this shape? Because the coffee cools in proportion to how far it is
             *above* the room. A scalding cup dumps heat quickly; a lukewarm one barely
@@ -73,7 +64,7 @@ def _(delib, go, mo, np):
             whose rate of decrease is proportional to itself decays exponentially.
             """
         ),
-        _fig,
+        delib.cooling_coffee(T0=90.0, Tr=20.0, k=0.20),
     ])
     return
 
