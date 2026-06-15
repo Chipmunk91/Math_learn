@@ -539,144 +539,100 @@ def inject_tutor(page: Path, name: str) -> None:
 # ---------------------------------------------------------------------------
 DIAG_SCRIPT = r"""<script>(function () {
   if (new URLSearchParams(location.search).get('diag') !== '1') return;
-  var t0 = performance.now(), events = [], network = [];
-  function rel() { return performance.now() - t0; }
+  function rel() { return performance.now(); }
+  var events = [];
   function logEvent(name, detail) { events.push({ t: rel(), name: name, detail: detail || '' }); schedRender(); }
 
-  // ---- Network: hook fetch (Pyodide uses fetch under the hood) ----
-  var origFetch = window.fetch.bind(window);
-  window.fetch = function (input, init) {
-    var url = typeof input === 'string' ? input : (input && input.url) || '<unknown>';
-    var tStart = rel();
-    return origFetch(input, init).then(function (res) {
-      try {
-        var cloned = res.clone();
-        cloned.arrayBuffer().then(function (buf) {
-          network.push({ url: shortUrl(url), bytes: buf.byteLength, ms: rel() - tStart });
-          schedRender();
-        }).catch(function () {
-          var cl = parseInt(res.headers.get('content-length') || '0', 10);
-          network.push({ url: shortUrl(url), bytes: cl, ms: rel() - tStart });
-          schedRender();
-        });
-      } catch (e) {}
-      return res;
-    });
-  };
-  function shortUrl(u) {
-    try { var p = new URL(u, location.href); return p.hostname + p.pathname; }
-    catch (e) { return String(u).slice(0, 80); }
+  // ---- DOM milestones + live cell/output timeline (main-thread visible) ----
+  // Pyodide runs Python in a Web Worker but renders OUTPUT into this document,
+  // so watching cells / charts / canvases appear gives a per-cell execution
+  // timeline even though the Python itself is out of reach.
+  var firstSeen = {};
+  var last = { cells: 0, plotly: 0, canvas: 0 };
+  var CELL_SEL = '[data-testid=cell], .marimo-cell, [data-cell-id]';
+  function countSel(s) { try { return document.querySelectorAll(s).length; } catch (e) { return 0; } }
+  function tick() {
+    if (!firstSeen.dom && document.querySelector('[data-testid], iframe')) { firstSeen.dom = true; logEvent('first marimo DOM element'); }
+    var cells = countSel(CELL_SEL), plotly = countSel('.js-plotly-plot, .plotly-graph-div'), canvas = countSel('canvas');
+    if (cells !== last.cells) { logEvent('cells rendered: ' + cells); last.cells = cells; }
+    if (plotly !== last.plotly) { logEvent('Plotly charts: ' + plotly); last.plotly = plotly; }
+    if (canvas !== last.canvas) { logEvent('canvases: ' + canvas); last.canvas = canvas; }
   }
-
-  // ---- DOM milestones ----
-  var milestones = [
-    { sel: 'iframe, [data-testid]', name: 'first marimo DOM element' },
-    { sel: '[data-testid="cell"], .marimo-cell, [data-cell-id]', name: 'first marimo cell' },
-    { sel: '.js-plotly-plot, .plotly-graph-div', name: 'first Plotly chart' },
-    { sel: 'canvas', name: 'first canvas (anywidget)' }
-  ];
-  var seen = {};
-  function checkMilestones() {
-    for (var i = 0; i < milestones.length; i++) {
-      var m = milestones[i];
-      if (seen[m.name]) continue;
-      if (document.querySelector(m.sel)) { seen[m.name] = true; logEvent(m.name); }
-    }
-  }
-  function startObserving() {
+  function start() {
     logEvent('DOMContentLoaded');
-    new MutationObserver(checkMilestones).observe(document.body, { childList: true, subtree: true });
-    checkMilestones();
+    new MutationObserver(tick).observe(document.body, { childList: true, subtree: true });
+    tick();
   }
-  if (document.body) startObserving();
-  else document.addEventListener('DOMContentLoaded', startObserving);
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
   window.addEventListener('load', function () { logEvent('window load'); });
+  setInterval(tick, 1000);
 
-  // ---- Python-side timing: parse `[diag] name: Nms` console.log lines ----
+  // ---- Python-side [diag] lines. These also appear directly in the DevTools
+  //      console (Pyodide's worker logs surface there); this hook only catches
+  //      any that happen to be emitted on the main thread. ----
   var origLog = console.log.bind(console);
   console.log = function () {
     try {
       var msg = arguments[0];
       if (typeof msg === 'string' && msg.indexOf('[diag]') === 0) {
-        var m = msg.match(/^\\[diag\\]\\s+(.+?):\\s+(\\d+(?:\\.\\d+)?)\\s*(ms|s)?$/);
-        if (m) {
-          var ms = parseFloat(m[2]) * (m[3] === 's' ? 1000 : 1);
-          logEvent('py: ' + m[1], ms.toFixed(0) + 'ms');
-        }
+        var m = msg.match(/^\[diag\]\s+(.+?):\s+(\d+(?:\.\d+)?)\s*(ms|s)?$/);
+        if (m) logEvent('py: ' + m[1], (parseFloat(m[2]) * (m[3] === 's' ? 1000 : 1)).toFixed(0) + 'ms');
       }
     } catch (e) {}
     return origLog.apply(console, arguments);
   };
 
+  // ---- Resource Timing: what the MAIN thread loaded (pyodide.js, the .wasm,
+  //      the marimo JS bundle, katex, esm.sh widget modules). Pyodide fetches
+  //      its Python wheels inside the Worker; those do NOT appear here -- use
+  //      the DevTools Network tab for them. transferSize 0 + a body = cached. ----
+  function resourceRows() {
+    var list = performance.getEntriesByType ? performance.getEntriesByType('resource') : [];
+    return list.map(function (e) {
+      var bytes = e.transferSize || 0, body = e.decodedBodySize || e.encodedBodySize || 0;
+      return { url: shortUrl(e.name), bytes: bytes, body: body, cached: (bytes === 0 && body > 0), ms: e.duration || 0 };
+    });
+  }
+  function shortUrl(u) { try { var p = new URL(u, location.href); return p.hostname + p.pathname; } catch (e) { return String(u).slice(0, 70); } }
+
   // ---- Overlay ----
   var overlay = document.createElement('div');
   overlay.id = 'ml-diag';
-  overlay.style.cssText =
-    'position:fixed;top:8px;right:8px;width:440px;max-height:88vh;overflow:auto;' +
-    'background:rgba(15,18,24,0.95);color:#dfe5ed;font:11px/1.35 ui-monospace,Menlo,monospace;' +
-    'padding:10px 12px;border-radius:8px;z-index:2147483647;box-shadow:0 6px 28px rgba(0,0,0,0.4);';
+  overlay.style.cssText = 'position:fixed;top:8px;right:8px;width:470px;max-height:90vh;overflow:auto;background:rgba(15,18,24,0.96);color:#dfe5ed;font:11px/1.4 ui-monospace,Menlo,monospace;padding:10px 12px;border-radius:8px;z-index:2147483647;box-shadow:0 6px 28px rgba(0,0,0,0.45)';
   overlay.innerHTML =
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-      '<div style="font-weight:bold;color:#9cf">Load diagnostics (?diag=1)</div>' +
-      '<button id="ml-diag-close" style="background:transparent;border:0;color:#9ab;cursor:pointer;font-size:14px">\\u00d7</button>' +
-    '</div>' +
-    '<div data-time style="color:#9ab;margin-bottom:6px"></div>' +
-    '<div data-events></div>' +
-    '<div data-net></div>';
-  function attach() {
-    (document.body || document.documentElement).appendChild(overlay);
-    overlay.querySelector('#ml-diag-close').onclick = function () { overlay.remove(); };
-  }
+      '<b style="color:#9cf">Load diagnostics (?diag=1)</b>' +
+      '<button id="ml-diag-x" style="background:transparent;border:0;color:#9ab;cursor:pointer;font-size:15px">&times;</button>' +
+    '</div><div data-time style="color:#9ab;margin-bottom:6px"></div><div data-events></div><div data-net></div>';
+  function attach() { (document.body || document.documentElement).appendChild(overlay); overlay.querySelector('#ml-diag-x').onclick = function () { overlay.remove(); }; }
   if (document.body) attach(); else document.addEventListener('DOMContentLoaded', attach);
+  setInterval(function () { var el = overlay.querySelector('[data-time]'); if (el) el.textContent = 'elapsed: ' + (rel() / 1000).toFixed(1) + 's'; }, 200);
 
-  setInterval(function () {
-    var el = overlay.querySelector('[data-time]');
-    if (el) el.textContent = 'elapsed: ' + (rel() / 1000).toFixed(1) + 's';
-  }, 200);
-
-  var renderScheduled = false;
-  function schedRender() {
-    if (renderScheduled) return;
-    renderScheduled = true;
-    requestAnimationFrame(function () { renderScheduled = false; render(); });
-  }
+  var sched = false;
+  function schedRender() { if (sched) return; sched = true; requestAnimationFrame(function () { sched = false; render(); }); }
   function fmtMs(ms) { return ms < 1000 ? ms.toFixed(0) + 'ms' : (ms / 1000).toFixed(2) + 's'; }
-  function fmtBytes(b) {
-    if (b < 1024) return b + 'B';
-    if (b < 1048576) return (b / 1024).toFixed(1) + 'KB';
-    return (b / 1048576).toFixed(2) + 'MB';
-  }
-  function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;' }[c]; }); }
+  function fmtB(b) { return b < 1024 ? b + 'B' : (b < 1048576 ? (b / 1024).toFixed(1) + 'KB' : (b / 1048576).toFixed(2) + 'MB'); }
+  function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
   function render() {
     var ee = overlay.querySelector('[data-events]');
-    if (ee) ee.innerHTML =
-      '<div style="color:#9cf;font-weight:bold;margin-bottom:2px">Phases</div>' +
-      events.map(function (e) {
-        return '<div><span style="color:#fc9">' + (e.t / 1000).toFixed(2) + 's</span>  ' + esc(e.name) +
-               (e.detail ? '  <span style="color:#9ab">' + esc(e.detail) + '</span>' : '') + '</div>';
-      }).join('');
+    if (ee) ee.innerHTML = '<b style="color:#9cf">Timeline</b>' + events.map(function (e) {
+      return '<div><span style="color:#fc9">' + (e.t / 1000).toFixed(2) + 's</span>  ' + esc(e.name) + (e.detail ? '  <span style="color:#9ab">' + esc(e.detail) + '</span>' : '') + '</div>';
+    }).join('');
+    var rows = resourceRows().sort(function (a, b) { return (b.bytes || b.body) - (a.bytes || a.body); }).slice(0, 25);
     var ne = overlay.querySelector('[data-net]');
-    if (ne) {
-      var top = network.slice().sort(function (a, b) { return b.bytes - a.bytes; }).slice(0, 25);
-      var totalB = network.reduce(function (s, n) { return s + n.bytes; }, 0);
-      var totalMs = network.reduce(function (s, n) { return s + n.ms; }, 0);
-      ne.innerHTML =
-        '<div style="color:#9cf;font-weight:bold;margin:8px 0 2px">Network (top 25 by size \\u2014 ' +
-        fmtBytes(totalB) + ', ' + network.length + ' req, ~' + fmtMs(totalMs) + ' cumulative)</div>' +
-        top.map(function (n) {
-          return '<div><span style="color:#fc9">' + fmtBytes(n.bytes) + '</span>' +
-                 '  <span style="color:#9ab">' + fmtMs(n.ms) + '</span>  ' + esc(n.url) + '</div>';
-        }).join('');
-    }
+    if (ne) ne.innerHTML =
+      '<b style="color:#9cf;display:block;margin-top:8px">Main-thread resources (top 25)</b>' +
+      '<div style="color:#c98;margin-bottom:3px">Pyodide wheels download inside a Worker &mdash; they are NOT here. Use DevTools &rarr; Network for those.</div>' +
+      rows.map(function (n) {
+        return '<div><span style="color:#fc9">' + (n.cached ? 'cache' : fmtB(n.bytes)) + '</span>  <span style="color:#9ab">' + fmtMs(n.ms) + '</span>  ' + esc(n.url) + '</div>';
+      }).join('');
   }
   setTimeout(function () {
-    console.group('[diag] 60s snapshot');
+    console.group('[diag] snapshot @45s');
     console.table(events);
-    console.table(network.slice().sort(function (a, b) { return b.bytes - a.bytes; }).slice(0, 40));
-    console.log('Total bytes:', (network.reduce(function (s, n) { return s + n.bytes; }, 0) / 1048576).toFixed(2) + 'MB');
-    console.log('Total requests:', network.length);
+    console.table(resourceRows().sort(function (a, b) { return b.body - a.body; }).slice(0, 40));
     console.groupEnd();
-  }, 60000);
+  }, 45000);
   setTimeout(render, 50);
 })();</script>"""
 
