@@ -43,6 +43,7 @@ def _(mo):
         | 11 | 120,000 particles | WebGPU + WGSL compute shader | damped pendulum (as #4), GPU-side | ○ candidate · Ch 12/13 |
         | 12 | Rumor through a crowd | Canvas 2D agents + live logistic fit | $\dot y = b\,y(K-y)$ — spatial vs. well-mixed | ✅ `rumor_crowd` · Ch 1 hook |
         | 13 | Cooling coffee | Canvas 2D + steam particles | $T' + kT = kT_r$ — Newton's cooling | ✅ `cooling_coffee` · Ch 2 hook |
+        | 14 | The hidden hillside | Canvas 2D contour map + level-curve tracing | $M\,dx + N\,dy = 0$ — exact equations as contours of $F$ | ○ candidate · Ch 3a |
 
         The **Status** column is the single place this page tracks
         graduation: ✅ means the demo has moved into `delib` and now
@@ -1606,6 +1607,227 @@ def _(delib):
     delib.cooling_coffee()
     return
 
+# ============================================================================
+# Demo 14 — The hidden hillside (Canvas 2D; exact equations as contour walks)
+# ============================================================================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## 14 · The hidden hillside
+
+        Chapter 3 opens with a hiker on a hillside who walks so as to
+        **stay at exactly the same altitude** — never up, never down.
+        The path they trace is a **contour line**, and that contour is a
+        **solution** of an *exact* equation $M\,dx + N\,dy = 0$. The
+        whole idea of exactness is that such an equation is secretly the
+        flatness condition of a hidden landscape $F(x, y)$: with
+        $M = F_x$ and $N = F_y$, "no change in $F$" — $F_x\,dx +
+        F_y\,dy = 0$ — is precisely the equation, and its solutions are
+        the level curves $F = C$.
+
+        Below is that hillside from above: a **peak** (upper right) and
+        a **basin** (lower left), shaded by altitude. **Click anywhere
+        and a hiker sets off, always keeping the same altitude** — so
+        they walk a contour. Around the peak or the basin the contour
+        closes and the hiker **returns exactly home**; out on the open
+        slopes it runs off the edge. The little tick on the hiker is the
+        steepest-uphill direction $(M, N)$ — notice it's *always square
+        to the path*, which is exactly what $M\,dx + N\,dy = 0$ says.
+
+        Drag **tilt** to lean the whole landscape (it adds a constant to
+        $M$, so it stays exact) and watch the closed loops open up into
+        through-routes.
+
+        *Why it matters:* "the path doesn't matter" is the chapter's
+        title, and here it's literal — every step of a contour walk
+        returns the same altitude reading, because altitude depends only
+        on *where you are*, not *how you got there*. That path-
+        independence **is** what makes an equation exact, and it's why a
+        single function $F$ can stand in for the whole family of
+        solutions.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    import anywidget as _aw
+
+    class _HiddenHillside(_aw.AnyWidget):
+        _esm = r"""
+        function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <canvas data-map style="width:100%;max-width:680px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff;touch-action:none;cursor:crosshair"></canvas>
+              <div style="display:flex;gap:18px;margin-top:8px;align-items:center;flex-wrap:wrap">
+                <label>tilt <input type="range" min="-0.6" max="0.6" step="0.02" value="0" data-k="tilt"> <span data-v="tilt">0.00</span></label>
+                <label><input type="checkbox" data-k="arrows" checked> show uphill field</label>
+                <button data-b="reset" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">↺ clear walks</button>
+                <span data-stat style="color:#7c8aa0"></span>
+              </div>
+              <div style="color:#8a96a5;margin-top:4px">click the hillside to send a hiker along a contour (a solution) · F = C the whole way</div>
+            </div>`;
+
+          var cv = el.querySelector('[data-map]');
+          var dpr = window.devicePixelRatio || 1;
+          var W = 680, H = 430;
+          cv.width = W * dpr; cv.height = H * dpr;
+          var ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          var bg = document.createElement('canvas');
+          bg.width = W * dpr; bg.height = H * dpr;
+          var bx = bg.getContext('2d'); bx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          var XR = 2.6, YR = XR * H / W;   // world half-ranges (keep aspect)
+          var tilt = 0, showArrows = true;
+          function toWorld(px, py) { return [(px / W * 2 - 1) * XR, -((py / H * 2 - 1) * YR)]; }
+          function toPx(x, y) { return [(x / XR + 1) / 2 * W, (-y / YR + 1) / 2 * H]; }
+
+          // The hidden landscape: a peak (upper-right) minus a basin (lower-left).
+          function F(x, y) {
+            var pk = Math.exp(-(((x-1.1)*(x-1.1) + (y-1.1)*(y-1.1))) / 0.9);
+            var vl = Math.exp(-(((x+1.1)*(x+1.1) + (y+1.1)*(y+1.1))) / 0.9);
+            return pk - vl + tilt * x;
+          }
+          function grad(x, y) {           // (M, N) = (F_x, F_y)
+            var h = 1e-3;
+            return [ (F(x+h,y)-F(x-h,y)) / (2*h), (F(x,y+h)-F(x,y-h)) / (2*h) ];
+          }
+
+          // Terrain palette: basin (teal) -> mid (cream) -> peak (warm red).
+          function terrain(v) {
+            var t = Math.max(0, Math.min(1, (v + 1) / 2));   // F in ~[-1,1] -> [0,1]
+            var lo = [42, 110, 130], mid = [244, 240, 224], hi = [193, 90, 70];
+            var a, b, u;
+            if (t < 0.5) { a = lo; b = mid; u = t / 0.5; } else { a = mid; b = hi; u = (t - 0.5) / 0.5; }
+            return 'rgb(' + Math.round(a[0]+(b[0]-a[0])*u) + ',' +
+                            Math.round(a[1]+(b[1]-a[1])*u) + ',' +
+                            Math.round(a[2]+(b[2]-a[2])*u) + ')';
+          }
+
+          // Paint the heatmap (coarse cells) + contour lines, into the bg canvas.
+          function paintBg() {
+            var step = 5;
+            for (var py = 0; py < H; py += step) {
+              for (var px = 0; px < W; px += step) {
+                var w = toWorld(px + step/2, py + step/2);
+                bx.fillStyle = terrain(F(w[0], w[1]));
+                bx.fillRect(px, py, step, step);
+              }
+            }
+            // contour lines: mark cells where F crosses a set of levels
+            var levels = [-0.8,-0.6,-0.4,-0.2,-0.05,0.05,0.2,0.4,0.6,0.8];
+            bx.fillStyle = 'rgba(255,255,255,0.55)';
+            var gs = 3;
+            for (var py = 0; py < H; py += gs) {
+              for (var px = 0; px < W; px += gs) {
+                var w0 = toWorld(px, py), w1 = toWorld(px + gs, py), w2 = toWorld(px, py + gs);
+                var f0 = F(w0[0], w0[1]), f1 = F(w1[0], w1[1]), f2 = F(w2[0], w2[1]);
+                for (var k = 0; k < levels.length; k++) {
+                  var L = levels[k];
+                  if ((f0 - L) * (f1 - L) < 0 || (f0 - L) * (f2 - L) < 0) { bx.fillRect(px, py, 1.4, 1.4); break; }
+                }
+              }
+            }
+          }
+
+          // Trace the contour (solution) through (x0,y0): walk perpendicular to
+          // the gradient, so F stays constant. Returns the polyline + closed flag.
+          function traceContour(x0, y0) {
+            var pts = [[x0, y0]], x = x0, y = y0, ds = 0.012, closed = false;
+            for (var i = 0; i < 5000; i++) {
+              var g = grad(x, y), n = Math.hypot(g[0], g[1]) || 1;
+              var tx = g[1] / n, ty = -g[0] / n;
+              var xm = x + tx * ds/2, ym = y + ty * ds/2;
+              var g2 = grad(xm, ym), n2 = Math.hypot(g2[0], g2[1]) || 1;
+              x += (g2[1] / n2) * ds; y += (-g2[0] / n2) * ds;
+              pts.push([x, y]);
+              if (Math.abs(x) > XR*1.05 || Math.abs(y) > YR*1.05) break;
+              if (pts.length > 60 && Math.hypot(x - x0, y - y0) < ds * 1.5) { closed = true; break; }
+            }
+            return { pts: pts, closed: closed, F: F(x0, y0) };
+          }
+
+          var walks = [];   // {curve, t, F, closed} hikers in progress
+          function addWalk(px, py) {
+            var w = toWorld(px, py);
+            var c = traceContour(w[0], w[1]);
+            if (c.pts.length > 4) walks.push({ c: c, t: 0 });
+            if (walks.length > 5) walks.shift();
+          }
+
+          var pressing = false;
+          function evPx(e) { var r = cv.getBoundingClientRect(); return [(e.clientX-r.left)*(W/r.width), (e.clientY-r.top)*(H/r.height)]; }
+          cv.addEventListener('pointerdown', function (e) { pressing = true; var p = evPx(e); addWalk(p[0], p[1]); });
+          cv.addEventListener('pointermove', function (e) { if (pressing) { var p = evPx(e); if (Math.random() < 0.12) addWalk(p[0], p[1]); } });
+          window.addEventListener('pointerup', function () { pressing = false; });
+          el.querySelector('[data-b="reset"]').addEventListener('click', function () { walks = []; });
+          el.querySelector('input[data-k="tilt"]').addEventListener('input', function () {
+            tilt = parseFloat(this.value); el.querySelector('[data-v="tilt"]').textContent = tilt.toFixed(2);
+            paintBg(); walks = [];   // landscape changed; old contours no longer valid
+          });
+          el.querySelector('input[data-k="arrows"]').addEventListener('change', function () { showArrows = this.checked; });
+
+          paintBg();
+
+          function drawArrows() {
+            if (!showArrows) return;
+            ctx.strokeStyle = 'rgba(40,55,70,0.35)'; ctx.lineWidth = 1;
+            for (var gx = 1; gx <= 9; gx++) {
+              for (var gy = 1; gy <= 6; gy++) {
+                var x = -XR + 2*XR*gx/10, y = -YR + 2*YR*gy/7;
+                var g = grad(x, y), n = Math.hypot(g[0], g[1]) || 1;
+                var p = toPx(x, y), ux = g[0]/n*10, uy = -g[1]/n*10;
+                ctx.beginPath(); ctx.moveTo(p[0]-ux/2, p[1]-uy/2); ctx.lineTo(p[0]+ux/2, p[1]+uy/2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(p[0]+ux/2, p[1]+uy/2, 1.4, 0, 6.2832); ctx.fillStyle='rgba(40,55,70,0.4)'; ctx.fill();
+              }
+            }
+          }
+
+          var raf, running = true;
+          function frame() {
+            if (!running) return;
+            ctx.clearRect(0, 0, W, H);
+            ctx.drawImage(bg, 0, 0, W, H);
+            drawArrows();
+            var stat = '';
+            for (var i = 0; i < walks.length; i++) {
+              var wk = walks[i], pts = wk.c.pts;
+              // the traced contour (faint), then the hiker advancing along it
+              ctx.strokeStyle = 'rgba(20,30,45,0.5)'; ctx.lineWidth = 2; ctx.beginPath();
+              for (var j = 0; j < pts.length; j++) { var q = toPx(pts[j][0], pts[j][1]); if (j===0) ctx.moveTo(q[0],q[1]); else ctx.lineTo(q[0],q[1]); }
+              ctx.stroke();
+              wk.t += 6; if (wk.t >= pts.length) wk.t = wk.c.closed ? 0 : pts.length - 1;
+              var idx = Math.min(pts.length-1, Math.floor(wk.t));
+              var hp = toPx(pts[idx][0], pts[idx][1]);
+              // steepest-uphill tick at the hiker (perpendicular to the path)
+              var g = grad(pts[idx][0], pts[idx][1]), n = Math.hypot(g[0],g[1]) || 1;
+              ctx.strokeStyle = '#16223a'; ctx.lineWidth = 2;
+              ctx.beginPath(); ctx.moveTo(hp[0], hp[1]); ctx.lineTo(hp[0]+g[0]/n*16, hp[1]-g[1]/n*16); ctx.stroke();
+              ctx.fillStyle = '#16223a'; ctx.beginPath(); ctx.arc(hp[0], hp[1], 5, 0, 6.2832); ctx.fill();
+              ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(hp[0], hp[1], 2, 0, 6.2832); ctx.fill();
+              if (i === walks.length - 1) stat = 'altitude F = ' + wk.c.F.toFixed(3) + (wk.c.closed ? '  ·  closed loop — returns home' : '  ·  open route — leaves the map');
+            }
+            el.querySelector('[data-stat]').textContent = stat;
+            raf = requestAnimationFrame(frame);
+          }
+          frame();
+          return function () { running = false; cancelAnimationFrame(raf); };
+        }
+        export default { render };
+        """
+
+    hidden_hillside = _HiddenHillside()
+    return (hidden_hillside,)
+
+
+@app.cell(hide_code=True)
+def _(hidden_hillside, mo):
+    mo.ui.anywidget(hidden_hillside)
+    return
+
+
 
 @app.cell(hide_code=True)
 def _(mo):
@@ -1614,7 +1836,7 @@ def _(mo):
         ---
         ## The full bench has now played
 
-        Thirteen demos, ten technologies (Canvas 2D keeps earning its
+        Fourteen demos, ten technologies (Canvas 2D keeps earning its
         keep). The only candidate left unbuilt is **CodeMirror 6**
         (embedded code editing inside a
         widget) — skipped deliberately, because marimo already gives
