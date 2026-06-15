@@ -134,43 +134,61 @@ def _(delib, mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 3 — build the equation. Earn each term and the canonical
-    # constants. Damping ratio mentioned but not over-emphasised.
+    # Section 3 — build the equation, recap-first. Newton's law; recall
+    # Ch 6's TWO forces (restoring + damping — damping is NOT new, Ch 6
+    # already did it); add the one genuinely new term (the push); tidy to
+    # the canonical form.
     mo.md(
         r"""
         ## Building the equation
 
-        The swing's bobbing-from-Chapter-6 part comes from the same
-        two ingredients we used there: a restoring force
-        proportional to displacement, and Newton's $F = m\ddot x$.
-        Two new ingredients enter the equation now.
+        Back to **Newton's second law**: a mass obeys $F = m\ddot x$,
+        where $F$ is the *total* force on it. So writing the swing's
+        equation is just a matter of listing the forces — and
+        Chapter 6 already found most of them.
 
-        **Damping.** Friction with the air (and at the swing's
-        pivot) drags against motion. It's well-modelled as a force
-        proportional to *velocity*, opposing it:
-        $F_{\text{friction}} = -c\dot x$ with $c \ge 0$. A fast
-        swing feels more drag than a slow one; a stationary swing
-        feels none.
+        **Recall Chapter 6.** A swing left to itself feels two forces:
 
-        **External forcing.** The parent's hand applies an extra,
-        time-varying force — push, wait, push, wait. For the
-        cleanest case (and a surprisingly accurate model for
-        rhythmic pushing), take it sinusoidal:
-        $F_{\text{drive}} = F_0 \cos(\omega t)$, with amplitude
-        $F_0$ and frequency $\omega$.
+        - a **restoring pull** back toward the bottom, proportional to
+          how far it has swung and always pointing home: $-k\,x$;
+        - a **damping** drag from friction and the air, proportional to
+          how *fast* it moves and always opposing it: $-c\,\dot x$.
 
-        Newton's law $m\ddot x = \text{net force}$ assembles these:
+        Newton's law adds them into Chapter 6's swing:
 
         $$
-        m\,\ddot x \;=\; -k\,x \;-\; c\,\dot x \;+\; F_0\cos(\omega t).
+        m\ddot x \;=\; -k\,x \;-\; c\,\dot x.
         $$
 
-        Divide through by $m$ and rename constants for cleaner
-        algebra later: let $\omega_0 = \sqrt{k/m}$ (the **natural
-        frequency** — what the swing would do on its own with no
-        friction and no push), $2\gamma = c/m$ (the **damping
-        rate**), and absorb $F_0 / m \to F_0$. The canonical form
-        is
+        Left alone, that swing only ever coasts to rest — the damping
+        drains it, every time. (Chapter 6 is where we solved it and saw
+        the decay.)
+
+        **Chapter 7 adds exactly one thing: the push.** The parent's
+        hand puts an extra force on the swing that wasn't there before.
+        For rhythmic pushing — shove, let it swing, shove again — the
+        clean model is a cosine:
+
+        $$
+        F_{\text{push}}(t) \;=\; F_0\cos(\omega t),
+        $$
+
+        where $F_0$ is **how hard** each push is and $\omega$ is **how
+        often** the pushes come (the *drive frequency*). Drop it onto
+        the end of the force list:
+
+        $$
+        m\ddot x \;=\; -k\,x \;-\; c\,\dot x \;+\; F_0\cos(\omega t).
+        $$
+
+        That's the whole equation: everything from Chapter 6, plus the
+        one new term on the right.
+
+        **Tidy it up.** Divide through by $m$ and rename constants for
+        cleaner algebra: let $\omega_0 = \sqrt{k/m}$ (the **natural
+        frequency** — the rhythm the swing keeps on its own), let
+        $2\gamma = c/m$ (the **damping rate**), and fold the leftover
+        $F_0/m$ back into $F_0$. The canonical form is
 
         $$
         \boxed{\quad
@@ -178,24 +196,24 @@ def _(mo):
         \quad}
         $$
 
-        — and from here on out, "the equation" means this one.
+        — and from here on, "the equation" means this one. Notice the
+        left-hand side is **Chapter 6's, untouched**; all that's new is
+        the push on the right.
 
-        Three physical knobs you can turn:
+        Three knobs you can turn:
 
-        - $\omega_0$ — set by *what kind of swing it is*. Longer
-          swing → smaller $\omega_0$, slower natural rhythm.
-        - $\gamma$ — set by *how much friction*. Light damping is
-          $\gamma \ll \omega_0$; heavy damping is $\gamma$
-          comparable to $\omega_0$.
-        - $\omega$ — set by *how you push*. Independent of the
-          other two; the whole resonance story is about what
-          happens as you sweep $\omega$.
+        - $\omega_0$ — set by *what kind of swing it is* (a longer swing
+          has a smaller $\omega_0$, a slower natural rhythm);
+        - $\gamma$ — set by *how much friction* (light damping is
+          $\gamma \ll \omega_0$);
+        - $\omega$ — set by *how you push*, independent of the other
+          two. The whole resonance story is about what happens as you
+          sweep $\omega$.
 
-        The factor of $2$ in $2\gamma$ looks awkward at first but
-        makes the characteristic equation in Chapter 6 come out as
-        $r^2 + 2\gamma r + \omega_0^2 = 0$, whose roots are
-        $r = -\gamma \pm \sqrt{\gamma^2 - \omega_0^2}$. Convention.
-        Live with it; the algebra rewards you.
+        (The factor of $2$ in $2\gamma$ is just convention — it makes
+        Chapter 6's characteristic equation
+        $r^2 + 2\gamma r + \omega_0^2 = 0$ come out tidy, with roots
+        $r = -\gamma \pm \sqrt{\gamma^2 - \omega_0^2}$.)
         """
     )
     return
