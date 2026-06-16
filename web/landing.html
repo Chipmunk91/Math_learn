@@ -95,6 +95,18 @@
     .chip.done a:hover { color: var(--teal); }
     .chip.done .mark { color: var(--teal); font-weight: 700; }
     .chip.todo { color: #9aa7b5; background: #fafbfc; }
+    /* in-progress (draft) — readable today, but still being written */
+    .chip.wip { border-color: var(--gold); border-style: dashed; background: #fdf8ee; }
+    .chip.wip a { color: var(--ink); text-decoration: none; }
+    .chip.wip a:hover { color: var(--gold); }
+    .chip.wip .mark { color: var(--gold); font-weight: 700; }
+    /* draft card: dashed gold accent + a Draft pill so it doesn't read as finished */
+    .card.wip { border-color: var(--gold); border-style: dashed; }
+    .card.wip .t { color: var(--grey); }
+    .card .badge { display: inline-block; margin-top: 0.45rem; font-size: 0.66rem;
+                   font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+                   color: #9a6a12; background: #fdf3df; border: 1px solid var(--gold);
+                   border-radius: 0.5rem; padding: 0.05rem 0.4rem; }
 
     /* ---- why ---- */
     .why { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
@@ -162,7 +174,9 @@
       <p class="sub">The full arc — a standard undergraduate differential-equations
         course, built one interactive chapter at a time.
         <span class="chip done" style="padding:0.1rem 0.5rem"><span class="mark">✓</span> available</span>
-        means you can read it today.</p>
+        means you can read it today;
+        <span class="chip wip" style="padding:0.1rem 0.5rem"><span class="mark">✎</span> draft</span>
+        means it's readable but still being written.</p>
       __ROADMAP__
     </div>
   </section>

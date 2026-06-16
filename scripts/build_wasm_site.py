@@ -808,13 +808,18 @@ def build_index(names: list[str]) -> str:
                 f"<h1>Differential Equations</h1><ul>{items}</ul>")
 
     # 'Read it now' cards — built chapters in reading order, nice titles.
+    # WIP chapters get a dashed gold card + a Draft pill so they don't read
+    # as finished (they also load in edit mode — cells don't auto-run).
     card_li = []
     for slug in chapters:
         label, title = CHAPTER_CARDS.get(slug, ("Chapter", pretty(slug)))
+        wip = slug in WIP_CHAPTERS
+        cls = "card wip" if wip else "card"
+        badge = '<span class="badge">✎ Draft</span>' if wip else ""
         card_li.append(
-            f'        <li class="card"><a href="./{slug}/">'
+            f'        <li class="{cls}"><a href="./{slug}/">'
             f'<span class="n">{label}</span>'
-            f'<span class="t">{title}</span></a></li>'
+            f'<span class="t">{title}</span>{badge}</a></li>'
         )
     available_html = "\n".join(card_li)
 
@@ -823,7 +828,12 @@ def build_index(names: list[str]) -> str:
     for part_title, part_sub, entries in ROADMAP_PARTS:
         chips = []
         for title, slug in entries:
-            if slug and slug in built:
+            if slug and slug in built and slug in WIP_CHAPTERS:
+                chips.append(
+                    f'<li class="chip wip"><a href="./{slug}/">'
+                    f'<span class="mark">✎</span> {title}</a></li>'
+                )
+            elif slug and slug in built:
                 chips.append(
                     f'<li class="chip done"><a href="./{slug}/">'
                     f'<span class="mark">✓</span> {title}</a></li>'
