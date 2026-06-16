@@ -105,6 +105,14 @@ CHAPTER_CARDS = {
 # auto-run experience.
 WIP_CHAPTERS: set[str] = {"ch07_damping_forcing_resonance"}
 
+# Optional slug -> external fast-preview URL (e.g. a Hugging Face Space running
+# `marimo run` on a real Python kernel, which loads in <1s vs the WASM page's
+# ~50s — see deploy/hf-space/). When a WIP chapter has an entry here, its Draft
+# card/chip on the landing page links to the fast preview instead of the slow
+# WASM page. Set it without touching code via the WIP_PREVIEW_URLS env (JSON),
+# e.g. WIP_PREVIEW_URLS='{"ch07_damping_forcing_resonance":"https://…hf.space"}'.
+WIP_PREVIEW_URLS: dict[str, str] = json.loads(os.environ.get("WIP_PREVIEW_URLS", "{}"))
+
 # delib is a locally-installed package and does not exist in the browser's
 # Pyodide runtime. For the WASM build we inline its source into each notebook so
 # the exported page is self-contained.
@@ -814,10 +822,17 @@ def build_index(names: list[str]) -> str:
     for slug in chapters:
         label, title = CHAPTER_CARDS.get(slug, ("Chapter", pretty(slug)))
         wip = slug in WIP_CHAPTERS
+        preview = WIP_PREVIEW_URLS.get(slug) if wip else None
         cls = "card wip" if wip else "card"
-        badge = '<span class="badge">✎ Draft</span>' if wip else ""
+        if preview:
+            href, extra = preview, ' target="_blank" rel="noopener"'
+            badge = '<span class="badge">✎ Draft · fast preview ↗</span>'
+        elif wip:
+            href, extra, badge = f"./{slug}/", "", '<span class="badge">✎ Draft</span>'
+        else:
+            href, extra, badge = f"./{slug}/", "", ""
         card_li.append(
-            f'        <li class="{cls}"><a href="./{slug}/">'
+            f'        <li class="{cls}"><a href="{href}"{extra}>'
             f'<span class="n">{label}</span>'
             f'<span class="t">{title}</span>{badge}</a></li>'
         )
@@ -829,8 +844,11 @@ def build_index(names: list[str]) -> str:
         chips = []
         for title, slug in entries:
             if slug and slug in built and slug in WIP_CHAPTERS:
+                preview = WIP_PREVIEW_URLS.get(slug)
+                href = preview or f"./{slug}/"
+                extra = ' target="_blank" rel="noopener"' if preview else ""
                 chips.append(
-                    f'<li class="chip wip"><a href="./{slug}/">'
+                    f'<li class="chip wip"><a href="{href}"{extra}>'
                     f'<span class="mark">✎</span> {title}</a></li>'
                 )
             elif slug and slug in built:
