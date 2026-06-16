@@ -221,13 +221,13 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(delib, mo):
-    # Section 4 (motivation) — the two-state split, built from what
-    # the reader has actually SEEN in Section 1. The on-resonance
-    # panel starts at rest: first cycle small, each cycle bigger,
-    # only after many pushes does the clean steady sweep emerge.
-    # That growth IS the transient dying. Each of the two motions
-    # gets its own little figure so the reader knows what it looks
-    # like, then a real "why linear lets them add" bridge.
+    # Section 4 (motivation) — math-first reorder. Start from the
+    # equation we just built. Split the unknown into x = x_h + x_p,
+    # *choose* x_h to absorb the unforced equation (Ch 6, decays),
+    # and derive that x_p must satisfy the full forced equation.
+    # Only THEN show the figures so the labels "transient" and
+    # "steady state" carry a picture, and only THEN tie back to
+    # Section 1's building-up swing as the payoff.
     _fig_h, _fig_p = delib.transient_steady_figures(
         omega0=2.0, gamma=0.25, omega=2.0, t_end=28.0,
     )
@@ -236,128 +236,140 @@ def _(delib, mo):
             r"""
             ## Two motions in one — and which one we care about
 
-            Scroll back to the **left panel of Section 1** (the
-            right-rhythm swing) and watch its first few seconds. The
-            first cycle is *small* — the swing was at rest when the
-            pushing started, and the first push only nudged it. Each
-            cycle that follows is bigger; only after several pushes
-            has the motion grown into the steady soaring sweep you
-            remember.
-
-            That "still building up" stretch isn't a glitch. The
-            swing is doing **two things at once**, and it helps to
-            see each one on its own first.
-            """
-        ),
-        mo.md(
-            r"""
-            **Motion 1 — its own natural sway.** Left to itself, the
-            swing oscillates and slowly dies down — exactly the
-            damped motion from Chapter 6. Starting the swing from
-            rest "wakes up" a dose of this natural sway, and damping
-            then drains it away. On its own it looks like the figure
-            below: an oscillation tucked inside a shrinking envelope,
-            headed for zero.
-            """
-        ),
-        _fig_h,
-        mo.md(
-            r"""
-            **Motion 2 — the response locked to your pushes.** Now
-            the part that answers the push: a steady swing *at the
-            drive's frequency*, the same size every cycle, never
-            growing and never fading. It is locked to the push (it
-            may lag a little behind it, dashed below) and it would
-            keep going forever as long as you keep pushing.
-            """
-        ),
-        _fig_p,
-        mo.md(
-            r"""
-            Both motions are present from the very first second. Early
-            on, the natural sway (Motion 1) is still large, so what
-            you actually see is the **two figures added together** —
-            and that sum is exactly the "still building up" wobble in
-            Section 1. After a few times $1/\gamma$ — the damping
-            timescale — Motion 1 has died off and only Motion 2 is
-            left. *That's* the clean repeating sweep.
-
-            ### Why the two motions add cleanly
-
-            It looks too convenient — how do we know the full motion
-            is *exactly* Motion 1 plus Motion 2, with nothing left
-            over? The answer is the single word **linear**, and we
-            can watch it work.
-
-            We hold two facts. Motion 1 is a free Chapter 6 swing
-            with **no push**, so it satisfies the *unforced* equation
+            We've built the equation:
 
             $$
-            \ddot x_h + 2\gamma\dot x_h + \omega_0^2 x_h \;=\; 0,
+            \ddot x + 2\gamma\dot x + \omega_0^2 x \;=\; F_0\cos(\omega t).
             $$
 
-            and fed through the left side it returns nothing. Motion 2
-            is the particular swing the rest of this section will
-            build to *answer* the push, so it satisfies the full
+            Solving it head-on — chasing one function that handles
+            the push, fits the initial conditions, and holds for
+            all time — is a lot to ask at once. Here's a trick that
+            splits the job into two easier problems, each with a
+            clean physical meaning.
+
+            ### Split the unknown into two pieces
+
+            Write the solution as a sum of two functions we haven't
+            decided on yet,
+
+            $$
+            x(t) \;=\; x_h(t) \;+\; x_p(t).
+            $$
+
+            Because $x$ is a sum, so are its derivatives:
+
+            $$
+            \dot x \;=\; \dot x_h + \dot x_p,
+            \qquad
+            \ddot x \;=\; \ddot x_h + \ddot x_p.
+            $$
+
+            Plug those into the equation and group the $x_h$ pieces
+            apart from the $x_p$ pieces:
+
+            $$
+            \ddot x + 2\gamma\dot x + \omega_0^2 x
+            \;=\;
+            \bigl(\ddot x_h + 2\gamma\dot x_h + \omega_0^2 x_h\bigr)
+            \;+\;
+            \bigl(\ddot x_p + 2\gamma\dot x_p + \omega_0^2 x_p\bigr)
+            \;=\; F_0\cos(\omega t).
+            $$
+
+            So far this is just bookkeeping — no choice has been
+            made yet. Now we make one: **declare $x_h$ to satisfy
+            the equation with the push turned off,**
+
+            $$
+            \ddot x_h + 2\gamma\dot x_h + \omega_0^2 x_h \;=\; 0.
+            $$
+
+            That kills the first parenthesis, and the rest must
+            carry the whole load:
 
             $$
             \ddot x_p + 2\gamma\dot x_p + \omega_0^2 x_p \;=\; F_0\cos(\omega t).
             $$
 
-            Now glue them. Define $x = x_h + x_p$ and feed it to the
-            left side. The only fact we need is that *a derivative of
-            a sum is the sum of the derivatives*,
+            The original problem has split into **two equations** —
+            one with no push, one with the push — and any $x_h$
+            solving the first plus any $x_p$ solving the second
+            give, by addition, a solution of the original.
 
-            $$
-            \ddot x \;=\; \ddot x_h + \ddot x_p
-            \qquad\text{and}\qquad
-            \dot x \;=\; \dot x_h + \dot x_p .
-            $$
+            *(This worked because every operation on the left side —
+            differentiate, scale, add — distributes over a sum, so
+            regrouping by $x_h$ and $x_p$ is allowed: the two
+            pieces never mix. Had the equation carried an $x^2$
+            term, $(x_h+x_p)^2 \neq x_h^2 + x_p^2$ and the
+            regrouping would fail — the pieces would cross-talk.
+            The word for what saves us is **linear**: linearity is
+            precisely the permission to add.)*
+            """
+        ),
+        mo.md(
+            r"""
+            ### Which half is interesting?
 
-            Every term splits along that same seam, and collecting
-            the $x_h$ pieces apart from the $x_p$ pieces gives
+            The first equation is one we've already met — it's
+            Chapter 6's damped oscillator, no driving force. Its
+            solution carries whatever initial conditions the swing
+            had at $t=0$, and whatever it carries, damping drains
+            it to zero in a few times $1/\gamma$. We call this
+            dying piece the **transient**.
 
-            $$
-            \ddot{x} + 2\gamma\dot{x} + \omega_0^2 x
-            \;=\; \underbrace{\left(\ddot{x}_h + 2\gamma\dot{x}_h + \omega_0^2 x_h\right)}_{=\;0}
-            \;+\; \underbrace{\left(\ddot{x}_p + 2\gamma\dot{x}_p + \omega_0^2 x_p\right)}_{=\;F_0\cos(\omega t)}
-            \;=\; F_0\cos(\omega t).
-            $$
+            The second equation is the new thing. Its solution has
+            to keep up with the push *forever*: a swing at the
+            drive's frequency, neither growing nor decaying. Notice
+            that the initial conditions are absent from how we
+            built it — they're already absorbed into $x_h$, so
+            $x_p$ depends only on the push and the swing's own
+            constants $\omega_0$, $\gamma$. We call this survivor
+            the **steady state**.
 
-            The push comes right back out, so $x_h + x_p$ solves the
-            full equation — and the two pieces passed through side by
-            side and **never touched**.
+            After a few times $1/\gamma$ the transient is gone,
+            and $x_p$ *is* the motion. All the long-term behaviour
+            lives in $x_p$, so it's $x_p$ we'll chase for the rest
+            of this section.
 
-            That *never touched* is the whole point. Every operation
-            on the left side — differentiate, scale by a constant,
-            add — acts on the two motions independently;
-            differentiating $x_h + x_p$ can't conjure an $x_h x_p$
-            cross-term out of nowhere. The dying sway knows nothing
-            about the steady push, and vice versa. No cross-term is
-            even *possible*, which is exactly what lets us write
+            ### What the two pieces look like
 
-            $$
-            x(t) \;=\; \underbrace{x_h(t)}_{\text{transient}}
-                 \;+\; \underbrace{x_p(t)}_{\text{steady state}}
-            $$
+            Before we go after $x_p$ algebraically, here's what
+            each piece looks like on its own — so the words
+            "transient" and "steady state" carry a picture.
 
-            with no apology. Had the equation carried a *nonlinear*
-            term — say an $x^2$ — this would collapse: $(x_h+x_p)^2
-            \neq x_h^2 + x_p^2$, the pieces would cross-talk, and the
-            clean split would be gone. Linearity is precisely the
-            permission to add.
+            **Motion 1 — the transient $x_h$.** A Chapter 6
+            oscillation tucked inside a shrinking envelope, headed
+            for zero. Whatever its initial size, the swing forgets
+            it after a few damping times.
+            """
+        ),
+        _fig_h,
+        mo.md(
+            r"""
+            **Motion 2 — the steady state $x_p$.** A constant-
+            amplitude swing at the drive's frequency, locked to
+            the push (dashed) and possibly lagging behind it. It
+            doesn't grow, doesn't fade, and would keep going
+            forever as long as the push keeps going.
+            """
+        ),
+        _fig_p,
+        mo.md(
+            r"""
+            With those two pictures in mind, go back to the
+            **left panel of Section 1** (the right-rhythm swing)
+            and watch its first few seconds. The small first
+            cycle growing into the steady soaring sweep is exactly
+            $x_h + x_p$ playing out: early on the transient
+            (Motion 1) is still substantial and overlaps the
+            steady state, so the visible motion is the
+            not-yet-settled sum of the two. After a few times
+            $1/\gamma$ the transient has faded out and only
+            Motion 2 is left — the clean repeating sweep you
+            remember.
 
-            Those two pieces have opposite characters. The
-            **transient** $x_h$ is Motion 1 — the damped sway; it
-            depends on how the swing was sitting when you started,
-            and it's gone after a few $1/\gamma$. The **steady state**
-            $x_p$ is Motion 2 — the survivor; it doesn't grow,
-            doesn't decay, and doesn't depend on initial conditions,
-            only on the push and the swing's constants $\omega_0$,
-            $\gamma$.
-
-            After the transient dies, $x_p$ *is* the motion. The rest
-            of this section finds a formula for it.
+            Time to find $x_p$.
             """
         ),
     ])
