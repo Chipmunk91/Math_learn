@@ -284,47 +284,66 @@ def _(delib, mo):
 
             ### Why the two motions add cleanly
 
-            It looks too convenient: how do we know the full motion
-            is *exactly* Motion 1 plus Motion 2, with no leftover
-            cross-term? The answer is the single word **linear**.
+            It looks too convenient — how do we know the full motion
+            is *exactly* Motion 1 plus Motion 2, with nothing left
+            over? The answer is the single word **linear**, and we
+            can watch it work.
 
-            Look at the left side of the equation, $\ddot x +
-            2\gamma\,\dot x + \omega_0^2 x$. Everything it does —
-            take a derivative, multiply by a constant, add terms —
-            **distributes over a sum**: the derivative of $f+g$ is
-            $f' + g'$, scaling $f+g$ scales each piece, and so on.
-            So if you feed the left side a *sum* of two motions, what
-            comes back out is just the *sum* of what each motion
-            would have produced alone.
+            We hold two facts. Motion 1 is a free Chapter 6 swing
+            with **no push**, so it satisfies the unforced equation
+            $\ddot{x}_h + 2\gamma\dot{x}_h + \omega_0^2 x_h = 0$ —
+            run it through the left side and you get nothing. Motion 2
+            is the particular swing the rest of this section will
+            build to *answer* the push, so it satisfies the full
+            $\ddot{x}_p + 2\gamma\dot{x}_p + \omega_0^2 x_p =
+            F_0\cos(\omega t)$.
 
-            Now put the two motions through it. Motion 1 is a
-            free Chapter 6 swing with **no push**, so the left side
-            turns it into $0$. Motion 2 is built to reproduce the
-            push, so the left side turns it into $F_0\cos(\omega t)$.
-            Feed in their sum and the left side returns
-            $0 + F_0\cos(\omega t) = F_0\cos(\omega t)$ — exactly the
-            push on the right. **The sum solves the full equation,
-            and the two pieces never interfere.** That is the whole
-            content of "linear," and it's why we may write
+            Now glue them. Define $x := x_h + x_p$ and feed it to the
+            left side. The only fact we need is that *a derivative of
+            a sum is the sum of the derivatives* — so $\ddot{x} =
+            \ddot{x}_h + \ddot{x}_p$ and $\dot{x} = \dot{x}_h +
+            \dot{x}_p$. Every term splits along that same seam, and
+            collecting the $x_h$ pieces apart from the $x_p$ pieces
+            gives
+
+            $$
+            \ddot{x} + 2\gamma\dot{x} + \omega_0^2 x
+            \;=\; \underbrace{\left(\ddot{x}_h + 2\gamma\dot{x}_h + \omega_0^2 x_h\right)}_{=\;0}
+            \;+\; \underbrace{\left(\ddot{x}_p + 2\gamma\dot{x}_p + \omega_0^2 x_p\right)}_{=\;F_0\cos(\omega t)}
+            \;=\; F_0\cos(\omega t).
+            $$
+
+            The push comes right back out, so $x_h + x_p$ solves the
+            full equation — and the two pieces passed through side by
+            side and **never touched**.
+
+            That *never touched* is the whole point. Every operation
+            on the left side — differentiate, scale by a constant,
+            add — acts on the two motions independently;
+            differentiating $x_h + x_p$ can't conjure an $x_h x_p$
+            cross-term out of nowhere. The dying sway knows nothing
+            about the steady push, and vice versa. No cross-term is
+            even *possible*, which is exactly what lets us write
 
             $$
             x(t) \;=\; \underbrace{x_h(t)}_{\text{transient}}
                  \;+\; \underbrace{x_p(t)}_{\text{steady state}}
             $$
 
-            with no apology. (Had the equation carried a *nonlinear*
+            with no apology. Had the equation carried a *nonlinear*
             term — say an $x^2$ — this would collapse: $(x_h+x_p)^2
             \neq x_h^2 + x_p^2$, the pieces would cross-talk, and the
             clean split would be gone. Linearity is precisely the
-            permission to add.)
+            permission to add.
 
-            We name the two pieces. The **transient** $x_h$ is
-            Motion 1 — the damped sway; it depends on how the swing
-            was sitting when you started, and it's gone after a few
-            $1/\gamma$. The **steady state** $x_p$ is Motion 2 — the
-            survivor; it doesn't grow, doesn't decay, and doesn't
-            depend on initial conditions, only on the push and the
-            swing's constants $\omega_0$, $\gamma$.
+            Those two pieces have opposite characters. The
+            **transient** $x_h$ is Motion 1 — the damped sway; it
+            depends on how the swing was sitting when you started,
+            and it's gone after a few $1/\gamma$. The **steady state**
+            $x_p$ is Motion 2 — the survivor; it doesn't grow,
+            doesn't decay, and doesn't depend on initial conditions,
+            only on the push and the swing's constants $\omega_0$,
+            $\gamma$.
 
             After the transient dies, $x_p$ *is* the motion. The rest
             of this section finds a formula for it.
