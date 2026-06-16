@@ -212,6 +212,110 @@ def oscillator_animate(
 
 # --- helper 2: amplitude / phase response -----------------------------------
 
+def transient_steady_figures(
+    omega0: float = 2.0,
+    gamma: float = 0.25,
+    omega: float = 2.0,
+    *,
+    t_end: float = 28.0,
+    n: int = 600,
+    height: int = 240,
+):
+    """Two small static illustrations for the transient/steady-state split.
+
+    Returns ``(fig_transient, fig_steady)``:
+
+    * ``fig_transient`` shows the **natural sway** ``x_h`` — the Chapter 6
+      underdamped motion ``e^{-gamma t} cos(omega_d t)`` (normalised to start
+      at 1) with its decaying envelope ``+-e^{-gamma t}``. The point of the
+      picture is that it *fades to zero*.
+    * ``fig_steady`` shows the **push-locked response** ``x_p`` — a
+      constant-amplitude sinusoid ``cos(omega t - phi)`` (normalised to unit
+      amplitude) with the drive ``cos(omega t)`` overlaid dashed, so the
+      reader sees it is locked to the push (and lags it) and never decays.
+
+    Both share the same time axis so they read as two halves of one story.
+    """
+    import plotly.graph_objects as go
+
+    transient_color = "#4e9a6b"   # green — the swing's own (Ch 6) motion
+    response_color = "#5b7db1"    # blue — matches the response elsewhere
+    drive_color = "#d1495b"       # red dashed — matches the drive elsewhere
+    grey = "#9aa7b5"
+
+    t = np.linspace(0.0, t_end, n)
+    env = np.exp(-gamma * t)
+
+    # --- transient: e^{-gamma t} cos(omega_d t), damped natural frequency ----
+    omega_d = float(np.sqrt(max(omega0 ** 2 - gamma ** 2, 0.0)))
+    x_h = env * np.cos(omega_d * t)
+
+    fig_h = go.Figure()
+    # decaying envelope (faint)
+    fig_h.add_trace(go.Scatter(
+        x=t, y=env, mode="lines",
+        line=dict(color=grey, width=1, dash="dot"),
+        hoverinfo="skip", showlegend=False,
+    ))
+    fig_h.add_trace(go.Scatter(
+        x=t, y=-env, mode="lines",
+        line=dict(color=grey, width=1, dash="dot"),
+        hoverinfo="skip", showlegend=False,
+    ))
+    fig_h.add_trace(go.Scatter(
+        x=t, y=x_h, mode="lines",
+        line=dict(color=transient_color, width=2.5),
+        name="natural sway  xₕ", hoverinfo="skip", showlegend=False,
+    ))
+    fig_h.add_hline(y=0, line=dict(color=grey, width=1))
+    fig_h.add_annotation(
+        x=t_end * 0.7, y=0.78, text="envelope  e^(−γt)  →  fades to 0",
+        showarrow=False, font=dict(size=11, color="#6a6a6a"),
+        xanchor="center",
+    )
+    fig_h.update_layout(
+        template="plotly_white",
+        title=dict(text="Its own natural sway  xₕ — a Chapter 6 motion that dies away",
+                   x=0.02, font=dict(size=13)),
+        xaxis=dict(title="time  t", range=[0, t_end]),
+        yaxis=dict(title="xₕ(t)", range=[-1.15, 1.15]),
+        height=height, margin=dict(l=55, r=15, t=40, b=45),
+        paper_bgcolor="white", plot_bgcolor="white", showlegend=False,
+    )
+
+    # --- steady state: cos(omega t - phi), unit amplitude, never decays -----
+    phi = float(steady_state_phase(omega0, gamma, omega))
+    x_p = np.cos(omega * t - phi)
+    drive = np.cos(omega * t)
+
+    fig_p = go.Figure()
+    fig_p.add_trace(go.Scatter(
+        x=t, y=drive, mode="lines",
+        line=dict(color=drive_color, width=1.5, dash="dash"),
+        opacity=0.7, name="push  cos(ωt)",
+    ))
+    fig_p.add_trace(go.Scatter(
+        x=t, y=x_p, mode="lines",
+        line=dict(color=response_color, width=2.5),
+        name="response  xₚ",
+    ))
+    fig_p.add_hline(y=0, line=dict(color=grey, width=1))
+    fig_p.update_layout(
+        template="plotly_white",
+        title=dict(text="The response locked to your pushes  xₚ — same swing, forever",
+                   x=0.02, font=dict(size=13)),
+        xaxis=dict(title="time  t", range=[0, t_end]),
+        yaxis=dict(title="xₚ(t)", range=[-1.35, 1.35]),
+        height=height, margin=dict(l=55, r=15, t=40, b=45),
+        paper_bgcolor="white", plot_bgcolor="white",
+        showlegend=True,
+        legend=dict(x=0.66, y=0.99, bgcolor="rgba(255,255,255,0.85)",
+                    font=dict(size=10)),
+    )
+
+    return fig_h, fig_p
+
+
 def frequency_response(
     omega0: float,
     gamma: float,

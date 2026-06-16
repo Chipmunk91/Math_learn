@@ -25,6 +25,7 @@ from delib.fields import (
 from delib.oscillators import (
     oscillator_animate,
     frequency_response,
+    transient_steady_figures,
     steady_state_amplitude,
     steady_state_phase,
     peak_frequency,
@@ -83,6 +84,7 @@ __all__ = [
     "rk4_steps",
     "oscillator_animate",
     "frequency_response",
+    "transient_steady_figures",
     "steady_state_amplitude",
     "steady_state_phase",
     "peak_frequency",
