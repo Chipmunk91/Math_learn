@@ -221,118 +221,157 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 4 (intro) — frame the derivation that follows in the
-    # Manim. The ansatz, the substitution, the matching, the
-    # algebraic isolation.
+    # Section 4 (motivation) — the two-state split, built from what
+    # the reader has actually SEEN in Section 1. The on-resonance
+    # panel starts at rest: first cycle small, each cycle bigger,
+    # only after many pushes does the clean steady sweep emerge.
+    # That growth IS the transient dying; name the two pieces.
     mo.md(
         r"""
-        ## Pinning down the steady state
+        ## Two motions in one — and which one we care about
 
-        Let's reconnect to where we are. Back in the bridge section
-        we split the motion into two parts,
-        $x(t) = x_h(t) + x_p(t)$: the **transient** $x_h$ (Chapter
-        6's solution, which dies away) plus the **steady state**
-        $x_p$ (the part locked to the push, which lives forever).
-        After you wait a few seconds the transient is gone, so
-        *the steady state is the motion you actually see* — the
-        clean repeating swing in the animations above. "Find a
-        formula for $x_p$" simply means: **write down what that
-        long-term swinging motion is.** That's the goal of this
-        section.
+        Scroll back to the **left panel of Section 1** (the
+        right-rhythm swing) and watch its first few seconds. The
+        first cycle is *small* — the swing was at rest when the
+        pushing started, and the first push only nudged it. Each
+        cycle that follows is bigger; only after several pushes has
+        the motion grown into the steady soaring sweep you remember.
 
-        We could grind it out, but there's a shortcut: we can
-        *guess the shape* of $x_p$ from two facts, and then only
-        have to find a couple of numbers. Here are the two facts.
+        That "still building up" stretch isn't a glitch. The swing
+        is doing **two things at once**:
 
-        **Fact one: the answer is a sinusoid at the push's
-        frequency.** Why? Look at the left side of the equation,
-        $\ddot x + 2\gamma\dot x + \omega_0^2 x$. It does only three
-        things to $x$: differentiate it, scale it, and add the
-        pieces. None of those operations invents a new frequency.
-        Differentiate $\cos(\omega t)$ and you get $-\omega
-        \sin(\omega t)$ — still frequency $\omega$. Scale it,
-        add two of them together — still frequency $\omega$. (This
-        is what the word **linear** is buying us: $x$ and its
-        derivatives appear only on their own, to the first power,
-        never squared or multiplied together or stuffed inside
-        another function. An equation built only from
-        "differentiate, scale, add" can't turn one frequency into
-        another.) So if the push on the right is a pure $\omega$
-        sinusoid, the only way the left side can possibly match it
-        is if $x_p$ is *also* a pure $\omega$ sinusoid. Any other
-        frequency would have nothing on the right to balance
-        against.
+        - **its own natural sway** — a Chapter 6 oscillation,
+          dragged into existence by the fact that the swing had to
+          start from rest and now has to "wake up." Damping is
+          draining it the whole time;
+        - **the response locked to your pushes** — a rhythmic swing
+          at the drive's frequency, ready to live forever.
 
-        **Fact two: it may be shifted in time.** The swing needn't
-        peak at the same instant the push peaks — it can lag behind.
-        A sinusoid at frequency $\omega$ has exactly two adjustable
-        features: how *big* it is, and *when* it peaks. Call the
-        size $A$ (the amplitude) and the timing offset $\varphi$
-        (the phase lag). The general frequency-$\omega$ sinusoid
-        with those two knobs is
+        Both are present from the very first second. Early on, the
+        natural sway is large enough to noticeably interfere with
+        the push-locked response, and what you see is the
+        combination of the two. After a few times $1/\gamma$ — the
+        damping timescale — the natural sway has died off and the
+        push-locked piece is all that's left. *That's* the clean
+        repeating sweep.
+
+        Because the equation is **linear**, this picture is exact:
+        the full motion is the sum of the two pieces,
 
         $$
-        x_p(t) \;=\; A\cos(\omega t - \varphi).
+        x(t) \;=\; \underbrace{x_h(t)}_{\text{transient}}
+             \;+\; \underbrace{x_p(t)}_{\text{steady state}}.
         $$
 
-        The $-\varphi$ inside is just a sign convention: a positive
-        $\varphi$ shifts the peak *later* than the push's peak, so
-        $\varphi$ reads directly as "how far the swing lags behind."
+        The **transient** $x_h$ is the Chapter 6 piece — the damped
+        sway. It depends on how the swing was sitting when you
+        started, and it's gone after a few $1/\gamma$.
 
-        So the shape is fixed, and only **two numbers** are left to
-        find: the amplitude $A$ and the lag $\varphi$. We pin them
-        down the only way available — substitute this guess into
-        the equation and demand that it actually hold for all $t$.
-        The video runs that substitution from start to finish; out
-        the other end comes a formula for $A$ and one for $\varphi$,
-        each in terms of the three knobs $\omega_0$, $\gamma$,
-        $\omega$.
+        The **steady state** $x_p$ is the push-locked piece that
+        survives. It doesn't grow, doesn't decay, doesn't depend on
+        initial conditions — only on the push and the swing's
+        constants $\omega_0$, $\gamma$.
+
+        After the transient dies, $x_p$ *is* the motion. The rest
+        of this section finds a formula for it.
         """
     )
     return
 
 
 @app.cell(hide_code=True)
-def _(delib):
-    # Section 4 — Manim hero: derive A(omega) and phi(omega) by
-    # substitution and coefficient matching.
-    delib.video(
-        "forced_oscillator_steady_state.mp4",
-        caption="Steady state of  ẍ + 2γẋ + ω₀²x = F₀ cos(ωt)  →  A(ω), φ(ω)",
-        fallback="The steady-state derivation animation is being rendered "
-                 "(see manim/forced_oscillator_steady_state.py).",
+def _(mo):
+    # Section 4 (shape) — before any algebra, what x_p MUST look
+    # like. Linear → output frequency = input frequency, so x_p is a
+    # sinusoid at omega. The only freedom is amplitude and phase.
+    mo.md(
+        r"""
+        ### What $x_p$ has to look like
+
+        Before doing any algebra, we can almost write down $x_p$
+        from two facts.
+
+        **The frequency is fixed.** The left side of the equation,
+        $\ddot x + 2\gamma\,\dot x + \omega_0^2\,x$, only ever
+        differentiates $x$, scales it, and adds the pieces — none
+        of those operations invent a new frequency. Differentiate
+        $\cos(\omega t)$ and you get $-\omega\sin(\omega t)$: still
+        frequency $\omega$. Scale that, add two together: still
+        frequency $\omega$. So if the right side is a pure-$\omega$
+        push, the only $x_p$ that can possibly balance it is itself
+        a pure-$\omega$ sinusoid. Any other frequency would have
+        nothing on the right to match. (That's what the word
+        **linear** is buying us: an equation built from
+        "differentiate, scale, add" can't turn one frequency into
+        another.)
+
+        **Only two numbers are free.** A sinusoid at frequency
+        $\omega$ has exactly two adjustable features: how *big* it
+        is and *when* it peaks. Call the size $A$ (the
+        **amplitude**) and the timing offset $\varphi$ (the
+        **phase lag**). The most general sinusoid at frequency
+        $\omega$ is
+
+        $$
+        x_p(t) \;=\; A\cos(\omega t - \varphi).
+        $$
+
+        The minus sign is just a convention: a positive $\varphi$
+        shifts the peak *later* than the push's peak, so $\varphi$
+        reads directly as "how far the swing lags behind the push."
+
+        We're not searching for a function any more — we're
+        searching for **two numbers**, $A$ and $\varphi$, each
+        determined by $\omega_0$, $\gamma$, $\omega$, and $F_0$.
+        """
     )
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 4 (post-video) — name the formulas and the headline.
+    # Section 4 (result) — pin A and phi down. Describe the
+    # substitution in a few lines (not a video) so the reader trusts
+    # the result, box A(omega) and phi(omega), gesture at the
+    # resonance that the next two sections will unfold.
     mo.md(
         r"""
-        Two formulas come out of that derivation. The amplitude is
+        ### Pinning down $A$ and $\varphi$
+
+        Two numbers, one equation that has to hold for **every**
+        $t$. That's enough. Plug $x_p(t) = A\cos(\omega t -
+        \varphi)$ into the equation, expand
+        $\cos(\omega t - \varphi) = \cos\omega t\cos\varphi
+        + \sin\omega t\sin\varphi$, and gather the $\cos(\omega t)$
+        terms and the $\sin(\omega t)$ terms separately on the left.
+        Because the equation must hold for **all** $t$, the
+        coefficient of $\cos(\omega t)$ on the left has to equal
+        $F_0$ (matching the right), and the coefficient of
+        $\sin(\omega t)$ on the left has to equal $0$. That's two
+        equations in two unknowns ($A$, $\varphi$). Solving them
+        gives
 
         $$
-        A(\omega) \;=\; \frac{F_0}{\sqrt{(\omega_0^2 - \omega^2)^2 + (2\gamma\omega)^2}},
+        \boxed{\;\,
+          A(\omega) \;=\; \frac{F_0}{\sqrt{(\omega_0^2 - \omega^2)^2 + (2\gamma\omega)^2}},
+          \qquad
+          \tan\varphi(\omega) \;=\; \frac{2\gamma\omega}{\omega_0^2 - \omega^2}.
+        \,\;}
         $$
 
-        and the phase lag is
-
-        $$
-        \varphi(\omega) \;=\; \arctan\!\frac{2\gamma\omega}{\omega_0^2 - \omega^2}.
-        $$
-
-        Stare at $A(\omega)$ for a moment. The denominator's first
-        piece, $(\omega_0^2 - \omega^2)^2$, vanishes when
-        $\omega = \omega_0$ — exactly at the swing's natural
-        frequency. With **no damping**, that would make $A$
-        infinite at resonance. With damping turned on, the second
-        piece $(2\gamma\omega)^2$ keeps the denominator from ever
-        hitting zero — but when $\gamma$ is small, it stays *very*
-        small near $\omega = \omega_0$, and the amplitude soars.
+        Stare at $A(\omega)$ for a moment. The first piece of the
+        denominator, $(\omega_0^2 - \omega^2)^2$, vanishes when the
+        drive frequency equals the swing's natural frequency,
+        $\omega = \omega_0$. With **no damping**, that would send
+        $A$ to infinity — push at the swing's natural rhythm and
+        the amplitude grows without bound. With damping turned on,
+        the second piece $(2\gamma\omega)^2$ keeps the denominator
+        from ever hitting zero — but when $\gamma$ is small, it
+        stays *very* small near $\omega = \omega_0$, and the
+        amplitude soars.
 
         That's the resonance story in one line. The next two
-        figures make it visible.
+        sections turn each of these two formulas into a picture.
         """
     )
     return
