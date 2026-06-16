@@ -103,7 +103,7 @@ CHAPTER_CARDS = {
 # don't want every load to re-render everything. Add a slug here while
 # you work on it; remove it before shipping so visitors get the polished
 # auto-run experience.
-WIP_CHAPTERS: set[str] = set()
+WIP_CHAPTERS: set[str] = {"ch07_damping_forcing_resonance"}
 
 # delib is a locally-installed package and does not exist in the browser's
 # Pyodide runtime. For the WASM build we inline its source into each notebook so
