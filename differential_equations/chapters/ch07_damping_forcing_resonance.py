@@ -290,21 +290,32 @@ def _(delib, mo):
             can watch it work.
 
             We hold two facts. Motion 1 is a free Chapter 6 swing
-            with **no push**, so it satisfies the unforced equation
-            $\ddot{x}_h + 2\gamma\dot{x}_h + \omega_0^2 x_h = 0$ —
-            run it through the left side and you get nothing. Motion 2
+            with **no push**, so it satisfies the *unforced* equation
+
+            $$
+            \ddot x_h + 2\gamma\dot x_h + \omega_0^2 x_h \;=\; 0,
+            $$
+
+            and fed through the left side it returns nothing. Motion 2
             is the particular swing the rest of this section will
             build to *answer* the push, so it satisfies the full
-            $\ddot{x}_p + 2\gamma\dot{x}_p + \omega_0^2 x_p =
-            F_0\cos(\omega t)$.
 
-            Now glue them. Define $x := x_h + x_p$ and feed it to the
+            $$
+            \ddot x_p + 2\gamma\dot x_p + \omega_0^2 x_p \;=\; F_0\cos(\omega t).
+            $$
+
+            Now glue them. Define $x = x_h + x_p$ and feed it to the
             left side. The only fact we need is that *a derivative of
-            a sum is the sum of the derivatives* — so $\ddot{x} =
-            \ddot{x}_h + \ddot{x}_p$ and $\dot{x} = \dot{x}_h +
-            \dot{x}_p$. Every term splits along that same seam, and
-            collecting the $x_h$ pieces apart from the $x_p$ pieces
-            gives
+            a sum is the sum of the derivatives*,
+
+            $$
+            \ddot x \;=\; \ddot x_h + \ddot x_p
+            \qquad\text{and}\qquad
+            \dot x \;=\; \dot x_h + \dot x_p .
+            $$
+
+            Every term splits along that same seam, and collecting
+            the $x_h$ pieces apart from the $x_p$ pieces gives
 
             $$
             \ddot{x} + 2\gamma\dot{x} + \omega_0^2 x
