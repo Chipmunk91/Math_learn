@@ -95,6 +95,16 @@ CHAPTER_CARDS = {
     "ch07_damping_forcing_resonance": ("Chapter 7", "Damping, forcing, resonance"),
 }
 
+# Per-chapter export mode. Chapters in WIP_CHAPTERS are exported with
+# `--mode edit` so cells DO NOT auto-run on page load — the reader (you,
+# during iteration) runs them by hand, one at a time. This skips the
+# ~10–15s "cell execution + chart/widget mount" phase, leaving only the
+# unavoidable Pyodide boot. Useful when you're drafting a chapter and
+# don't want every load to re-render everything. Add a slug here while
+# you work on it; remove it before shipping so visitors get the polished
+# auto-run experience.
+WIP_CHAPTERS: set[str] = set()
+
 # delib is a locally-installed package and does not exist in the browser's
 # Pyodide runtime. For the WASM build we inline its source into each notebook so
 # the exported page is self-contained.
@@ -495,13 +505,23 @@ def inline_delib(source: str) -> str:
 
 
 def export(notebook: Path, out_dir: Path) -> None:
-    """Export a chapter to a single WASM HTML page (run mode: auto-runs, code hidden)."""
+    """Export a chapter to a single WASM HTML page.
+
+    Polished chapters export with ``--mode run`` (auto-runs every cell, code
+    hidden — the clean reader experience). Slugs in ``WIP_CHAPTERS`` export
+    with ``--mode edit`` instead: Pyodide still boots, but cells don't
+    auto-run, charts/widgets don't auto-mount, so the page lands fast and
+    the author runs only the cells they're iterating on.
+    """
     transformed = PEP723_HEADER + inline_delib(notebook.read_text(encoding="utf-8"))
+    mode = "edit" if notebook.stem in WIP_CHAPTERS else "run"
+    print(f"  -> {notebook.stem}: --mode {mode}{'  [WIP]' if mode == 'edit' else ''}")
     with tempfile.TemporaryDirectory() as tmp:
         staged = Path(tmp) / notebook.name
         staged.write_text(transformed, encoding="utf-8")
         subprocess.run(
-            [sys.executable, "-m", "marimo", "export", "html-wasm", str(staged), "-o", str(out_dir), "--mode", "run"],
+            [sys.executable, "-m", "marimo", "export", "html-wasm",
+             str(staged), "-o", str(out_dir), "--mode", mode],
             check=True,
         )
 
