@@ -484,41 +484,85 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 4 (shape) — B3 of 3: repackage (a, b) as (A, phi). Trig
-    # identity to convert; (A, phi) is what we physically care about
-    # (amplitude and phase lag), so use that form going into cell C.
+    # Section 4 (shape) — B3 of 3: motivate (a, b) -> (A, phi) with a
+    # real argument, not "physicists prefer it". Two points: (1) a cos
+    # + b sin only LOOKS like two waves; it's secretly ONE sinusoid,
+    # shown via the rotating-vector / dot-product picture, which hands
+    # us A = length and phi = angle for free; (2) A and phi ARE the two
+    # questions the chapter is about (resonance size, phase lag), so
+    # they're the form worth solving for. Keeps <=3 displays.
     mo.md(
         r"""
-        **Repackaging in amplitude and phase.** The pair $(a, b)$
-        holds the answer, but they're not the numbers a physicist
-        cares about. What we'd like to read off the answer are the
-        **amplitude** $A$ (how big the swing gets) and the **phase
-        lag** $\varphi$ (how much the swing trails the push). A
-        standard trig identity converts between the two:
+        **One sinusoid in disguise.** We could solve the system
+        for $a$ and $b$ right now and be done. But hold on and look
+        again at what we've got, $a\cos(\omega t) + b\sin(\omega
+        t)$. It *reads* like two separate waves stacked together —
+        yet a single push at a single frequency drives a single
+        swing, with one size and one rhythm. So this can't really
+        be two independent motions; it must be **one** sinusoid
+        wearing a disguise. Let's take the disguise off.
+
+        Read $(a, b)$ as a fixed arrow in the plane, and let
+        $(\cos\omega t,\ \sin\omega t)$ be a unit arrow spinning
+        around the circle at rate $\omega$. Our combination is
+        exactly their dot product:
 
         $$
-        a\cos(\omega t) + b\sin(\omega t) \;=\; A\cos(\omega t - \varphi),
+        a\cos\omega t + b\sin\omega t \;=\; (a, b)\cdot(\cos\omega t,\ \sin\omega t).
         $$
 
-        with $A = \sqrt{a^2 + b^2}$ and $\tan\varphi = b/a$.
-        (Picture $(a, b)$ as a point in the plane: $A$ is its
-        distance from the origin and $\varphi$ is its angle to the
-        $a$-axis. Same information, different coordinates.)
+        A dot product is *(length of one) $\times$ (length of the
+        other) $\times$ cosine of the angle between them.* The
+        spinning arrow has length $1$; the fixed arrow has length
+        $\sqrt{a^2 + b^2}$; and as the unit arrow sweeps round, the
+        angle between the two is $\omega t - \varphi$, where
+        $\varphi$ is the direction the fixed arrow points. So the
+        whole thing collapses to a single cosine,
 
-        So the steady state takes the clean form
+        $$
+        a\cos\omega t + b\sin\omega t \;=\; A\cos(\omega t - \varphi),
+        \qquad A = \sqrt{a^2 + b^2}, \quad \tan\varphi = \tfrac{b}{a}.
+        $$
+
+        The pair $a, b$ was just an awkward way of writing one
+        arrow; its **length** $A$ and its **direction** $\varphi$
+        are the very same information in a form we can read at a
+        glance.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Section 4 (shape) — B3b: the payoff. A and phi are precisely the
+    # two questions the chapter is built around (resonance size, phase
+    # lag), so they are the form worth solving for. Land the x_p form
+    # and hand off to cell C.
+    mo.md(
+        r"""
+        And it's exactly the form we came for. $A$ is **how big the
+        steady swing gets** — the number that shoots up at
+        resonance, the headline of this whole chapter. $\varphi$ is
+        **how far the swing lags the push** — the timing that the
+        next section shows is the secret behind pushing "at the
+        right rhythm." Solving for $a$ and $b$ would answer a
+        question nobody asked; solving for $A$ and $\varphi$ answers
+        the two we actually care about. So we write the steady state
+        as
 
         $$
         x_p(t) \;=\; A\cos(\omega t - \varphi),
         $$
 
-        a sinusoid at the drive's frequency, shifted in time. The
-        minus sign is just a convention: a positive $\varphi$
-        shifts the peak *later* than the push's peak, so $\varphi$
-        reads directly as "how far the swing lags behind the push."
+        a single sinusoid at the drive's frequency, shifted in time.
+        (The minus sign is convention: a positive $\varphi$ puts the
+        swing's peak *after* the push's, so $\varphi$ reads directly
+        as the lag.)
 
-        Two numbers left to find — $A$ and $\varphi$ — and the
-        linear system above already contains them. The next
-        subsection solves it.
+        Two numbers left to find, $A$ and $\varphi$ — and the
+        $2\times 2$ system from the second attempt already holds
+        them. The next subsection solves it.
         """
     )
     return
