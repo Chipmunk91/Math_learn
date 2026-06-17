@@ -388,48 +388,51 @@ def _(delib, mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 4 (shape) — before any algebra, what x_p MUST look
-    # like. Linear → output frequency = input frequency, so x_p is a
-    # sinusoid at omega. The only freedom is amplitude and phase.
+    # Section 4 (shape) — B1 of 3: first attempt at x_p. Try the
+    # simplest possible thing (x_p = a cos(wt)), compute the
+    # derivatives, plug into the left side, and SEE that the damping
+    # term produces an uncancellable sin(wt). That diagnosis tells us
+    # what to do next.
     mo.md(
         r"""
         ### What $x_p$ has to look like
 
-        Before doing any algebra, we can almost write down $x_p$
-        from two facts.
-
-        **The frequency is fixed.** The left side of the equation,
-        $\ddot x + 2\gamma\,\dot x + \omega_0^2\,x$, only ever
-        differentiates $x$, scales it, and adds the pieces — none
-        of those operations invent a new frequency. Differentiate
-        $\cos(\omega t)$ and you get $-\omega\sin(\omega t)$: still
-        frequency $\omega$. Scale that, add two together: still
-        frequency $\omega$. So if the right side is a pure-$\omega$
-        push, the only $x_p$ that can possibly balance it is itself
-        a pure-$\omega$ sinusoid. Any other frequency would have
-        nothing on the right to match. (That's what the word
-        **linear** is buying us: an equation built from
-        "differentiate, scale, add" can't turn one frequency into
-        another.)
-
-        **Only two numbers are free.** A sinusoid at frequency
-        $\omega$ has exactly two adjustable features: how *big* it
-        is and *when* it peaks. Call the size $A$ (the
-        **amplitude**) and the timing offset $\varphi$ (the
-        **phase lag**). The most general sinusoid at frequency
-        $\omega$ is
+        We need a specific $x_p(t)$ that satisfies the forced
+        equation
 
         $$
-        x_p(t) \;=\; A\cos(\omega t - \varphi).
+        \ddot x_p + 2\gamma\dot x_p + \omega_0^2 x_p \;=\; F_0\cos(\omega t).
         $$
 
-        The minus sign is just a convention: a positive $\varphi$
-        shifts the peak *later* than the push's peak, so $\varphi$
-        reads directly as "how far the swing lags behind the push."
+        Where do we even start guessing? The right side is a cosine
+        at frequency $\omega$. The simplest possible move is to try
+        the same kind of thing on the left — let $x_p$ be a cosine
+        at the same frequency, scaled by some unknown amplitude —
+        and see what breaks.
 
-        We're not searching for a function any more — we're
-        searching for **two numbers**, $A$ and $\varphi$, each
-        determined by $\omega_0$, $\gamma$, $\omega$, and $F_0$.
+        **First attempt: $x_p(t) = a\cos(\omega t)$.** Then
+        $\dot x_p = -a\omega\sin(\omega t)$ and
+        $\ddot x_p = -a\omega^2\cos(\omega t)$. Plug those into the
+        left side and gather $\cos$ and $\sin$ terms:
+
+        $$
+        \ddot x_p + 2\gamma\dot x_p + \omega_0^2 x_p
+        \;=\; a(\omega_0^2 - \omega^2)\cos(\omega t)
+        \;-\; 2\gamma a\omega\sin(\omega t).
+        $$
+
+        We wanted this to equal $F_0\cos(\omega t)$. The cosine
+        terms cooperated — pick $a$ to make the cosine coefficient
+        equal $F_0$ and we're done on that side. But the damping
+        term has produced a leftover $\sin(\omega t)$ piece with
+        coefficient $-2\gamma a\omega$, and there is nothing on the
+        right side to absorb it. With only one knob $a$, we cannot
+        zero out two coefficients at the same time.
+
+        The diagnosis: **the damping term — the one that touches
+        $\dot x$ — turns $\cos$ into $\sin$.** A pure-cosine ansatz
+        simply lacks the vocabulary to answer back. The fix is to
+        include a sine term from the start.
         """
     )
     return
@@ -437,26 +440,110 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 4 (result) — pin A and phi down. Describe the
-    # substitution in a few lines (not a video) so the reader trusts
-    # the result, box A(omega) and phi(omega), gesture at the
-    # resonance that the next two sections will unfold.
+    # Section 4 (shape) — B2 of 3: second attempt, x_p = a cos + b sin.
+    # Substitute, gather cos and sin, and get a 2x2 linear system in
+    # (a, b). The form works -- two equations, two unknowns, unique
+    # solution.
+    mo.md(
+        r"""
+        **Second attempt: $x_p(t) = a\cos(\omega t) + b\sin(\omega t)$.**
+        Two unknowns now. Differentiating as before and substituting
+        into the left side, then collecting cosine terms apart from
+        sine terms, gives
+
+        $$
+        \bigl[a(\omega_0^2 - \omega^2) + 2\gamma b\omega\bigr]\cos(\omega t)
+        \;+\;
+        \bigl[b(\omega_0^2 - \omega^2) - 2\gamma a\omega\bigr]\sin(\omega t).
+        $$
+
+        The output has *exactly* the same vocabulary as the right
+        side: one $\cos(\omega t)$ piece plus one $\sin(\omega t)$
+        piece. And the right side, $F_0\cos(\omega t)$, is itself
+        $F_0\cos(\omega t) + 0\cdot\sin(\omega t)$. For the two
+        sides to agree at every instant $t$, their cosine
+        coefficients must match and their sine coefficients must
+        match — two equations:
+
+        $$
+        \begin{aligned}
+        a(\omega_0^2 - \omega^2) + 2\gamma b\omega &\;=\; F_0, \\
+        b(\omega_0^2 - \omega^2) - 2\gamma a\omega &\;=\; 0.
+        \end{aligned}
+        $$
+
+        **Two equations, two unknowns** — a $2\times 2$ linear
+        system in $(a, b)$. The form has worked: $x_p$ is some
+        specific cosine-plus-sine combination at the drive
+        frequency, with $a$ and $b$ determined uniquely by the
+        system above.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Section 4 (shape) — B3 of 3: repackage (a, b) as (A, phi). Trig
+    # identity to convert; (A, phi) is what we physically care about
+    # (amplitude and phase lag), so use that form going into cell C.
+    mo.md(
+        r"""
+        **Repackaging in amplitude and phase.** The pair $(a, b)$
+        holds the answer, but they're not the numbers a physicist
+        cares about. What we'd like to read off the answer are the
+        **amplitude** $A$ (how big the swing gets) and the **phase
+        lag** $\varphi$ (how much the swing trails the push). A
+        standard trig identity converts between the two:
+
+        $$
+        a\cos(\omega t) + b\sin(\omega t) \;=\; A\cos(\omega t - \varphi),
+        $$
+
+        with $A = \sqrt{a^2 + b^2}$ and $\tan\varphi = b/a$.
+        (Picture $(a, b)$ as a point in the plane: $A$ is its
+        distance from the origin and $\varphi$ is its angle to the
+        $a$-axis. Same information, different coordinates.)
+
+        So the steady state takes the clean form
+
+        $$
+        x_p(t) \;=\; A\cos(\omega t - \varphi),
+        $$
+
+        a sinusoid at the drive's frequency, shifted in time. The
+        minus sign is just a convention: a positive $\varphi$
+        shifts the peak *later* than the push's peak, so $\varphi$
+        reads directly as "how far the swing lags behind the push."
+
+        Two numbers left to find — $A$ and $\varphi$ — and the
+        linear system above already contains them. The next
+        subsection solves it.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Section 4 (result) — solve the 2x2 system from B for (a, b),
+    # convert to (A, phi), box the result. Resonance setup unchanged.
+    # (The previous prose re-did the substitution in (A, phi) form;
+    # after the B rewrite, B already does the substitution in (a, b)
+    # form, so C now just solves the system.)
     mo.md(
         r"""
         ### Pinning down $A$ and $\varphi$
 
-        Two numbers, one equation that has to hold for **every**
-        $t$. That's enough. Plug $x_p(t) = A\cos(\omega t -
-        \varphi)$ into the equation, expand
-        $\cos(\omega t - \varphi) = \cos\omega t\cos\varphi
-        + \sin\omega t\sin\varphi$, and gather the $\cos(\omega t)$
-        terms and the $\sin(\omega t)$ terms separately on the left.
-        Because the equation must hold for **all** $t$, the
-        coefficient of $\cos(\omega t)$ on the left has to equal
-        $F_0$ (matching the right), and the coefficient of
-        $\sin(\omega t)$ on the left has to equal $0$. That's two
-        equations in two unknowns ($A$, $\varphi$). Solving them
-        gives
+        The $2\times 2$ system from above is now a small piece of
+        linear algebra. The second equation rearranges to
+        $b/a = 2\gamma\omega / (\omega_0^2 - \omega^2)$ — and that
+        ratio is exactly $\tan\varphi$, so the phase lag drops out
+        immediately. Substituting back into the first equation pins
+        down $a$, then $b$, and the magnitude
+        $A = \sqrt{a^2 + b^2}$ comes out by the Pythagorean
+        theorem. The two formulas we'll spend the rest of the
+        chapter living with are
 
         $$
         \boxed{\;\,
