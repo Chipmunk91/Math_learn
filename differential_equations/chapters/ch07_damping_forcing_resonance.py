@@ -725,31 +725,6 @@ def _(delib, fr_panel, mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 5 (interactive) — hear the same curve. The peak is far
-    # more visceral as a swell of loudness than as a bump on a plot.
-    mo.md(
-        r"""
-        You've *seen* the peak; now **hear** it. The widget below
-        plays a tone whose pitch follows the drive frequency and
-        whose loudness follows the very amplitude $A(\omega)$ plotted
-        above. Enable sound and sweep $\omega$ slowly across $\omega_0$
-        (the dotted line): the system swells loud right at resonance,
-        then fades as you pass it. Tighten the damping and the loud
-        band narrows to a knife-edge — that's a high-$Q$ resonator,
-        the principle behind every tuned circuit and every string.
-        """
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(delib):
-    delib.resonance_audio(omega0=2.0, gamma=0.15, F0=1.0)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
     # Section 6 — phase: why "right rhythm" matters. Animated
     # side-by-side comparison of drive vs response at two phases,
     # plus the prose connecting phase to energy transfer.
@@ -796,9 +771,12 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(delib, mo):
-    # Section 6 — two-panel animation: drive vs response, in-phase
-    # case (omega well below resonance) and quarter-phase case
-    # (omega at resonance). Same omega0 and gamma in both.
+    # Section 6 — three-panel animation: drive vs response across
+    # the three phase regimes. Below resonance (in-phase, modest
+    # response); at resonance (quarter-cycle lag, response grows
+    # large); above resonance (anti-phase, tiny response -- the
+    # swing's inertia can't keep up with the high-frequency drive).
+    # Same omega0 and gamma everywhere; only omega differs.
     _omega0 = 2.0
     _gamma = 0.15
     _F0 = 1.0
@@ -806,30 +784,49 @@ def _(delib, mo):
     _fig_inphase = delib.oscillator_animate(
         _omega0, _gamma, _F0, omega=0.6,
         ic=(0.0, 0.0), t_end=30.0, n_points=500,
-        title="Below resonance  (ω = 0.6 ≪ ω₀ = 2): swing in phase with push",
+        title="Below resonance  (ω = 0.6):  in phase",
         ylim=(-1.5, 1.5),
     )
     _fig_resonant = delib.oscillator_animate(
         _omega0, _gamma, _F0, omega=2.0,
         ic=(0.0, 0.0), t_end=30.0, n_points=500,
-        title="At resonance  (ω = ω₀ = 2): swing a quarter cycle behind push",
+        title="At resonance  (ω = ω₀ = 2):  quarter cycle behind",
         ylim=(-5.0, 5.0),
+    )
+    _fig_above = delib.oscillator_animate(
+        _omega0, _gamma, _F0, omega=4.0,
+        ic=(0.0, 0.0), t_end=30.0, n_points=500,
+        title="Above resonance  (ω = 4):  opposite to push",
+        ylim=(-1.2, 1.2),
     )
 
     mo.vstack([
-        mo.hstack([_fig_inphase, _fig_resonant],
-                  justify="space-between", widths="equal", gap=0.5),
+        mo.hstack(
+            [_fig_inphase, _fig_resonant, _fig_above],
+            justify="space-between", widths="equal", gap=0.4,
+        ),
         mo.md(
             r"""
-            On the **left**: push and swing rise and fall together,
-            same rhythm. The swing's amplitude is small — there's
-            no opportunity for the push to do much work because the
-            push is fighting the velocity half the time it's
-            applied. On the **right**: every push peak (dashed)
-            lands during a swing zero-crossing (solid passes through
-            $0$), which is exactly when the swing is fastest. Every
-            push adds energy. The amplitude climbs and climbs until
-            damping finally balances the energy input.
+            **Below resonance** (left): push and swing rise and
+            fall together, same rhythm. The swing's amplitude is
+            modest — the push fights the velocity half the time
+            it's applied, so it does little net work.
+
+            **At resonance** (middle): every push peak (dashed)
+            lands during a swing zero-crossing (solid passes
+            through $0$), which is exactly when the swing is
+            fastest. Every push adds energy. The amplitude climbs
+            and climbs until damping finally balances the energy
+            input.
+
+            **Above resonance** (right): the swing now moves
+            *opposite* to the push — push goes right, swing goes
+            left. At this drive frequency, the swing's inertia
+            can't reverse direction fast enough; by the time it
+            starts responding, the push has already flipped. The
+            response stays tiny (note the y-scale: $\pm 1.2$,
+            compared with $\pm 5$ at resonance), and what little
+            there is fights the push at every moment.
             """
         ),
     ])
@@ -859,18 +856,32 @@ def _(mo):
         the idealised model. A frictionless oscillator at
         resonance keeps absorbing energy without limit, and its
         amplitude grows **linearly with time**, not toward a
-        steady value. The right ansatz at $\omega = \omega_0$ with
-        $\gamma = 0$ is
+        steady value.
+
+        Worth pausing on, though: the formula we derived was
+        $x_p(t) = A\cos(\omega t - \varphi)$ — a *bounded*
+        sinusoid. How does a bounded sinusoid turn into a
+        *growing* solution? **It doesn't.** When $A$ blows up,
+        the formula has *failed*: $A\cos(\omega t - \varphi)$
+        stops being a valid answer at this exact point, because
+        there is no finite-amplitude steady state for the equation
+        to settle into. We need a different particular-solution
+        ansatz.
+
+        The right one at $\omega = \omega_0$ with $\gamma = 0$ is
 
         $$
-        x_p(t) \;=\; \frac{F_0}{2\omega_0}\,t\,\sin(\omega_0 t)
+        x_p(t) \;=\; \frac{F_0}{2\omega_0}\,t\,\sin(\omega_0 t),
         $$
 
-        — a sine whose envelope $t$ rises straight up. (We won't
-        derive this here; you can plug it in and check it works.
-        Or: think of it as the boundary-case version of the
-        repeated-root trick from Chapter 6, where one of the basis
-        solutions needed an extra factor of $t$.)
+        a sine whose envelope $t$ rises straight up. (We won't
+        grind through the substitution here; you can verify it by
+        plugging in. The connection to Chapter 6 is exact: there,
+        when the characteristic polynomial had a repeated root,
+        one basis solution needed an extra factor of $t$. Here,
+        the forcing term $\cos(\omega_0 t)$ happens to *be* a
+        homogeneous solution at $\gamma = 0$ — and the same
+        multiply-by-$t$ trick rescues us.)
 
         **In reality, two things rescue you.** First, real systems
         always have *some* damping, so the denominator never quite
