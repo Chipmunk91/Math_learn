@@ -228,119 +228,129 @@ def _(delib, mo):
     # Only THEN show the figures so the labels "transient" and
     # "steady state" carry a picture, and only THEN tie back to
     # Section 1's building-up swing as the payoff.
+    #
+    # NOTE on structure: the algebra is kept in DISPLAY-ONLY md
+    # blocks (A1, A2) and the prose in INLINE-ONLY blocks (A3+).
+    # Cramming many $$ displays and many inline $...$ into a single
+    # md block made KaTeX leak its MathML fallback in the browser
+    # (math appeared tripled). Smaller, separated blocks render
+    # cleanly.
     _fig_h, _fig_p = delib.transient_steady_figures(
         omega0=2.0, gamma=0.25, omega=2.0, t_end=28.0,
     )
     mo.vstack([
-        mo.md(
+        mo.md(  # A1 — setup + the split (display equations only)
             r"""
             ## Two motions in one — and which one we care about
 
-            We've built the equation:
+            We've just built the equation of motion:
 
             $$
             \ddot x + 2\gamma\dot x + \omega_0^2 x \;=\; F_0\cos(\omega t).
             $$
 
-            Solving it head-on — chasing one function that handles
-            the push, fits the initial conditions, and holds for
-            all time — is a lot to ask at once. Here's a trick that
-            splits the job into two easier problems, each with a
-            clean physical meaning.
+            Solving it all in one go — a single function that answers
+            the push, matches how the swing started, and holds for
+            all time — is a lot to ask at once. There's a trick that
+            breaks the job into two easier pieces, each with a clean
+            physical meaning.
 
             ### Split the unknown into two pieces
 
             Write the solution as a sum of two functions we haven't
-            decided on yet,
+            pinned down yet:
 
             $$
             x(t) \;=\; x_h(t) \;+\; x_p(t).
             $$
 
-            Because $x$ is a sum, so are its derivatives:
+            Since the solution is a sum, its first and second
+            derivatives are sums in exactly the same way:
 
             $$
             \dot x \;=\; \dot x_h + \dot x_p,
             \qquad
             \ddot x \;=\; \ddot x_h + \ddot x_p.
             $$
-
-            Plug those into the equation and group the $x_h$ pieces
-            apart from the $x_p$ pieces:
+            """
+        ),
+        mo.md(  # A2 — regroup, the one choice, underbraced split (display only)
+            r"""
+            Now feed these into the left side and gather the terms by
+            which function they came from. We are free to split the
+            solution any way we like, so we spend that freedom on the
+            one choice that pays off: **require the first piece to
+            solve the equation with the push switched off** — Chapter
+            6's oscillator, no driving force. That makes its entire
+            group vanish, and the second piece is left to reproduce
+            the drive on its own:
 
             $$
             \ddot x + 2\gamma\dot x + \omega_0^2 x
             \;=\;
-            \bigl(\ddot x_h + 2\gamma\dot x_h + \omega_0^2 x_h\bigr)
+            \underbrace{\left(\ddot x_h + 2\gamma\dot x_h + \omega_0^2 x_h\right)}_{=\;0}
             \;+\;
-            \bigl(\ddot x_p + 2\gamma\dot x_p + \omega_0^2 x_p\bigr)
+            \underbrace{\left(\ddot x_p + 2\gamma\dot x_p + \omega_0^2 x_p\right)}_{=\;F_0\cos(\omega t)}
             \;=\; F_0\cos(\omega t).
             $$
 
-            So far this is just bookkeeping — no choice has been
-            made yet. Now we make one: **declare $x_h$ to satisfy
-            the equation with the push turned off,**
+            Reading off the two braces, the one hard equation has
+            split into two familiar ones — an unforced equation for
+            the first (transient) piece, and the full forced equation
+            for the second (steady-state) piece:
 
             $$
-            \ddot x_h + 2\gamma\dot x_h + \omega_0^2 x_h \;=\; 0.
+            \ddot x_h + 2\gamma\dot x_h + \omega_0^2 x_h \;=\; 0,
             $$
-
-            That kills the first parenthesis, and the rest must
-            carry the whole load:
 
             $$
             \ddot x_p + 2\gamma\dot x_p + \omega_0^2 x_p \;=\; F_0\cos(\omega t).
             $$
-
-            The original problem has split into **two equations** —
-            one with no push, one with the push — and any $x_h$
-            solving the first plus any $x_p$ solving the second
-            give, by addition, a solution of the original.
-
-            *(This worked because every operation on the left side —
-            differentiate, scale, add — distributes over a sum, so
-            regrouping by $x_h$ and $x_p$ is allowed: the two
-            pieces never mix. Had the equation carried an $x^2$
-            term, $(x_h+x_p)^2 \neq x_h^2 + x_p^2$ and the
-            regrouping would fail — the pieces would cross-talk.
-            The word for what saves us is **linear**: linearity is
-            precisely the permission to add.)*
             """
         ),
-        mo.md(
+        mo.md(  # A3 — linearity aside + which half is interesting + Motion 1 (inline only)
             r"""
+            That regrouping was legal for one reason. Every operation
+            on the left side — differentiate, scale by a constant,
+            add — distributes over a sum, so the $x_h$ terms and the
+            $x_p$ terms stay in their own brackets and never mix.
+            (Had the equation carried a *nonlinear* term, say an
+            $x^2$, this would fail: $(x_h+x_p)^2 \neq x_h^2 + x_p^2$,
+            and the two pieces would cross-talk.) The word for the
+            property that saves us is **linear** — linearity is
+            precisely the permission to add.
+
             ### Which half is interesting?
 
-            The first equation is one we've already met — it's
-            Chapter 6's damped oscillator, no driving force. Its
+            The first equation is one we've already met: it's
+            Chapter 6's damped oscillator with no driving force. Its
             solution carries whatever initial conditions the swing
-            had at $t=0$, and whatever it carries, damping drains
-            it to zero in a few times $1/\gamma$. We call this
-            dying piece the **transient**.
+            had at $t=0$, and whatever it carries, damping drains to
+            zero within a few times $1/\gamma$. We call this dying
+            piece the **transient**, $x_h$.
 
-            The second equation is the new thing. Its solution has
-            to keep up with the push *forever*: a swing at the
-            drive's frequency, neither growing nor decaying. Notice
-            that the initial conditions are absent from how we
-            built it — they're already absorbed into $x_h$, so
-            $x_p$ depends only on the push and the swing's own
-            constants $\omega_0$, $\gamma$. We call this survivor
-            the **steady state**.
+            The second equation is the new thing. Its solution must
+            keep pace with the push *forever*: a swing at the drive's
+            frequency that neither grows nor decays. The initial
+            conditions never entered how we built it — they were all
+            absorbed into $x_h$ — so $x_p$ depends only on the push
+            and the swing's own constants $\omega_0$ and $\gamma$. We
+            call this survivor the **steady state**, $x_p$.
 
-            After a few times $1/\gamma$ the transient is gone,
-            and $x_p$ *is* the motion. All the long-term behaviour
-            lives in $x_p$, so it's $x_p$ we'll chase for the rest
-            of this section.
+            After a few times $1/\gamma$ the transient is gone and
+            $x_p$ *is* the motion. All the long-term behaviour lives
+            in $x_p$, so $x_p$ is what we'll chase for the rest of
+            the section.
 
             ### What the two pieces look like
 
-            Before we go after $x_p$ algebraically, here's what
-            each piece looks like on its own — so the words
-            "transient" and "steady state" carry a picture.
+            Before going after $x_p$ with algebra, here's what each
+            piece looks like on its own, so the words *transient* and
+            *steady state* carry a picture.
 
             **Motion 1 — the transient $x_h$.** A Chapter 6
             oscillation tucked inside a shrinking envelope, headed
-            for zero. Whatever its initial size, the swing forgets
+            for zero. Whatever its starting size, the swing forgets
             it after a few damping times.
             """
         ),
