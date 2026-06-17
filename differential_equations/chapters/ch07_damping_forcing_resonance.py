@@ -557,17 +557,30 @@ def _(mo):
         $$
 
         Two equations, two unknowns — and they come apart with
-        the most elementary moves there are. **Square and add,**
-        so that $\cos^2\varphi + \sin^2\varphi = 1$ eats the phase:
+        the most elementary moves there are. **Square and add.**
+        Square each equation, then add. On the right, the two
+        halves combine into $F_0^2(\cos^2\varphi + \sin^2\varphi)
+        = F_0^2$, eating the phase entirely. On the left, what's
+        left is everything that will sit under the square root:
 
         $$
-        A \;=\; \frac{F_0}{\sqrt{(\omega_0^2 - \omega^2)^2 + (2\gamma\omega)^2}}.
+        \begin{aligned}
+        A^2\bigl[(\omega_0^2 - \omega^2)^2 + (2\gamma\omega)^2\bigr]
+          &\;=\; F_0^2, \\[2pt]
+        A &\;=\; \frac{F_0}{\sqrt{(\omega_0^2 - \omega^2)^2 + (2\gamma\omega)^2}}.
+        \end{aligned}
         $$
 
-        **Divide the two,** so that $A$ cancels:
+        **Divide the two.** Take the second equation over the
+        first. The $A$'s cancel on the left, and the cosines tidy
+        into a tangent on the right:
 
         $$
-        \tan\varphi \;=\; \frac{2\gamma\omega}{\omega_0^2 - \omega^2}.
+        \begin{aligned}
+        \frac{2\gamma A\omega}{A(\omega_0^2 - \omega^2)}
+          &\;=\; \frac{F_0\sin\varphi}{F_0\cos\varphi}, \\[2pt]
+        \tan\varphi &\;=\; \frac{2\gamma\omega}{\omega_0^2 - \omega^2}.
+        \end{aligned}
         $$
 
         Two trig identities — angle-addition and the Pythagorean
@@ -608,16 +621,34 @@ def _(mo):
         Stare at $A(\omega)$ for a moment. The first piece of the
         denominator, $(\omega_0^2 - \omega^2)^2$, vanishes when the
         drive frequency equals the swing's natural frequency,
-        $\omega = \omega_0$. With **no damping**, that would send
-        $A$ to infinity — push at the swing's natural rhythm and
-        the amplitude grows without bound. With damping turned on,
-        the second piece $(2\gamma\omega)^2$ keeps the denominator
-        from ever hitting zero — but when $\gamma$ is small, it
-        stays *very* small near $\omega = \omega_0$, and the
-        amplitude soars.
+        $\omega = \omega_0$. That equality is the whole point of
+        resonance: **you're pushing at exactly the rhythm at which
+        the swing would oscillate on its own.**
 
-        That's the resonance story in one line. The next two
-        sections turn each of these two formulas into a picture.
+        With **no damping** ($\gamma = 0$), the second denominator
+        piece $(2\gamma\omega)^2$ disappears too, leaving nothing to
+        keep the denominator off zero — so $A \to \infty$.
+        Physically: at this rhythm the push is perfectly timed to
+        pump energy into the swing on every cycle, and with no
+        damping to drain energy away, that pumping accumulates
+        without bound. With damping turned back on, the
+        $(2\gamma\omega)^2$ piece keeps the denominator strictly
+        positive — but when $\gamma$ is small, it stays *very*
+        small near $\omega = \omega_0$, and the amplitude soars
+        to a finite but enormous peak.
+
+        The phase formula sees the same singularity: at $\omega =
+        \omega_0$ the denominator of $\tan\varphi$ vanishes too,
+        so $\tan\varphi \to \infty$. A phase is still just an
+        angle, so this isn't really a blow-up — it just means
+        $\varphi = \pi/2$, **a quarter-cycle lag, exactly**. The
+        next section will show that this particular lag is what
+        makes the energy pumping work; it's the deeper reason $A$
+        peaks at $\omega_0$.
+
+        That's the resonance story. The next two sections turn
+        each formula into a picture, and the one after that walks
+        through the $\gamma = 0$ disaster on its own terms.
         """
     )
     return
