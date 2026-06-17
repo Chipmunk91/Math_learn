@@ -1186,6 +1186,9 @@ def _(api_field, chatbox, delib, key_bridge, picker):
 
 @app.cell(hide_code=True)
 def _(mo):
+    # Recap of the key takeaways. Heavy formulas live in display
+    # blocks (not inline) so KaTeX doesn't fall back to its tripled
+    # MathML rendering on a cell with many spans.
     mo.md(
         r"""
         ---
@@ -1196,36 +1199,113 @@ def _(mo):
           the motion splits as $x = x_h + x_p$: a transient from
           Chapter 6 (dies away) plus a steady state at the drive's
           frequency (lives forever).
-        - **The canonical equation:**
-          $\ddot x + 2\gamma\dot x + \omega_0^2 x = F_0\cos(\omega t)$.
-          Three physical knobs — natural frequency $\omega_0$,
-          damping $\gamma$, drive frequency $\omega$.
-        - **The amplitude formula:**
-          $A(\omega) = F_0 / \sqrt{(\omega_0^2 - \omega^2)^2 +
-          (2\gamma\omega)^2}$. Peak at $\omega_{\text{peak}} =
-          \sqrt{\omega_0^2 - 2\gamma^2}$, slightly below
-          $\omega_0$; height $\sim F_0 / (2\gamma\omega_0)$
-          at resonance.
-        - **The phase formula:**
-          $\tan\varphi = 2\gamma\omega / (\omega_0^2 - \omega^2)$.
-          Below resonance the response is in phase with the drive;
-          at resonance it lags by $\pi/2$ (peak push meets peak
-          velocity, max energy transfer); above resonance it
-          fights the drive ($\varphi \to \pi$).
-        - **At $\gamma = 0$ and $\omega = \omega_0$** the
-          amplitude grows linearly with time forever. Real systems
-          are rescued by friction or by leaving the linear regime;
+
+        - **The canonical equation.** Three physical knobs —
+          natural frequency $\omega_0$, damping $\gamma$, drive
+          frequency $\omega$ — pack into
+
+            $$
+            \ddot x + 2\gamma\dot x + \omega_0^2 x \;=\; F_0\cos(\omega t).
+            $$
+
+        - **The amplitude formula.**
+
+            $$
+            A(\omega) \;=\; \frac{F_0}{\sqrt{(\omega_0^2 - \omega^2)^2 + (2\gamma\omega)^2}}.
+            $$
+
+            Peaks just below $\omega_0$, at $\omega_{\text{peak}} =
+            \sqrt{\omega_0^2 - 2\gamma^2}$; the peak height is
+            roughly $F_0/(2\gamma\omega_0)$.
+
+        - **The phase formula.**
+
+            $$
+            \tan\varphi \;=\; \frac{2\gamma\omega}{\omega_0^2 - \omega^2}.
+            $$
+
+            Below resonance the response is in phase with the
+            drive; at resonance it lags by exactly $\pi/2$ (peak
+            push meets peak velocity, maximal energy transfer);
+            above resonance it fights the drive ($\varphi \to \pi$).
+
+        - **At $\gamma = 0$ and $\omega = \omega_0$**, the amplitude
+          grows linearly with time forever. Real systems are
+          rescued by friction or by leaving the linear regime;
           engineers tune *toward* this point for instruments and
           *away* from it for bridges.
+        """
+    )
+    return
 
-        **Next:** so far the system has had one mass and one
-        spring. The next chapter introduces **Laplace transforms** —
-        a third way to solve linear ODEs that turns initial
-        conditions and forcing into algebraic operations on a
-        transformed function $X(s)$, and explains the "guessed"
-        exponentials of Chapter 6 as roots of a transformed
-        denominator. After that we step into **systems of ODEs**,
-        where two or more state variables interact.
+
+@app.cell(hide_code=True)
+def _(mo):
+    # The deeper pattern: Chapter 6's "guess an exponential" and
+    # Chapter 7's "guess a sinusoid" are the same trick (Euler), and
+    # they work because sinusoids/exponentials are eigenfunctions of
+    # d/dt. Names the implicit Fourier-at-one-frequency move.
+    mo.md(
+        r"""
+        ### The pattern underneath
+
+        Step back and notice what we kept doing. Chapter 6 guessed
+        $x_h = e^{\lambda t}$ and reduced the homogeneous ODE to an
+        algebraic equation in $\lambda$. This chapter guessed
+        $x_p = A\cos(\omega t - \varphi)$ and reduced the forced
+        ODE to algebraic equations in $A$ and $\varphi$. By Euler,
+        $e^{i\omega t} = \cos\omega t + i\sin\omega t$ — those two
+        guesses are the *same* family of functions in different
+        clothes.
+
+        The reason the trick keeps working is deeper than the
+        guesses themselves. Sinusoids and complex exponentials are
+        the **eigenfunctions of $d/dt$**: pass them through any
+        linear constant-coefficient operator and they come back
+        just rescaled, never changing shape. That is exactly what
+        turns a differential equation into an algebraic one — and
+        what we've been doing, without naming it, is **Fourier
+        analysis at one frequency**.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # "Next" reframed: not "the next chapter is Laplace" but "the
+    # next problem is non-sinusoidal forcing", with Fourier AND
+    # Laplace named as the two natural tools.
+    mo.md(
+        r"""
+        ### What's next
+
+        The world doesn't only push you with clean sinusoids. The
+        forcing could be a sudden kick, a step change, a square
+        wave, a chord of multiple frequencies, or just a messy
+        signal. The trick still works — but it needs a
+        generalisation: **decompose the input into sinusoids (or
+        exponentials), apply the $A(\omega), \varphi(\omega)$
+        machinery from this chapter to each piece, then sum the
+        responses back up.** Two complementary formalisms make
+        this precise:
+
+        - **Fourier transforms.** $A(\omega)$ becomes a literal
+          *frequency-domain multiplier* on the input's spectrum.
+          Every linear system has such a multiplier — sometimes
+          called its **transfer function** — and it captures
+          everything the system does.
+        - **Laplace transforms.** A non-periodic cousin of Fourier
+          that also swallows initial conditions and finite-duration
+          pushes (impulses, step functions) into the same
+          algebraic framework.
+
+        Both turn the differential equation itself into a single
+        algebraic equation in a transformed function — promoting
+        the "guess pays off" trick we've been leaning on into a
+        proper machine. After that: **systems of ODEs**, where two
+        or more coupled state variables open the door to phase
+        portraits in higher dimensions.
         """
     )
     return
