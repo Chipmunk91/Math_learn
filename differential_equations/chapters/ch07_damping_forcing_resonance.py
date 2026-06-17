@@ -440,43 +440,44 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 4 (shape) — B2 of 3: second attempt, x_p = a cos + b sin.
-    # Substitute, gather cos and sin, and get a 2x2 linear system in
-    # (a, b). The form works -- two equations, two unknowns, unique
-    # solution.
+    # Section 4 (shape) — Panel: two ways to add the missing knob.
+    # Bridge from B1's diagnosis ("include a sine from the start")
+    # to the shifted-cosine route, by showing the two forms are
+    # angle-addition equivalents. The shifted form's two knobs
+    # are size and lag -- the very shape the steady-state plot
+    # already showed.
     mo.md(
         r"""
-        **Second attempt: $x_p(t) = a\cos(\omega t) + b\sin(\omega t)$.**
-        Two unknowns now. Differentiating as before and substituting
-        into the left side, then collecting cosine terms apart from
-        sine terms, gives
+        ### Two ways to add the missing knob
+
+        The diagnosis was sharp: a bare cosine is one knob short.
+        The damping term turns cosine into sine, and a pure cosine
+        has no sine to answer it. So we need to widen the guess —
+        but there are two ways to do that, and they turn out to be
+        the same fix wearing different clothes.
+
+        The first way is to add a sine beside the cosine:
+        $x_p = a\cos\omega t + b\sin\omega t$. Two knobs now —
+        how much cosine, how much sine. The second way is to take
+        the one cosine we started with and slide it sideways in
+        time: $x_p = A\cos(\omega t - \varphi)$. Also two knobs —
+        how big, and how shifted.
+
+        These are not rival ideas. A shifted cosine is a
+        cosine-plus-sine in disguise, by the angle-addition
+        formula:
 
         $$
-        \bigl[a(\omega_0^2 - \omega^2) + 2\gamma b\omega\bigr]\cos(\omega t)
-        \;+\;
-        \bigl[b(\omega_0^2 - \omega^2) - 2\gamma a\omega\bigr]\sin(\omega t).
+        A\cos(\omega t - \varphi) \;=\; (A\cos\varphi)\cos\omega t
+        \;+\; (A\sin\varphi)\sin\omega t.
         $$
 
-        The output has *exactly* the same vocabulary as the right
-        side: one $\cos(\omega t)$ piece plus one $\sin(\omega t)$
-        piece. And the right side, $F_0\cos(\omega t)$, is itself
-        $F_0\cos(\omega t) + 0\cdot\sin(\omega t)$. For the two
-        sides to agree at every instant $t$, their cosine
-        coefficients must match and their sine coefficients must
-        match — two equations:
-
-        $$
-        \begin{aligned}
-        a(\omega_0^2 - \omega^2) + 2\gamma b\omega &\;=\; F_0, \\
-        b(\omega_0^2 - \omega^2) - 2\gamma a\omega &\;=\; 0.
-        \end{aligned}
-        $$
-
-        **Two equations, two unknowns** — a $2\times 2$ linear
-        system in $(a, b)$. The form has worked: $x_p$ is some
-        specific cosine-plus-sine combination at the drive
-        frequency, with $a$ and $b$ determined uniquely by the
-        system above.
+        So the phase $\varphi$ is exactly the sine vocabulary the
+        first attempt was missing — just folded into a single
+        shifted wave. We'll take this second spelling, because its
+        two knobs are the two things we actually want to read off:
+        the size of the response and the lag behind the push — the
+        very shape the steady-state plot already showed us.
         """
     )
     return
@@ -484,50 +485,52 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 4 (shape) — B3 of 3: motivate (a, b) -> (A, phi) with a
-    # real argument, not "physicists prefer it". Two points: (1) a cos
-    # + b sin only LOOKS like two waves; it's secretly ONE sinusoid,
-    # shown via the rotating-vector / dot-product picture, which hands
-    # us A = length and phi = angle for free; (2) A and phi ARE the two
-    # questions the chapter is about (resonance size, phase lag), so
-    # they're the form worth solving for. Keeps <=3 displays.
+    # Section 4 (shape) — Panel: Route C, part 1. Substitute
+    # x_p = A cos(wt - phi), carry the shift as a single angle
+    # theta = wt - phi. Get the same cos+sin wall as attempt 1, BUT
+    # this time unfold the push into the same theta frame -- the
+    # phase manufactures the matching sine on the right that the
+    # bare cosine attempt lacked. That is the physical meaning of
+    # the lag: phi exists to absorb what damping makes.
     mo.md(
         r"""
-        **One sinusoid in disguise.** We could solve the system
-        for $a$ and $b$ right now and be done. But hold on and look
-        again at what we've got, $a\cos(\omega t) + b\sin(\omega
-        t)$. It *reads* like two separate waves stacked together —
-        yet a single push at a single frequency drives a single
-        swing, with one size and one rhythm. So this can't really
-        be two independent motions; it must be **one** sinusoid
-        wearing a disguise. Let's take the disguise off.
+        ### Route C: guess the lag directly
 
-        Read $(a, b)$ as a fixed arrow in the plane, and let
-        $(\cos\omega t,\ \sin\omega t)$ be a unit arrow spinning
-        around the circle at rate $\omega$. Our combination is
-        exactly their dot product:
+        Second attempt, take two:
+        $x_p(t) = A\cos(\omega t - \varphi)$. The trick that keeps
+        this clean is to never expand the shift away — carry it as
+        a single angle. Let $\theta = \omega t - \varphi$. Then
+        $x_p = A\cos\theta$, $\dot x_p = -A\omega\sin\theta$, and
+        $\ddot x_p = -A\omega^2\cos\theta$. Substituting into the
+        left side and gathering $\cos\theta$ apart from
+        $\sin\theta$:
 
         $$
-        a\cos\omega t + b\sin\omega t \;=\; (a, b)\cdot(\cos\omega t,\ \sin\omega t).
+        \ddot x_p + 2\gamma\dot x_p + \omega_0^2 x_p
+        \;=\; A(\omega_0^2 - \omega^2)\cos\theta
+        \;-\; 2\gamma A\omega\,\sin\theta.
         $$
 
-        A dot product is *(length of one) $\times$ (length of the
-        other) $\times$ cosine of the angle between them.* The
-        spinning arrow has length $1$; the fixed arrow has length
-        $\sqrt{a^2 + b^2}$; and as the unit arrow sweeps round, the
-        angle between the two is $\omega t - \varphi$, where
-        $\varphi$ is the direction the fixed arrow points. So the
-        whole thing collapses to a single cosine,
+        This is the same wall the first attempt hit — a cosine
+        piece and a leftover sine piece from the damping. Last
+        time there was nothing on the right to match that sine,
+        and the guess died. But now the right side has a hidden
+        resource we didn't use before. Unfold the push into the
+        same shifted frame:
 
         $$
-        a\cos\omega t + b\sin\omega t \;=\; A\cos(\omega t - \varphi),
-        \qquad A = \sqrt{a^2 + b^2}, \quad \tan\varphi = \tfrac{b}{a}.
+        F_0\cos\omega t \;=\; F_0\cos(\theta + \varphi)
+        \;=\; (F_0\cos\varphi)\cos\theta
+        \;-\; (F_0\sin\varphi)\sin\theta.
         $$
 
-        The pair $a, b$ was just an awkward way of writing one
-        arrow; its **length** $A$ and its **direction** $\varphi$
-        are the very same information in a form we can read at a
-        glance.
+        There it is — the phase has manufactured a sine on the
+        right. The leftover sine that killed the pure cosine
+        finally has a partner to match against. We don't delete
+        the damping's sine; we **tilt the push, with $\varphi$,
+        until it produces an equal sine to meet it.** That is the
+        whole physical meaning of the lag: the phase exists
+        precisely to absorb what the damping makes.
         """
     )
     return
@@ -535,34 +538,44 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 4 (shape) — B3b: the payoff. A and phi are precisely the
-    # two questions the chapter is built around (resonance size, phase
-    # lag), so they are the form worth solving for. Land the x_p form
-    # and hand off to cell C.
+    # Section 4 (shape) — Panel: Route C, part 2. Match cos and sin
+    # coefficients on both sides; the two equations come apart by
+    # the most elementary moves -- square-and-add eats phi and
+    # leaves A; divide eats A and leaves tan phi. No linear algebra.
     mo.md(
         r"""
-        And it's exactly the form we came for. $A$ is **how big the
-        steady swing gets** — the number that shoots up at
-        resonance, the headline of this whole chapter. $\varphi$ is
-        **how far the swing lags the push** — the timing that the
-        next section shows is the secret behind pushing "at the
-        right rhythm." Solving for $a$ and $b$ would answer a
-        question nobody asked; solving for $A$ and $\varphi$ answers
-        the two we actually care about. So we write the steady state
-        as
+        Now both sides carry a $\cos\theta$ and a $\sin\theta$,
+        and "equal at every instant" means matching each:
 
         $$
-        x_p(t) \;=\; A\cos(\omega t - \varphi),
+        A(\omega_0^2 - \omega^2) \;=\; F_0\cos\varphi,
+        \qquad
+        2\gamma A\omega \;=\; F_0\sin\varphi.
         $$
 
-        a single sinusoid at the drive's frequency, shifted in time.
-        (The minus sign is convention: a positive $\varphi$ puts the
-        swing's peak *after* the push's, so $\varphi$ reads directly
-        as the lag.)
+        Two equations, two unknowns — and they come apart with
+        the most elementary moves there are. **Square and add,**
+        so that $\cos^2\varphi + \sin^2\varphi = 1$ eats the phase:
 
-        Two numbers left to find, $A$ and $\varphi$ — and the
-        $2\times 2$ system from the second attempt already holds
-        them. The next subsection solves it.
+        $$
+        A \;=\; \frac{F_0}{\sqrt{(\omega_0^2 - \omega^2)^2 + (2\gamma\omega)^2}}.
+        $$
+
+        **Divide the two,** so that $A$ cancels:
+
+        $$
+        \tan\varphi \;=\; \frac{2\gamma\omega}{\omega_0^2 - \omega^2}.
+        $$
+
+        No system to solve, no vectors — just the angle-addition
+        formula and square-and-add. And the two answers are
+        exactly what the plot promised: one size $A$ telling us
+        how hard the swing responds, one lag $\varphi$ telling us
+        how far it trails the push. The first attempt wasn't
+        wasted — it proved we were one knob short, and *shift the
+        cosine* was the cheapest way to add that knob, landing us
+        straight in the size-and-lag coordinates we wanted all
+        along.
         """
     )
     return
@@ -570,24 +583,16 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Section 4 (result) — solve the 2x2 system from B for (a, b),
-    # convert to (A, phi), box the result. Resonance setup unchanged.
-    # (The previous prose re-did the substitution in (A, phi) form;
-    # after the B rewrite, B already does the substitution in (a, b)
-    # form, so C now just solves the system.)
+    # Section 4 (result) — Route C already DERIVED A and tan phi
+    # directly. Cell C just boxes them as the chapter's headline
+    # result and unfolds the resonance story (denominator vanishes
+    # at omega = omega_0; without damping, A would blow up; small
+    # gamma -> sharp peak).
     mo.md(
         r"""
-        ### Pinning down $A$ and $\varphi$
+        ### What the formula says
 
-        The $2\times 2$ system from above is now a small piece of
-        linear algebra. The second equation rearranges to
-        $b/a = 2\gamma\omega / (\omega_0^2 - \omega^2)$ — and that
-        ratio is exactly $\tan\varphi$, so the phase lag drops out
-        immediately. Substituting back into the first equation pins
-        down $a$, then $b$, and the magnitude
-        $A = \sqrt{a^2 + b^2}$ comes out by the Pythagorean
-        theorem. The two formulas we'll spend the rest of the
-        chapter living with are
+        Boxed for the rest of the chapter:
 
         $$
         \boxed{\;\,
