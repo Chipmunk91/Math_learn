@@ -41,15 +41,7 @@ def _(delib, mo):
     mo.vstack([
         mo.md(
             r"""
-            ## A story about change — round two
-
-            Chapter 1 told *one* differential-equation story — a rumor spreading across
-            a campus — and we read its behaviour straight off a slope field, never
-            solving it. But differential equations describe far more than rumors, so
-            this chapter opens a **completely new story**, unrelated to the last one.
-            That's the real lesson: the *same kind of rate-rule* turns up behind wildly
-            different phenomena. And this time we won't stop at the picture — we'll get
-            an exact formula.
+            ## Cooling coffee
 
             Pour a coffee at **90°C** in a **20°C** room and watch it cool below —
             fast at first, then ever more slowly, easing toward room temperature but
