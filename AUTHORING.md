@@ -220,6 +220,12 @@ Each rule below traces to a specific feedback round. Apply them proactively.
 | Inline ✅/❌ correctness mark next to each quiz dropdown | Only show a feedback list below | ch02 R2 |
 | Captions on every Manim step ("integrate the LHS over T, the RHS over t"; "+ C absorbs both constants") | Trust the symbols to speak for themselves | ch02 R2 |
 | Re-center the Manim equation after each operation | Anchor everything at `LEFT * 3.4` and let it drift | ch02 R2 |
+| Order a derivation by what *motivates* it, even if that reverses the logical order (split → name the pieces → show figures, not figures-first) | Present a formal decomposition before the reader knows why they'd want it | ch07 |
+| Stay inside the toolkit the chapter has built — derive with what the audience can already read | Reach for out-of-scope machinery (dot-products / vectors in a trig-level chapter) to "explain" a step | ch07 |
+| Justify a representation switch with a concrete reason the reader can feel | Appeal to authority ("these aren't the numbers a physicist cares about") | ch07 |
+| Show one intermediate line of even "trivial" algebra (square-and-add, divide-and-cancel) for transparency | Jump from the matched equations straight to the boxed result | ch07 |
+| Build a two-part idea from what's *already on screen* (the swing's first cycles visibly growing) | Assert a decomposition the reader has no reason to believe yet | ch07 |
+| Pre-empt the sharp reader's question with one honest sentence (why $A\cos(\omega t-\varphi)$ doesn't "become" the growing $t\sin\omega_0 t$ at resonance) | Drop a surprising formula and move on | ch07 |
 
 Story-to-math gradient: keep the chapter's story present early ("your kitchen",
 "your campus") and let it fade as the math takes over. A hard jump from story
@@ -308,6 +314,78 @@ These are real bugs we hit. Each entry: **symptom → cause → fix**.
   to both define a global *and* show something, end the cell with the
   display expression (e.g. `fig` on its own line) and `return (...)` the
   globals downstream cells need.
+
+### 4.9 — Page blank until Pyodide finishes booting (~60–90s)
+- **Symptom:** The chapter shows only the loading splash for over a minute;
+  nothing readable appears until the in-browser runtime has fully booted.
+- **Cause:** A plain `marimo export html-wasm` embeds the notebook *source*
+  but **no rendered cell outputs** — so the page genuinely has nothing to
+  paint until Pyodide runs every cell. (Confirmed by dumping `index.html`:
+  section headings existed only inside `<script>` blobs.)
+- **Fix (two parts, both already in `build_wasm_site.py`):**
+  1. Export with **`--execute`**: marimo runs the notebook once at build
+     time and embeds each cell's rendered output into
+     `window.__MARIMO_MOUNT_CONFIG__`. The React bundle mounts those on
+     first paint (~2–3s), *before* Pyodide. Pyodide still boots in a worker
+     afterward to make sliders / code cells live.
+  2. The splash's `ready()` detector must watch for **content in `#root`**
+     (a heading, or >200 chars of text), **not** a marimo-specific class.
+     The old detector polled `.marimo-cell`, which this marimo version
+     doesn't emit, so the splash never lifted until the 180s cap — hiding
+     fully-rendered content underneath. That single wrong selector *was*
+     the "blank for 90s" bug.
+- **Don't** add a "warming up the interactive demos" pill keyed on figure
+  presence: with `--execute` the figures are pre-rendered and animations
+  play without Pyodide, so it fires over non-interactive sections and
+  confuses readers. (Removed.)
+
+### 4.10 — KaTeX renders inline math *tripled* ("x_h" → "xhx_hxh")
+- **Symptom:** A math span shows three overlaid copies — rendered glyphs +
+  raw TeX source + MathML — so `$x$` reads "xxx", `$x_h$` reads "xhx_hxh",
+  and plain words between spans repeat ("and and and").
+- **Cause:** KaTeX's hidden MathML/annotation layer leaks visible. It
+  correlated with **one `mo.md` block carrying too many math spans** (worst
+  case: 6 `$$` displays + 10 inline `$...$` in a single block). The
+  server-side HTML was correct; the failure was client-side and
+  density-driven.
+- **Fix:** Keep each `mo.md` light — at most ~3 display blocks, and don't
+  cram many inline spans alongside several displays. Split a heavy
+  derivation into multiple cells: **display-only equation blocks** kept
+  apart from **inline-only prose blocks**. Sanity-check a block by piping it
+  through `marimo._output.md.md(...)` and counting `||[` (display) vs `||(`
+  (inline) marimo-tex spans, and scanning for raw `\`-commands leaking
+  *outside* `<marimo-tex>`.
+
+### 4.11 — Inline `$...$` split across source lines renders as raw LaTeX
+- **Symptom:** `\omega`, `\cos`, … appear literally instead of rendering.
+- **Cause:** `pymdownx.arithmatex`'s inline matcher is line-bounded. An
+  inline expression wrapped across two source lines inside the `r"""..."""`
+  (e.g. `$x_p(t) = A\cos(\omega t -` ⏎ `\varphi)$`) is never recognised.
+- **Fix:** Keep every inline `$...$` on a **single physical source line**.
+  Expressions too long to fit go in a `$$...$$` display block (which *can*
+  span lines).
+
+### 4.12 — `--execute` runs every cell at build time → build env needs the full stack
+- **Symptom (CI):** `ModuleNotFoundError: No module named 'anywidget'` /
+  `'sympy'` during export; build aborts.
+- **Symptom (browser):** a Try-It cell errors with `No module named
+  'matplotlib'` when the student presses Run.
+- **Cause:** `--execute` executes the notebook during the build, so every
+  package any cell imports must be installed in the build env. And the
+  **browser** Pyodide only preinstalls what the PEP 723 header declares —
+  `delib.run_exercise` imports matplotlib at call time (to hand the student
+  `plt`), which fails if matplotlib isn't declared.
+- **Fix:**
+  - CI installs the chapters' full stack: **`pip install . anywidget sympy`**
+    (mirrors `deploy/hf-space`; project metadata only declares delib's deps).
+  - Pass **`--no-sandbox`** so marimo executes inline in that env,
+    deterministically, instead of trying a `uv`-isolated env (CI has no
+    `uv`, so it silently fell back to a bare interpreter and every cell
+    errored).
+  - **`PEP723_HEADER` must list every package a cell or exercise can import
+    at runtime** — currently `marimo, anywidget, numpy, sympy, plotly,
+    matplotlib`. Add to it whenever a chapter introduces a new runtime
+    import, or the browser will `ModuleNotFound` at the moment that code runs.
 
 ---
 
@@ -485,16 +563,23 @@ To add a new hero clip:
 ## 8. The build pipeline (one-liner mental model)
 
 ```
-chapter.py → inline_delib() → marimo export html-wasm --mode run → site/chNN_*/index.html
-            (combined delib                                          + nav bar + KaTeX
-             base64-inlined                                          + tutor JS + mobile
-             at `import delib`)                                       CSS injected per page
+chapter.py → strip stray PEP723 + inline_delib() + prepend PEP723_HEADER
+           → marimo export html-wasm --mode run --execute --no-sandbox
+           → site/chNN_*/index.html  (+ nav bar, KaTeX, tutor JS, mobile CSS, splash)
 ```
 
 - `chapters()` globs `ch[0-9][0-9]_*.py`. Anything else (templates, spike
   files) is ignored.
 - `--mode run` auto-runs every cell, hides source code, and keeps `mo.ui`
   interactive — the experience students see.
+- `--execute` pre-renders every cell's output into the page so it's
+  **readable in ~2–3s**; Pyodide then boots in a background worker to
+  hydrate the interactive widgets (§4.9). `--no-sandbox` runs that
+  build-time execution in the build's own environment, so CI must install
+  the full chapter stack (§4.12).
+- `WIP_CHAPTERS` (a set, currently **empty** = everything is production)
+  flips a listed slug to `--mode edit` + a dashed "Draft" card while it's
+  being authored. Remove the slug to promote a chapter to production.
 - Each page gets the nav bar (3-col grid: Previous / All chapters / Next +
   absolute-right Tutor button) and the shadow-DOM-aware KaTeX renderer.
 
@@ -527,14 +612,23 @@ What's done and what's still drifting. Update this section at the end of
 every chapter so the next session inherits the state.
 
 ### Chapters
-- **Ch 01** — first-order ODEs & slope fields (rumor → logistic). Built.
-  Uses the delib tutor kit. Slider is split-cell + `mo.vstack` pattern.
-- **Ch 02** — separable & linear (cooling → Newton). Built. Has the
-  classify-the-family quiz (with the `_k` loop-variable fix), the Manim
-  per-atom hero clip with captions + centering, the "what the formula
-  tells us" beat, the inline ✅/❌ marks.
-- **Ch 03+** — not started. ROADMAP says: phase line + potential plot
-  (🔨 helpers required).
+- **Ch 01–07 — all built and in production** (`WIP_CHAPTERS` is empty).
+  See `ROADMAP.md` → *Status* for the per-chapter beat list; that's the
+  source of truth for content. A few that carry reusable lessons:
+  - **Ch 01** — split-cell + `mo.vstack` slider pattern; intro now grounds
+    `y' = f(x,y)` (slope-that-varies-with-position) *before* the rumor hook.
+  - **Ch 02** — classify-the-family quiz (`_k` loop-variable fix), per-atom
+    Manim hero, "what the formula tells us" beat, inline ✅/❌ marks. Intro
+    starts straight on the coffee (the "completely new story" framing was
+    cut as needless).
+  - **Ch 07** — the deepest prose + platform iteration to date. Its lessons
+    are folded into §3 (prose) and §4.9–4.12 (platform) above; don't
+    re-learn them. Reverse/math-first Section-4 ordering, trig-only
+    derivation (no linear-algebra detour), `transient_steady_figures`
+    helper added.
+- **Ch 08 — next** (immediate backlog): non-homogeneous equations / driven
+  RLC — undetermined coefficients, variation of parameters, superposition.
+  New helper likely: a particular + homogeneous decomposition view.
 
 ### `delib` toolkit by signature (current)
 ```
@@ -583,6 +677,22 @@ cell_picker_widget()
 persist_key(api_field, key_bridge)
 tutor_chat(api_field, key_bridge, picker, context, *, prompts, model)
 tutor_sidebar(api_field, key_bridge, picker, chatbox, *, title)
+
+# oscillators.py (Ch 6/7)
+oscillator_animate(omega0, gamma, F0, omega, *, ic, t_end, n_points, title, ...)
+frequency_response(omega0, gamma, *, F0, omega_range, n, height, title)
+transient_steady_figures(omega0, gamma, omega, *, t_end, n, height)  # (fig_h, fig_p)
+steady_state_amplitude(omega0, gamma, F0, omega)
+steady_state_phase(omega0, gamma, omega)
+peak_frequency(omega0, gamma)
+
+# widgets.py (graduated from the Lab — Canvas/WebAudio/anywidget)
+rumor_crowd()                 # Ch 1
+cooling_coffee(T0, Tr, k)     # Ch 2
+spring_grab(...)              # Ch 6
+resonance_audio(omega0, gamma, F0)   # Ch 7
+solution_anatomy(...)         # Ch 7
+feedback_form(chapter_name)   # end-of-chapter star + comment
 ```
 
 ### `delib` backlog (from ROADMAP)
@@ -607,6 +717,20 @@ tutor_sidebar(api_field, key_bridge, picker, chatbox, *, title)
 - Shadow-DOM KaTeX: `MATH_RENDER_JS` walks roots, injects CSS, observes.
 - Arrow size: uniform in display-pixel space (set `aspect=` if a future
   chapter has a very different chart box).
+- **WASM first paint:** `--execute` embeds rendered outputs; the splash
+  lifts on `#root` content (not `.marimo-cell`); Pyodide hydrates widgets
+  in the background. Readable in ~2–3s. (§4.9)
+- **Build executes cells:** needs the full chapter stack in the build env
+  (`pip install . anywidget sympy`) + every runtime import declared in
+  `PEP723_HEADER` (now incl. matplotlib); `--no-sandbox` for determinism. (§4.12)
+- **Production promotion:** empty `WIP_CHAPTERS` = all chapters `--mode run`;
+  add a slug to draft-mode one (dashed card, no auto-run) while authoring.
+- **Lab demo design (Ch 99):** dramatize the chapter's *thesis*, not a
+  consequence — and a top-down 2-D map can't show "altitude," so it can't
+  convey "stay at the same height." Demo 14 was rebuilt from a single
+  contour-walker into **twin hikers** whose altimeters (accumulated
+  $\int M\,dx + N\,dy$) agree at B iff the field is exact — the literal
+  "path doesn't matter."
 
 ### Open follow-ups (small)
 - SymPy first-load can stutter (chunky download). Not blocking; warn in
