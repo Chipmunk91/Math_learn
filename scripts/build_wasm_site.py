@@ -265,17 +265,12 @@ LOADING_CSS = (
     "background:#5b7db1;border-radius:3px;animation:ml-slide 1.25s ease-in-out infinite;}"
     ".ml-loading .el{margin-top:.5rem;font-size:.8rem;color:#9aa7b5;"
     "font-variant-numeric:tabular-nums;}"
-    # Small non-blocking pill shown after the splash lifts, until the first
-    # interactive demo (canvas / Plotly) renders.
-    ".ml-warm{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);"
-    "z-index:2900;background:#16223a;color:#dfe7f2;font:13px/1.3 -apple-system,"
-    "BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;padding:9px 16px;"
-    "border-radius:999px;box-shadow:0 6px 22px rgba(0,0,0,.22);display:flex;"
-    "align-items:center;gap:9px;opacity:0;transition:opacity .4s ease;}"
-    ".ml-warm.show{opacity:1;}"
-    ".ml-warm .d{width:9px;height:9px;border-radius:50%;border:2px solid #6f86ad;"
-    "border-top-color:#dfe7f2;animation:ml-spin .8s linear infinite;}"
-    "@keyframes ml-slide{0%{left:-42%;}100%{left:104%;}}"
+    # (The old "warming up the interactive demos" pill was removed: with
+    # --execute the figures are pre-rendered and animations play without
+    # Pyodide, so a figure-presence-keyed pill fired in the wrong places
+    # and confused readers. The genuinely-still-loading thing is the live
+    # kernel behind the sliders, which we don't yet have a reliable DOM
+    # signal for.)
     "@keyframes ml-spin{to{transform:rotate(360deg);}}"
     "</style>"
 )
@@ -304,43 +299,30 @@ LOADING_JS = r"""<script>(function () {
     if (st) st.textContent = msg;
     if (el) el.textContent = s.toFixed(0) + 's';
   }
-  function ready() { var c = document.querySelector('.marimo-cell'); return !!(c && (c.textContent || '').trim().length > 0); }
-  function hasDemo() { return !!document.querySelector('canvas, .js-plotly-plot, .plotly-graph-div'); }
-  function warm() {
-    if (hasDemo()) return;
-    var w = document.createElement('div');
-    w.className = 'ml-warm';
-    w.innerHTML = '<span class="d"></span>warming up the interactive demos…';
-    document.body.appendChild(w);
-    requestAnimationFrame(function () { w.classList.add('show'); });
-    var wt = Date.now();
-    var wi = setInterval(function () {
-      if (hasDemo() || Date.now() - wt > 150000) {
-        clearInterval(wi); w.classList.remove('show');
-        setTimeout(function () { if (w.parentNode) w.parentNode.removeChild(w); }, 450);
-      }
-    }, 400);
+  // The chapter is readable as soon as marimo mounts the pre-executed
+  // snapshot (from --execute) into #root — which happens within a few
+  // seconds, well before Pyodide finishes booting. Detect that
+  // selector-agnostically: a heading, or a real chunk of text, inside
+  // #root (our splash lives in a sibling node, so it doesn't count).
+  // The previous detector waited for '.marimo-cell', a class this marimo
+  // version doesn't emit, so the splash never lifted until the hard cap.
+  function ready() {
+    var root = document.getElementById('root');
+    if (!root) return false;
+    if (root.querySelector('h1, h2, h3')) return true;
+    return (root.textContent || '').trim().length > 200;
   }
   function hide() {
     if (done) return; done = true;
     ov.classList.add('ml-hide');
     setTimeout(function () { if (ov && ov.parentNode) ov.parentNode.removeChild(ov); }, 700);
-    warm();
   }
   tick();
-  // DIAGNOSTIC: forcibly hide the splash after 3 seconds regardless of
-  // whether a .marimo-cell has appeared. We want to learn what marimo
-  // actually paints during the Pyodide boot when --execute pre-rendered
-  // the cell outputs into MOUNT_CONFIG. If chapter content is visible
-  // underneath, the bug was our ready() detection. If still blank, marimo
-  // is gating render on the runtime and we need to inject outputs ourselves.
-  // TODO: revert this once the diagnosis is in.
-  setTimeout(hide, 3000);
   var iv = setInterval(function () {
     tick();
-    if (ready()) { if (st) st.textContent = 'Rendering the chapter…'; clearInterval(iv); setTimeout(hide, 500); return; }
+    if (ready()) { if (st) st.textContent = 'Rendering the chapter…'; clearInterval(iv); setTimeout(hide, 300); return; }
     if (Date.now() - t0 > 180000) { clearInterval(iv); hide(); }
-  }, 250);
+  }, 200);
 })();</script>"""
 
 
