@@ -82,6 +82,8 @@ jobs:
           find media -name 'characteristic_equation.mp4' -exec cp {} assets-rendered/ \; || true
           manim render -qm -o forced_oscillator_steady_state manim/forced_oscillator_steady_state.py SceneForcedOscillatorSteadyState || true
           find media -name 'forced_oscillator_steady_state.mp4' -exec cp {} assets-rendered/ \; || true
+          manim render -qm -o variation_of_parameters manim/variation_of_parameters.py SceneVariationOfParameters || true
+          find media -name 'variation_of_parameters.mp4' -exec cp {} assets-rendered/ \; || true
           ls -la assets-rendered || true
 
       - name: Upload rendered media

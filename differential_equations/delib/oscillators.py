@@ -210,7 +210,167 @@ def oscillator_animate(
     return fig
 
 
-# --- helper 2: amplitude / phase response -----------------------------------
+# --- helper: forced-response decomposition (Ch 8) ---------------------------
+
+def forced_response(
+    omega0: float,
+    gamma: float,
+    forcing,
+    *,
+    ic: Sequence[float] = (0.0, 0.0),
+    t_end: float = 30.0,
+    n: int = 600,
+    height: int = 540,
+    title: str | None = None,
+    forcing_label: str = "F(t)",
+    show_forcing: bool = True,
+):
+    """Three-panel decomposition of a damped, driven oscillator into the
+    **zero-input response** (transient, IC-driven) and the **zero-state
+    response** (particular, forcing-driven).
+
+    The equation is ``\\ddot x + 2 gamma \\dot x + omega0^2 x = F(t)`` and
+    ``ic = (x(0), \\dot x(0))``.
+
+    The split is canonical: ``x = x_h + x_p`` with
+
+    * ``x_h(t)`` = solution of the *unforced* equation with the given ICs.
+      Carries the initial conditions; decays at rate ``gamma``.
+    * ``x_p(t)`` = solution of the *full forced* equation with zero ICs.
+      Carries the response to the forcing; independent of how the system
+      started.
+
+    Both pieces are integrated with RK4. By linearity their sum solves the
+    full equation with the given ICs — that is the chapter's whole picture
+    made concrete: initial conditions live in ``x_h``; the forcing lives in
+    ``x_p``; what you'd see is their sum.
+
+    Parameters
+    ----------
+    forcing : callable ``F(t) -> float``
+        Any time-dependent forcing — a constant, a polynomial, an
+        exponential, a sinusoid, or a sum of these. The chapter wires
+        sliders into this callable.
+
+    Returns
+    -------
+    fig : plotly.graph_objects.Figure
+        Three vertically stacked subplots sharing the time axis:
+        ``x_h(t)`` (top), ``x_p(t)`` with ``F(t)`` dashed underneath
+        (middle), and ``x(t) = x_h(t) + x_p(t)`` (bottom).
+    """
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    transient_color = "#4e9a6b"   # green — IC-driven piece
+    response_color = "#5b7db1"    # blue — forcing-driven piece
+    sum_color = "#16223a"         # dark — the full motion
+    drive_color = "#d1495b"       # red dashed — the input
+    grey = "#9aa7b5"
+
+    t = np.linspace(0.0, t_end, n)
+    F = np.array([float(forcing(float(tk))) for tk in t], dtype=float)
+
+    # x_h: unforced, with the given ICs.
+    def rhs_h(_t, y):
+        x, v = y[0], y[1]
+        return [v, -2 * gamma * v - omega0 ** 2 * x]
+    ys_h = _rk4(rhs_h, list(ic), t)
+    x_h = ys_h[:, 0]
+
+    # x_p: forced, with zero ICs.
+    def rhs_p(_t, y):
+        x, v = y[0], y[1]
+        return [v, float(forcing(float(_t))) - 2 * gamma * v - omega0 ** 2 * x]
+    ys_p = _rk4(rhs_p, [0.0, 0.0], t)
+    x_p = ys_p[:, 0]
+
+    x = x_h + x_p   # by linearity, this solves the full equation with the given ICs.
+
+    # Symmetric y-range per panel, with a small padding above the largest
+    # excursion. The sum panel uses the same range as whichever of x_h, x_p
+    # is bigger — usually that's x_p once steady-state is reached, but x_h
+    # may dominate early if the ICs are large.
+    def _ylim(*arrs):
+        m = max(float(np.nanmax(np.abs(a))) for a in arrs)
+        m = max(m, 1.0) * 1.15
+        return [-m, m]
+    ylim_h = _ylim(x_h)
+    ylim_p = _ylim(x_p, F if show_forcing else x_p)
+    ylim_x = _ylim(x)
+
+    fig = make_subplots(
+        rows=3, cols=1, shared_xaxes=True,
+        vertical_spacing=0.07,
+        subplot_titles=(
+            "x_h(t) — zero-input response (the ICs)",
+            "x_p(t) — zero-state response (the forcing)",
+            "x(t) = x_h(t) + x_p(t) — the motion you'd see",
+        ),
+    )
+
+    fig.add_hline(y=0, line=dict(color=grey, width=1), row=1, col=1)
+    fig.add_trace(go.Scatter(
+        x=t, y=x_h, mode="lines",
+        line=dict(color=transient_color, width=2.5),
+        hovertemplate="t=%{x:.2f}, x_h=%{y:.3f}<extra></extra>",
+        showlegend=False, name="x_h",
+    ), row=1, col=1)
+
+    fig.add_hline(y=0, line=dict(color=grey, width=1), row=2, col=1)
+    if show_forcing:
+        fig.add_trace(go.Scatter(
+            x=t, y=F, mode="lines",
+            line=dict(color=drive_color, width=1.5, dash="dash"),
+            opacity=0.7,
+            hovertemplate="t=%{x:.2f}, F=%{y:.3f}<extra></extra>",
+            showlegend=False, name=forcing_label,
+        ), row=2, col=1)
+    fig.add_trace(go.Scatter(
+        x=t, y=x_p, mode="lines",
+        line=dict(color=response_color, width=2.5),
+        hovertemplate="t=%{x:.2f}, x_p=%{y:.3f}<extra></extra>",
+        showlegend=False, name="x_p",
+    ), row=2, col=1)
+
+    fig.add_hline(y=0, line=dict(color=grey, width=1), row=3, col=1)
+    fig.add_trace(go.Scatter(
+        x=t, y=x_h, mode="lines",
+        line=dict(color=transient_color, width=1, dash="dot"),
+        opacity=0.5, hoverinfo="skip", showlegend=False, name="x_h",
+    ), row=3, col=1)
+    fig.add_trace(go.Scatter(
+        x=t, y=x_p, mode="lines",
+        line=dict(color=response_color, width=1, dash="dot"),
+        opacity=0.5, hoverinfo="skip", showlegend=False, name="x_p",
+    ), row=3, col=1)
+    fig.add_trace(go.Scatter(
+        x=t, y=x, mode="lines",
+        line=dict(color=sum_color, width=2.8),
+        hovertemplate="t=%{x:.2f}, x=%{y:.3f}<extra></extra>",
+        showlegend=False, name="x",
+    ), row=3, col=1)
+
+    fig.update_xaxes(title="time  t", row=3, col=1, range=[0, t_end])
+    for r, yl in ((1, ylim_h), (2, ylim_p), (3, ylim_x)):
+        fig.update_xaxes(range=[0, t_end], row=r, col=1)
+        fig.update_yaxes(range=yl, row=r, col=1)
+    fig.update_yaxes(title="x_h(t)", row=1, col=1)
+    fig.update_yaxes(title="x_p(t)", row=2, col=1)
+    fig.update_yaxes(title="x(t)",   row=3, col=1)
+
+    fig.update_layout(
+        template="plotly_white",
+        title=(dict(text=title, x=0.02, font=dict(size=13)) if title else None),
+        height=height,
+        margin=dict(l=70, r=20, t=(60 if title else 40), b=55),
+        paper_bgcolor="white", plot_bgcolor="white",
+        showlegend=False,
+    )
+    return fig
+
+
+# --- helper: amplitude / phase response (Ch 7) ------------------------------
 
 def transient_steady_figures(
     omega0: float = 2.0,
