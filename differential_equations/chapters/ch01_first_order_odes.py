@@ -44,29 +44,63 @@ def _(delib, mo):
             r"""
             ## A story about change
 
-            Most of the math you've met so far describes where things *are* — a point,
-            a length, a value. **Differential equations** capture something subtler and
-            far more powerful: how things *change*. They rarely hand you the answer
-            outright. Instead they hand you a **rule for the rate of change** at each
-            instant, and let the whole story unfold from it. Populations, epidemics,
-            cooling coffee, orbiting planets, the charge on your phone — all of them are
-            stories told by differential equations.
+            Most of the math you've met so far describes where things
+            *are* — a point, a length, a value. **Differential
+            equations** capture something subtler and far more powerful:
+            how things *change*.
 
-            The quickest way to *feel* that is with a story. So here's one.
+            Before any story, a quick reminder of the one piece of
+            notation we'll lean on. The symbol $y'$ stands for the
+            **rate of change** of $y$ at a point — the slope of $y$ as
+            a function of $x$, measured right there. On a curve, $y'$
+            is just the slope of the ground under your feet at that
+            spot.
 
-            Monday morning, **3 people** on a 1,000-person campus know a juicy rumor. By
-            Friday, *everyone* does. **Watch it happen below** — every figure is a person
-            wandering the campus, and the rumor jumps each time someone who knows crosses
-            paths with someone who doesn't. Plot the fraction who've heard it (right) and
-            you don't get a straight line — you get this lazy **S**: a slow start, an
-            explosive middle, and a gentle leveling-off. *(Click the crowd to start the
-            rumor somewhere new; drag* mingle speed *to make the campus busier.)*
+            The point worth pausing on is that $y'$ is *local*: it has
+            a value at every point on a curve, and that value generally
+            changes from point to point. At one spot $y'$ might be
+            $+2$; a little further along, $-0.5$; somewhere else, $0$
+            (a flat moment). Same curve, different slopes at different
+            places. So $y'$ itself is a quantity that depends on
+            **where you are**.
 
-            Why that exact shape? Because spreading takes **two** people: one who knows
-            and one who doesn't. On Monday there are only a handful of tellers, so it
-            creeps. By midweek there are plenty of tellers *and* plenty of fresh ears,
-            so it erupts. By Friday almost everyone has heard it, so there's hardly
-            anyone left to tell — and it flattens. All the drama lives in the middle.
+            A differential equation turns that observation into a
+            **rule**. It says, for every possible $(x, y)$, what the
+            slope at that point has to be:
+
+            $$
+            y' \;=\; f(x, y).
+            $$
+
+            Read it as "tell me your $(x, y)$, and the equation hands
+            back your slope." It's not an *answer*, like ordinary
+            algebra hands you — it's a recipe, and the whole shape of
+            a curve unfolds from applying it at every point.
+            Populations, epidemics, cooling coffee, orbiting planets,
+            the charge on your phone — every one of them is a story
+            told by a slope rule like this.
+
+            The quickest way to *feel* one is with a story. So here's
+            one.
+
+            Monday morning, **3 people** on a 1,000-person campus know
+            a juicy rumor. By Friday, *everyone* does. **Watch it
+            happen below** — every figure is a person wandering the
+            campus, and the rumor jumps each time someone who knows
+            crosses paths with someone who doesn't. Plot the fraction
+            who've heard it (right) and you don't get a straight line
+            — you get this lazy **S**: a slow start, an explosive
+            middle, and a gentle leveling-off. *(Click the crowd to
+            start the rumor somewhere new; drag* mingle speed *to make
+            the campus busier.)*
+
+            Why that exact shape? Because spreading takes **two**
+            people: one who knows and one who doesn't. On Monday there
+            are only a handful of tellers, so it creeps. By midweek
+            there are plenty of tellers *and* plenty of fresh ears, so
+            it erupts. By Friday almost everyone has heard it, so
+            there's hardly anyone left to tell — and it flattens. All
+            the drama lives in the middle.
             """
         ),
         delib.rumor_crowd(),
@@ -81,22 +115,25 @@ def _(mo):
         r"""
         ## What the story is really saying
 
-        Notice we never wrote a formula for "how many know it on day 7." We described
-        something more *local*: how fast the number is changing **right now**, in terms
-        of how many already know. That is exactly what a **differential equation** is —
-        a rule of the form
+        Notice we never wrote a formula for "how many know it on day
+        7." We described something *local*: how fast the number is
+        changing **right now**, in terms of how many already know.
+        That is exactly the slope rule we set up earlier — only the
+        independent variable is time $t$ instead of position $x$:
 
-        $$ \frac{dy}{dt} = f(t, y), $$
+        $$ \frac{dy}{dt} \;=\; f(t, y). $$
 
-        which reads *"tell me where you are, and I'll tell you how fast you're moving."*
-        Think of $f$ as a little machine: feed it the current day $t$ and the current
-        count $y$, and it hands back the **slope** — how fast $y$ is climbing at that
-        instant. Plug in a *different* $(t, y)$ and you generally get a different slope.
-        So the equation never states an answer outright; it states a **rule you can
-        apply at any point**. Hand a solver that rule plus a starting value and it walks
-        forward in tiny steps: read the slope here, nudge $y$ a little, read the new
-        slope there, nudge again — and the whole curve grows out of the rule. The
-        S-shape above is exactly what you get when you **follow the rate**, day by day.
+        (When the variable is time, the dot or fraction notation
+        $\frac{dy}{dt}$ tends to feel more natural than $y'$, but
+        they mean the same thing.) Plug in the current day $t$ and
+        the current count $y$ and the equation hands back the slope —
+        how fast $y$ is climbing at that instant. A different $(t,
+        y)$ gives a different slope. Hand a solver that rule plus a
+        starting value and it walks forward in tiny steps: read the
+        slope here, nudge $y$ a little, read the new slope there,
+        nudge again — and the whole curve grows out of the rule. The
+        S-shape above is exactly what you get when you **follow the
+        rate**, day by day.
 
         (You'll hear an equation like this called **first-order**. The name just means
         the rule needs only the present value $y$ — not its acceleration or any
