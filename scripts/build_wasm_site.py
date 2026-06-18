@@ -328,6 +328,14 @@ LOADING_JS = r"""<script>(function () {
     warm();
   }
   tick();
+  // DIAGNOSTIC: forcibly hide the splash after 3 seconds regardless of
+  // whether a .marimo-cell has appeared. We want to learn what marimo
+  // actually paints during the Pyodide boot when --execute pre-rendered
+  // the cell outputs into MOUNT_CONFIG. If chapter content is visible
+  // underneath, the bug was our ready() detection. If still blank, marimo
+  // is gating render on the runtime and we need to inject outputs ourselves.
+  // TODO: revert this once the diagnosis is in.
+  setTimeout(hide, 3000);
   var iv = setInterval(function () {
     tick();
     if (ready()) { if (st) st.textContent = 'Rendering the chapter…'; clearInterval(iv); setTimeout(hide, 500); return; }
