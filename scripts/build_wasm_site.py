@@ -133,6 +133,7 @@ PEP723_HEADER = """\
 #     "numpy",
 #     "sympy",
 #     "plotly",
+#     "matplotlib",
 # ]
 # ///
 """
