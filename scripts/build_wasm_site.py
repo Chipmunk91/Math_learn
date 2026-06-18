@@ -520,8 +520,22 @@ def export(notebook: Path, out_dir: Path) -> None:
     with ``--mode edit`` instead: Pyodide still boots, but cells don't
     auto-run, charts/widgets don't auto-mount, so the page lands fast and
     the author runs only the cells they're iterating on.
+
+    We pass ``--execute`` so marimo runs every cell at build time and
+    embeds the rendered outputs into the HTML as ``__MARIMO_MOUNT_CONFIG__``.
+    The React bundle mounts those pre-rendered outputs immediately when the
+    page loads — the student sees prose, math, figures, and animations in
+    ~1s rather than blank-until-Pyodide. Pyodide still loads in a worker
+    afterward to hydrate the interactive widgets (sliders, code cells);
+    the static content fronts the wait. (Build cost: roughly an extra ~15s
+    per chapter for the isolated-env execution, cached across chapters.)
     """
-    transformed = PEP723_HEADER + inline_delib(notebook.read_text(encoding="utf-8"))
+    source = notebook.read_text(encoding="utf-8")
+    # Strip any existing PEP 723 header in the source so the build's full
+    # header (with anywidget/numpy/sympy/plotly) wins when we prepend it.
+    # Some tooling (marimo/uv) injects a minimal header naming only marimo.
+    source = re.sub(r"^# /// script\n(?:#[^\n]*\n)*# ///\n", "", source, count=1)
+    transformed = PEP723_HEADER + inline_delib(source)
     mode = "edit" if notebook.stem in WIP_CHAPTERS else "run"
     print(f"  -> {notebook.stem}: --mode {mode}{'  [WIP]' if mode == 'edit' else ''}")
     with tempfile.TemporaryDirectory() as tmp:
@@ -529,7 +543,7 @@ def export(notebook: Path, out_dir: Path) -> None:
         staged.write_text(transformed, encoding="utf-8")
         subprocess.run(
             [sys.executable, "-m", "marimo", "export", "html-wasm",
-             str(staged), "-o", str(out_dir), "--mode", mode],
+             str(staged), "-o", str(out_dir), "--mode", mode, "--execute"],
             check=True,
         )
 
