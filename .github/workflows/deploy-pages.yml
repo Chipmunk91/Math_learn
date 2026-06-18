@@ -113,7 +113,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .
+          # `pip install .` brings delib's deps (marimo, numpy, scipy,
+          # matplotlib, plotly). The chapters also import anywidget and sympy
+          # at cell-execution time, which the build now needs because it runs
+          # every cell (--execute, --no-sandbox) to pre-render outputs into
+          # the HTML. Mirrors deploy/hf-space's `pip install . anywidget sympy`.
+          pip install . anywidget sympy
 
       - name: Build interactive WASM site
         run: python scripts/build_wasm_site.py

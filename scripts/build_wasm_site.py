@@ -527,8 +527,18 @@ def export(notebook: Path, out_dir: Path) -> None:
     page loads — the student sees prose, math, figures, and animations in
     ~1s rather than blank-until-Pyodide. Pyodide still loads in a worker
     afterward to hydrate the interactive widgets (sliders, code cells);
-    the static content fronts the wait. (Build cost: roughly an extra ~15s
-    per chapter for the isolated-env execution, cached across chapters.)
+    the static content fronts the wait.
+
+    ``--no-sandbox`` forces marimo to execute the cells in *this* Python
+    environment rather than spinning up a uv-isolated one. Two reasons:
+    (1) determinism — we run with the same pinned marimo/numpy/plotly the
+    build already depends on, instead of whatever uv resolves fresh; and
+    (2) CI has no uv, so the auto-sandbox path silently fell back to a bare
+    inline env missing anywidget/sympy and every cell errored. The trade
+    is that the build environment must now have the chapters' full runtime
+    stack installed (see the CI workflow / deploy-hf-space: `pip install .
+    anywidget sympy`). The browser still re-runs each cell under Pyodide,
+    so the embedded outputs are only the first-paint preview.
     """
     source = notebook.read_text(encoding="utf-8")
     # Strip any existing PEP 723 header in the source so the build's full
@@ -543,7 +553,8 @@ def export(notebook: Path, out_dir: Path) -> None:
         staged.write_text(transformed, encoding="utf-8")
         subprocess.run(
             [sys.executable, "-m", "marimo", "export", "html-wasm",
-             str(staged), "-o", str(out_dir), "--mode", mode, "--execute"],
+             str(staged), "-o", str(out_dir), "--mode", mode,
+             "--execute", "--no-sandbox"],
             check=True,
         )
 
