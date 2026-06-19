@@ -44,7 +44,7 @@ def _(mo):
         | 12 | Rumor through a crowd | Canvas 2D agents + live logistic fit | $\dot y = b\,y(K-y)$ — spatial vs. well-mixed | ✅ `rumor_crowd` · Ch 1 hook |
         | 13 | Cooling coffee | Canvas 2D + steam particles | $T' + kT = kT_r$ — Newton's cooling | ✅ `cooling_coffee` · Ch 2 hook |
         | 14 | Two ways up the hill | Canvas 2D + accumulated line-integral chart | $\oint M\,dx + N\,dy$ path-independence — exactness as a consistent height | ○ candidate · Ch 3a |
-        | 15 | The driven RLC circuit | Canvas 2D circuit diagram + waveform chart, RK4 in JS | $L\ddot q + R\dot q + (1/C) q = V(t)$ — non-homogeneous, any source | ○ candidate · Ch 8 |
+        | 15 | Road test — same car, different roads | Canvas 2D side-scrolling road + chassis, RK4 in JS | $y'' + 2\gamma y' + \omega_0^2 y = \omega_0^2\,u(t)$ — non-homogeneous; road profile *is* the forcing | ○ candidate · Ch 8 |
 
         The **Status** column is the single place this page tracks
         graduation: ✅ means the demo has moved into `delib` and now
@@ -1895,50 +1895,48 @@ def _(hidden_hillside, mo):
 
 
 # ============================================================================
-# Demo 15 — The driven RLC circuit (Canvas 2D + waveform chart, RK4 in JS)
+# Demo 15 — Road test: a car on any road profile (Canvas 2D + RK4 in JS)
 # ============================================================================
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
-        ## 15 · The driven RLC circuit
+        ## 15 · Road test — same car, different roads
 
-        Chapter 8 is built around the **non-homogeneous** equation
-        $L\ddot q + R\dot q + (1/C)\,q = V(t)$ — same shape as
-        Ch 7's driven spring, with $m \leftrightarrow L$,
-        $c \leftrightarrow R$, $k \leftrightarrow 1/C$, and
-        $F \leftrightarrow V$. Circuits are a better laboratory than
-        springs for studying *any* forcing, because the source
-        voltage $V(t)$ can naturally be anything you like — a
-        battery, an AC source, a sudden switch-on, a ramp, or a
-        sum of these.
+        Chapter 8 is about the non-homogeneous equation
+        $y'' + 2\gamma y' + \omega_0^2 y = g(t)$ — the **same** system
+        from Chapter 7, but now the right-hand side $g(t)$ can be
+        **anything**, not just a single cosine. The chapter's point
+        is that the *shape* you put on the right changes the response
+        you get.
 
-        Below: a series RLC loop with an adjustable source. Pick a
-        waveform from the menu, tune $L$, $R$, $C$, and the source
-        parameters; the kernel-side RK4 integrator turns Kirchhoff's
-        voltage law into a live trace of $q(t)$ (capacitor charge)
-        and $i(t) = \dot q$ (loop current). The decomposition
-        $q = q_h + q_p$ that Ch 8 names — homogeneous transient plus
-        particular response to the source — plays out as the
-        startup wobble settles into the source-locked steady state.
+        Here that's made literal. A car rolls at constant speed over
+        a road. **The road's vertical profile *is* the forcing
+        $g(t)$** — its shape is what the system is being told. The
+        car's chassis bobs up and down — **that bobbing is the
+        solution $y(t)$**. Pick a road, watch the response.
 
-        Try the canonical sequence:
+        - **Flat road** → no forcing → after any initial bounce, the
+          chassis settles. This is the homogeneous part $y_h$ alone.
+        - **One bump** → an impulse-like push → the chassis bounces
+          once, then the bounce decays.
+        - **Wavy road** → sinusoidal forcing → the chassis tracks
+          the rhythm. Try the wavelength that matches the car's
+          natural bounce — *resonance*, made physical.
+        - **Stairs** → a sequence of step changes → each step kicks
+          a new bounce that superposes on what's already there.
+          Superposition, visible.
 
-        - **DC battery.** Charge climbs and settles at $q_\infty = CV$.
-          (No surprise: with $\dot q = \ddot q = 0$ in steady state,
-          the equation reads $q/C = V$.)
-        - **AC source at $\omega \neq \omega_0$.** Tiny startup
-          oscillation that dies; the rest of the time, $q(t)$
-          tracks the source at its frequency, scaled.
-        - **AC source at $\omega = 1/\sqrt{LC}$.** Resonance — the
-          steady-state amplitude soars; lighter $R$ → sharper peak.
-        - **Switch (step).** The transient is the whole story for
-          the first few $L/R$ timescales; then it settles.
+        The chart underneath shows it in one picture: the **road**
+        $u(t)$ in amber (the forcing, up to a scale $\omega_0^2$),
+        the **chassis height** $y(t)$ in cyan (the solution). One
+        function in, another function out — and the road shape *is*
+        the input shape.
 
-        *Why it matters:* the **same** equation answers every one
-        of these — and the **same** $q = q_h + q_p$ split lets you
-        chase the particular piece with whichever method (UC, VoP)
-        suits the source.
+        The car has two real knobs: **stiffness** (how taut the
+        spring is — sets the natural bounce frequency $\omega_0$)
+        and **damping** (how much the shocks absorb each bounce —
+        sets $\gamma$). No L, no R, no C — just a car you can drive.
         """
     )
     return
@@ -1948,40 +1946,38 @@ def _(mo):
 def _():
     import anywidget as _aw
 
-    class _DrivenRLC(_aw.AnyWidget):
+    class _RoadTest(_aw.AnyWidget):
         _esm = r"""
         function render({ model, el }) {
           el.innerHTML = `
             <div style="font:13px sans-serif;color:#dfe7f2">
               <div data-r style="position:relative;width:100%;max-width:680px;border:1px solid #1d2638;border-radius:8px;overflow:hidden;background:#0c1118">
-                <canvas data-circuit style="display:block;width:100%;height:200px"></canvas>
+                <canvas data-road style="display:block;width:100%;height:280px"></canvas>
               </div>
               <div data-r2 style="position:relative;width:100%;max-width:680px;border:1px solid #1d2638;border-radius:8px;overflow:hidden;background:#0c1118;margin-top:8px">
-                <canvas data-chart style="display:block;width:100%;height:260px"></canvas>
+                <canvas data-chart style="display:block;width:100%;height:200px"></canvas>
               </div>
               <div style="display:flex;gap:14px;margin-top:10px;align-items:center;flex-wrap:wrap;color:#cdd6e0">
-                <label>source
-                  <select data-k="src" style="margin-left:4px;padding:3px 6px;background:#16223a;color:#dfe7f2;border:1px solid #2a3654;border-radius:4px">
-                    <option value="dc">DC battery</option>
-                    <option value="ac" selected>AC sinusoid</option>
-                    <option value="step">step at t=0</option>
-                    <option value="ramp">linear ramp</option>
+                <label>road
+                  <select data-k="road" style="margin-left:4px;padding:3px 6px;background:#16223a;color:#dfe7f2;border:1px solid #2a3654;border-radius:4px">
+                    <option value="flat">flat — no forcing</option>
+                    <option value="bump">single bump — impulse</option>
+                    <option value="wavy" selected>wavy — sinusoid</option>
+                    <option value="stairs">stairs — repeated steps</option>
+                    <option value="random">random — noise</option>
                   </select>
                 </label>
-                <label>L <input type="range" min="0.2" max="3.0" step="0.1" value="1.0" data-k="L"> <span data-v="L" style="color:#7aa6ff">1.0</span></label>
-                <label>R <input type="range" min="0.0" max="3.0" step="0.05" value="0.4" data-k="R"> <span data-v="R" style="color:#ffb968">0.40</span></label>
-                <label>C <input type="range" min="0.1" max="2.0" step="0.05" value="1.0" data-k="C"> <span data-v="C" style="color:#7ce0a8">1.00</span></label>
-                <label>V₀ <input type="range" min="0.0" max="3.0" step="0.1" value="1.0" data-k="V0"> <span data-v="V0" style="color:#ff7a8a">1.0</span></label>
-                <label data-acrow>ω <input type="range" min="0.1" max="3.0" step="0.05" value="1.0" data-k="omega"> <span data-v="omega" style="color:#ff7a8a">1.00</span></label>
+                <label>stiffness ω₀ <input type="range" min="0.5" max="3.5" step="0.05" value="1.5" data-k="omega0"> <span data-v="omega0" style="color:#7ce0d3">1.50</span></label>
+                <label>damping γ <input type="range" min="0.0" max="1.5" step="0.05" value="0.3" data-k="gamma"> <span data-v="gamma" style="color:#ffb968">0.30</span></label>
                 <button data-b="reset" style="padding:6px 12px;background:#16223a;color:#dfe7f2;border:1px solid #2a3654;border-radius:6px;cursor:pointer">↺ restart</button>
               </div>
               <div data-stat style="color:#8a96a5;margin-top:6px"></div>
-              <div style="color:#56636f;margin-top:2px">L q̈ + R q̇ + q/C = V(t) · pulsing dot is the source (glow ∝ |V|, hue = sign) · neon stream is the current (direction = sign of i, speed ∝ |i|) · trace below = capacitor charge q(t)</div>
+              <div style="color:#56636f;margin-top:2px">y'' + 2γ y' + ω₀² y = ω₀² · u(t) · road profile u(t) IS the forcing · chassis height y(t) IS the response</div>
             </div>`;
 
           // --- canvases / sizing ------------------------------------------
-          var cc = el.querySelector('[data-circuit]');
-          var ch = el.querySelector('[data-chart]');
+          var roadEl = el.querySelector('[data-road]');
+          var chartEl = el.querySelector('[data-chart]');
           var dpr = window.devicePixelRatio || 1;
           function fitCanvas(c, hpx) {
             var w = c.parentElement.clientWidth || 680;
@@ -1990,303 +1986,322 @@ def _():
             var k = c.getContext('2d'); k.setTransform(dpr, 0, 0, dpr, 0, 0);
             return { ctx: k, W: w, H: hpx };
           }
-          var fitC = fitCanvas(cc, 200), fitG = fitCanvas(ch, 260);
-          var x_ = fitC.ctx, CW = fitC.W, CH = fitC.H;
+          var fitR = fitCanvas(roadEl, 280), fitG = fitCanvas(chartEl, 200);
+          var r_ = fitR.ctx, RW = fitR.W, RH = fitR.H;
           var g_ = fitG.ctx, GW = fitG.W, GH = fitG.H;
           window.addEventListener('resize', function () {
-            fitC = fitCanvas(cc, 200); x_ = fitC.ctx; CW = fitC.W; CH = fitC.H;
-            fitG = fitCanvas(ch, 260); g_ = fitG.ctx; GW = fitG.W; GH = fitG.H;
-            computeLoop();
+            fitR = fitCanvas(roadEl, 280);  r_ = fitR.ctx; RW = fitR.W; RH = fitR.H;
+            fitG = fitCanvas(chartEl, 200); g_ = fitG.ctx; GW = fitG.W; GH = fitG.H;
           });
 
-          // --- parameters (driven by the controls) ------------------------
-          var src = 'ac', L = 1.0, R = 0.4, C = 1.0, V0 = 1.0, omega = 1.0;
+          // --- parameters --------------------------------------------------
+          var roadKind = 'wavy', omega0 = 1.5, gamma = 0.3;
           function readControls() {
-            src   = el.querySelector('select[data-k="src"]').value;
-            L     = parseFloat(el.querySelector('input[data-k="L"]').value);
-            R     = parseFloat(el.querySelector('input[data-k="R"]').value);
-            C     = parseFloat(el.querySelector('input[data-k="C"]').value);
-            V0    = parseFloat(el.querySelector('input[data-k="V0"]').value);
-            omega = parseFloat(el.querySelector('input[data-k="omega"]').value);
-            el.querySelector('[data-v="L"]').textContent = L.toFixed(1);
-            el.querySelector('[data-v="R"]').textContent = R.toFixed(2);
-            el.querySelector('[data-v="C"]').textContent = C.toFixed(2);
-            el.querySelector('[data-v="V0"]').textContent = V0.toFixed(1);
-            el.querySelector('[data-v="omega"]').textContent = omega.toFixed(2);
-            el.querySelector('[data-acrow]').style.opacity = (src === 'ac') ? 1 : 0.4;
+            roadKind = el.querySelector('select[data-k="road"]').value;
+            omega0   = parseFloat(el.querySelector('input[data-k="omega0"]').value);
+            gamma    = parseFloat(el.querySelector('input[data-k="gamma"]').value);
+            el.querySelector('[data-v="omega0"]').textContent = omega0.toFixed(2);
+            el.querySelector('[data-v="gamma"]').textContent  = gamma.toFixed(2);
           }
           el.querySelectorAll('input,select').forEach(function (i) {
-            i.addEventListener('input',  readControls);
+            i.addEventListener('input',  function (e) {
+              if (e.target.tagName === 'SELECT') buildRoad();   // preset changed
+              readControls();
+            });
             i.addEventListener('change', readControls);
           });
           el.querySelector('[data-b="reset"]').addEventListener('click', function () { reset(); });
 
-          // --- the source V(t) --------------------------------------------
-          function V(t) {
-            if (src === 'dc')   return V0;
-            if (src === 'ac')   return V0 * Math.cos(omega * t);
-            if (src === 'step') return t >= 0.0 ? V0 : 0.0;
-            if (src === 'ramp') return V0 * Math.max(0.0, Math.min(1.0, t / 4.0));
-            return 0.0;
+          // --- the road u(t) -----------------------------------------------
+          // Pre-built so 'random' is reproducible until the user re-picks it.
+          var roadFn = function (t) { return 0; };
+          function buildRoad() {
+            var kind = el.querySelector('select[data-k="road"]').value;
+            if (kind === 'flat') { roadFn = function (t) { return 0; }; return; }
+            if (kind === 'bump') {
+              var t0 = 4.0, sig = 0.5;
+              roadFn = function (t) {
+                var d = t - t0;
+                return 0.55 * Math.exp(-(d * d) / (2 * sig * sig));
+              };
+              return;
+            }
+            if (kind === 'wavy') {
+              // Fixed wavelength; resonance hits when omega0 == 1.5.
+              roadFn = function (t) { return 0.32 * Math.sin(1.5 * t); };
+              return;
+            }
+            if (kind === 'stairs') {
+              roadFn = function (t) {
+                var period = 8.0, p = ((t % period) + period) % period;
+                if (p < 1) return 0;
+                if (p < 3) return 0.22;
+                if (p < 5) return 0.44;
+                if (p < 7) return 0.22;
+                return 0;
+              };
+              return;
+            }
+            if (kind === 'random') {
+              // smooth band-limited noise from random Fourier modes
+              var modes = [], nmodes = 14;
+              for (var k = 0; k < nmodes; k++) {
+                modes.push({
+                  amp:   (0.18 / Math.sqrt(k + 1)) * (0.4 + 0.6 * Math.random()),
+                  freq:  0.4 + 1.8 * Math.random(),
+                  phase: Math.random() * 6.2832,
+                });
+              }
+              roadFn = function (t) {
+                var s = 0;
+                for (var k = 0; k < modes.length; k++) {
+                  s += modes[k].amp * Math.sin(modes[k].freq * t + modes[k].phase);
+                }
+                return s * 0.7;
+              };
+              return;
+            }
           }
+          buildRoad();
 
-          // --- RK4 on the 2-state system [q, i = dq/dt] -------------------
-          function rhs(t, y) {
-            var q = y[0], i = y[1];
-            return [i, (V(t) - R * i - q / C) / L];
+          // --- RK4 on the 2-state system [y, y_dot] -----------------------
+          // y'' + 2 gamma y' + omega0^2 y = omega0^2 u(t)
+          function rhs(t, s) {
+            var y = s[0], v = s[1];
+            return [v, omega0*omega0 * (roadFn(t) - y) - 2*gamma * v];
           }
-          function step(t, y, h) {
-            var k1 = rhs(t, y);
-            var k2 = rhs(t + h/2, [y[0] + h/2*k1[0], y[1] + h/2*k1[1]]);
-            var k3 = rhs(t + h/2, [y[0] + h/2*k2[0], y[1] + h/2*k2[1]]);
-            var k4 = rhs(t + h,   [y[0] + h*k3[0],   y[1] + h*k3[1]  ]);
+          function rk4step(t, s, h) {
+            var k1 = rhs(t, s);
+            var k2 = rhs(t + h/2, [s[0] + h/2*k1[0], s[1] + h/2*k1[1]]);
+            var k3 = rhs(t + h/2, [s[0] + h/2*k2[0], s[1] + h/2*k2[1]]);
+            var k4 = rhs(t + h,   [s[0] + h*k3[0],   s[1] + h*k3[1]  ]);
             return [
-              y[0] + h/6 * (k1[0] + 2*k2[0] + 2*k3[0] + k4[0]),
-              y[1] + h/6 * (k1[1] + 2*k2[1] + 2*k3[1] + k4[1]),
+              s[0] + h/6 * (k1[0] + 2*k2[0] + 2*k3[0] + k4[0]),
+              s[1] + h/6 * (k1[1] + 2*k2[1] + 2*k3[1] + k4[1]),
             ];
           }
 
-          // --- loop geometry & parametric perimeter -----------------------
-          // The loop is a rectangle in pixel space; we parametrise its
-          // perimeter as s in [0, 1) going clockwise starting from the
-          // top-left corner. Particles ride this s coordinate; their x,y
-          // pixel positions follow.  ds/dt = +i means "current flows
-          // clockwise" (sign is a visual convention).
-          var loop = { L: 60, R: CW - 60, T: 40, B: CH - 36 };
-          var len = { top: 0, right: 0, bot: 0, left: 0, total: 0 };
-          function computeLoop() {
-            loop.L = 60; loop.R = CW - 60; loop.T = 40; loop.B = CH - 36;
-            len.top   = loop.R - loop.L;
-            len.right = loop.B - loop.T;
-            len.bot   = loop.R - loop.L;
-            len.left  = loop.B - loop.T;
-            len.total = len.top + len.right + len.bot + len.left;
-          }
-          computeLoop();
-          function loopXY(s) {
-            // s in [0,1). Returns [x,y, tx,ty] (position + unit tangent).
-            s = ((s % 1) + 1) % 1;
-            var d = s * len.total;
-            if (d < len.top)                       return [loop.L + d,                    loop.T,                          1, 0];
-            d -= len.top;
-            if (d < len.right)                     return [loop.R,                        loop.T + d,                      0, 1];
-            d -= len.right;
-            if (d < len.bot)                       return [loop.R - d,                    loop.B,                         -1, 0];
-            d -= len.bot;
-            return                                        [loop.L,                        loop.B - d,                      0,-1];
-          }
+          // --- the world's geometry ---------------------------------------
+          // Time-domain world: car moves at v_car = 1.0 unit/sec; the
+          // viewport shows ~T_WIN seconds of road around the current time.
+          // The car itself is drawn at the horizontal center of the viewport.
+          var T_WIN_BEFORE = 4.0, T_WIN_AFTER = 1.5;   // sec of road visible
+          var PX_PER_UNIT = 60;                        // vertical scaling
+          var GROUND_PX = 200;                         // wheel-level Y at u=0
+          var BODY_OFFSET = 64;                        // chassis sits this far above the wheel center
 
-          // --- the particle stream ----------------------------------------
-          var N_PARTICLES = 90;
-          var particles = [];
-          function seedParticles() {
-            particles.length = 0;
-            for (var k = 0; k < N_PARTICLES; k++) particles.push({ s: k / N_PARTICLES });
-          }
-          seedParticles();
-          // Each frame, every particle's s advances by k * i * dt (clockwise
-          // when i > 0). v_visual is the scaled current we render with.
-          var V_VIS_SCALE = 0.08;   // converts "current units" to "fraction of loop per second"
+          // --- visual: sky + horizon + road + ground + car ----------------
+          function drawScene(t, y) {
+            // Sky (vertical gradient, dark)
+            var sky = r_.createLinearGradient(0, 0, 0, GROUND_PX);
+            sky.addColorStop(0, '#0c1118');
+            sky.addColorStop(1, '#141d2e');
+            r_.fillStyle = sky;
+            r_.fillRect(0, 0, RW, GROUND_PX);
 
-          // --- circuit drawing helpers (neon glow) ------------------------
-          function neonStroke(color, width, alpha, blur) {
-            x_.shadowColor = color; x_.shadowBlur = blur || 12;
-            x_.strokeStyle = color; x_.lineWidth = width; x_.globalAlpha = alpha;
-          }
-          function clearGlow() { x_.shadowBlur = 0; x_.globalAlpha = 1; }
+            // Horizon line (faint)
+            r_.strokeStyle = '#2a3654'; r_.lineWidth = 1;
+            r_.beginPath(); r_.moveTo(0, 90); r_.lineTo(RW, 90); r_.stroke();
 
-          // --- circuit rendering ------------------------------------------
-          function drawCircuit(t, y) {
-            // dark fill
-            x_.fillStyle = '#0c1118';
-            x_.fillRect(0, 0, CW, CH);
-
-            // very faint loop outline as a guide
-            neonStroke('#2a3654', 1.4, 0.85, 0);
-            x_.beginPath();
-            x_.moveTo(loop.L, loop.T); x_.lineTo(loop.R, loop.T);
-            x_.lineTo(loop.R, loop.B); x_.lineTo(loop.L, loop.B);
-            x_.closePath(); x_.stroke();
-            clearGlow();
-
-            // L (inductor) — coil arches on the top wire, blue glow
-            var lx = (loop.L + loop.R) / 2 - 90, ly = loop.T;
-            neonStroke('#7aa6ff', 2.0, 1.0, 10);
-            x_.beginPath();
-            for (var k = 0; k < 4; k++) {
-              var cx_ = lx - 22 + k * 14;
-              x_.moveTo(cx_, ly);
-              x_.arc(cx_ + 7, ly - 1, 7, Math.PI, 0, true);
+            // Distant 'lane' markers, parallax — gives a sense of motion.
+            var pm_period = 60, pm_offset = (t * 70) % pm_period;
+            r_.fillStyle = 'rgba(255,184,104,0.18)';
+            for (var px = -pm_offset; px < RW; px += pm_period) {
+              r_.fillRect(px, 92, 22, 1.4);
             }
-            x_.stroke();
-            clearGlow();
-            x_.fillStyle = '#7aa6ff'; x_.font = '11px sans-serif';
-            x_.textAlign = 'center';  x_.textBaseline = 'bottom';
-            x_.fillText('L = ' + L.toFixed(1), lx + 7, ly - 14);
 
-            // R (resistor) — neon zigzag on the top wire, amber glow
-            var rx = (loop.L + loop.R) / 2 + 70;
-            neonStroke('#ffb968', 2.0, 1.0, 10);
-            x_.beginPath();
-            var rsegs = 6, rdx = 6, rdy = 6;
-            x_.moveTo(rx - rsegs * rdx, ly);
-            for (var s = 0; s < rsegs; s++) {
-              x_.lineTo(rx - rsegs * rdx + (s + 0.5) * rdx, ly + (s % 2 === 0 ? -rdy : rdy));
-              x_.lineTo(rx - rsegs * rdx + (s + 1) * rdx, ly);
+            // Road profile across the visible window.
+            // Convert (t_rel) in [-T_WIN_BEFORE, +T_WIN_AFTER] to pixel x.
+            var x_center = RW / 2;
+            var px_per_sec = RW / (T_WIN_BEFORE + T_WIN_AFTER);
+            function tToPx(t_rel) { return x_center + t_rel * px_per_sec; }
+
+            // Build the road polyline.
+            var nsamples = 220;
+            var pts = [];
+            for (var i = 0; i <= nsamples; i++) {
+              var t_rel = -T_WIN_BEFORE + (i / nsamples) * (T_WIN_BEFORE + T_WIN_AFTER);
+              var t_abs = t + t_rel;
+              var u = roadFn(t_abs);
+              pts.push([tToPx(t_rel), GROUND_PX - u * PX_PER_UNIT]);
             }
-            x_.stroke();
-            clearGlow();
-            x_.fillStyle = '#ffb968';
-            x_.fillText('R = ' + R.toFixed(2), rx, ly - 14);
 
-            // C (capacitor) — two glowing plates on the right wire, green glow
-            var c_x = loop.R, c_y = (loop.T + loop.B) / 2;
-            neonStroke('#7ce0a8', 2.4, 1.0, 12);
-            x_.beginPath();
-            x_.moveTo(c_x - 8, c_y - 16); x_.lineTo(c_x - 8, c_y + 16);
-            x_.moveTo(c_x + 8, c_y - 16); x_.lineTo(c_x + 8, c_y + 16);
-            x_.stroke();
-            clearGlow();
-            x_.fillStyle = '#7ce0a8';
-            x_.textAlign = 'left'; x_.textBaseline = 'middle';
-            x_.fillText('C = ' + C.toFixed(2),  c_x + 18, c_y - 6);
-            x_.fillText('q = ' + y[0].toFixed(3), c_x + 18, c_y + 10);
+            // Ground fill below the road (dark)
+            r_.beginPath();
+            r_.moveTo(pts[0][0], pts[0][1]);
+            for (var i = 1; i < pts.length; i++) r_.lineTo(pts[i][0], pts[i][1]);
+            r_.lineTo(RW, RH); r_.lineTo(0, RH); r_.closePath();
+            r_.fillStyle = '#1a2336';
+            r_.fill();
 
-            // V source on the left wire — pulsing dot, color encodes sign,
-            // glow radius/intensity encodes |V|.  This is the "push" point.
-            var vx = loop.L, vy = (loop.T + loop.B) / 2;
-            var Vnow = V(t);
-            var mag = Math.min(1.0, Math.abs(Vnow) / Math.max(V0, 0.001));
-            // hue: positive (push +) -> warm; negative (push -) -> cool; zero -> dim grey
-            var hot_rgb = '255, 94, 122', cold_rgb = '94, 161, 255', dim_rgb = '86, 99, 111';
-            var rgb = (Math.abs(Vnow) < 1e-3) ? dim_rgb : (Vnow > 0 ? hot_rgb : cold_rgb);
-            var color = 'rgb(' + rgb + ')';
+            // Glowing road line (amber to match the forcing's chart color)
+            r_.strokeStyle = '#ffb968'; r_.lineWidth = 2.4;
+            r_.shadowColor = '#ffb968'; r_.shadowBlur = 10;
+            r_.beginPath();
+            r_.moveTo(pts[0][0], pts[0][1]);
+            for (var i = 1; i < pts.length; i++) r_.lineTo(pts[i][0], pts[i][1]);
+            r_.stroke();
+            r_.shadowBlur = 0;
 
-            // Big halo: radial gradient, fades to transparent
-            var halo_r = 14 + 32 * mag;
-            var grad = x_.createRadialGradient(vx, vy, 4, vx, vy, halo_r);
-            grad.addColorStop(0,   'rgba(' + rgb + ', 1.0)');
-            grad.addColorStop(0.4, 'rgba(' + rgb + ', 0.35)');
-            grad.addColorStop(1,   'rgba(12, 17, 24, 0)');
-            x_.globalAlpha = 0.45 + 0.55 * mag;
-            x_.fillStyle = grad;
-            x_.beginPath(); x_.arc(vx, vy, halo_r, 0, 6.2832); x_.fill();
-            x_.globalAlpha = 1;
+            // 'Now' vertical guide at the car
+            r_.strokeStyle = 'rgba(255,255,255,0.08)'; r_.lineWidth = 1;
+            r_.beginPath(); r_.moveTo(x_center, 0); r_.lineTo(x_center, RH); r_.stroke();
 
-            // Core dot
-            neonStroke(color, 0, 1.0, 14);
-            x_.fillStyle = color;
-            x_.beginPath(); x_.arc(vx, vy, 8 + 4 * mag, 0, 6.2832); x_.fill();
-            x_.shadowBlur = 0;
+            // Current road height (where the wheels touch).
+            var u_now = roadFn(t);
+            var wheel_y = GROUND_PX - u_now * PX_PER_UNIT;
 
-            // Label + live readout to the right of the source
-            x_.fillStyle = '#dfe7f2'; x_.font = 'bold 13px sans-serif';
-            x_.textAlign = 'left'; x_.textBaseline = 'middle';
-            x_.fillText('V(t)', vx + halo_r + 8, vy - 8);
-            x_.fillStyle = color; x_.font = '12px sans-serif';
-            x_.fillText(Vnow.toFixed(2) + ' V', vx + halo_r + 8, vy + 8);
-            x_.fillStyle = '#56636f';
-            x_.fillText('(' + ({dc:'DC', ac:'AC', step:'step', ramp:'ramp'}[src]) + ')',
-                        vx + halo_r + 8, vy + 22);
+            // Chassis sits above the wheels at body offset; its bobbing
+            // is the SOLUTION y(t).
+            var chassis_y = wheel_y - BODY_OFFSET + (u_now - y[0]) * PX_PER_UNIT;
+            // ^^ The bob is (u_now - y(t)) so that:
+            //   - u rises, y rises too (eventually) -> chassis stays roughly level
+            //   - chassis displacement from rest is exactly y(t).
+            // Positive y -> chassis ABOVE rest -> drawn higher (smaller pixel y).
+            // Rewrite: chassis_pixel_y = wheel_y - BODY_OFFSET - y[0] * PX_PER_UNIT
+            //   only if we treat y[0] as displacement from a moving ride-height.
+            // For visual clarity, decouple: chassis bobs around a fixed ride
+            // height (GROUND_PX - BODY_OFFSET) by exactly -y[0] * PX_PER_UNIT.
+            chassis_y = GROUND_PX - BODY_OFFSET - y[0] * PX_PER_UNIT;
 
-            // ---- the particle stream (current) --------------------------
-            // Stream intensity: |i(t)| -> alpha + tail length;
-            // direction (sign of i) is already baked into ds/dt below.
-            var i_now = y[1];
-            var speed = Math.abs(i_now);
-            var stream_alpha = Math.min(1.0, 0.25 + 1.6 * speed);
-            // Each particle: short comet tail along the loop direction.
-            for (var pi = 0; pi < particles.length; pi++) {
-              var p = particles[pi];
-              var pos = loopXY(p.s);
-              // Tail of N segments backwards along the loop (i.e. -direction-of-motion).
-              var TAIL = 6, ds_tail = 0.006;
-              var prev_s = p.s - Math.sign(i_now || 1) * ds_tail * TAIL;
-              x_.strokeStyle = 'rgba(220, 244, 255, ' + (stream_alpha * 0.55).toFixed(3) + ')';
-              x_.shadowColor = '#9ed8ff'; x_.shadowBlur = 8;
-              x_.lineWidth = 1.6;
-              x_.beginPath();
-              for (var tt = 0; tt <= TAIL; tt++) {
-                var ss = prev_s + Math.sign(i_now || 1) * ds_tail * tt;
-                var pp = loopXY(ss);
-                if (tt === 0) x_.moveTo(pp[0], pp[1]); else x_.lineTo(pp[0], pp[1]);
+            // --- the car ---
+            var car_w = 96, car_h = 32;
+            var cx = x_center, cy = chassis_y;
+            var wheel_dx = 28, wheel_r = 12;
+            // Wheel positions: rear and front, riding the road at their x.
+            // Convert their pixel-x back to t_rel to look up u.
+            function pxToT(px_x) { return (px_x - x_center) / px_per_sec; }
+            var rear_x = cx - wheel_dx,  rear_t  = pxToT(rear_x);
+            var front_x = cx + wheel_dx, front_t = pxToT(front_x);
+            var rear_y  = GROUND_PX - roadFn(t + rear_t)  * PX_PER_UNIT;
+            var front_y = GROUND_PX - roadFn(t + front_t) * PX_PER_UNIT;
+
+            // Shock absorbers: zigzag from chassis bottom to each wheel.
+            function drawShock(x0, y0, x1, y1, color) {
+              r_.strokeStyle = color; r_.lineWidth = 1.6;
+              r_.shadowColor = color; r_.shadowBlur = 6;
+              r_.beginPath();
+              var n = 5;
+              for (var k = 0; k <= n; k++) {
+                var tt = k / n, mx = x0 + tt * (x1 - x0), my = y0 + tt * (y1 - y0);
+                var perp_x = -(y1 - y0), perp_y = (x1 - x0);
+                var pl = Math.hypot(perp_x, perp_y) || 1;
+                perp_x /= pl; perp_y /= pl;
+                var jitter = (k > 0 && k < n) ? (k % 2 === 0 ? 4 : -4) : 0;
+                if (k === 0) r_.moveTo(mx, my);
+                else r_.lineTo(mx + perp_x * jitter, my + perp_y * jitter);
               }
-              x_.stroke();
-              // Bright head
-              x_.shadowBlur = 12;
-              x_.fillStyle = 'rgba(220, 244, 255, ' + stream_alpha.toFixed(3) + ')';
-              x_.beginPath(); x_.arc(pos[0], pos[1], 1.8, 0, 6.2832); x_.fill();
+              r_.lineTo(x1, y1);
+              r_.stroke();
+              r_.shadowBlur = 0;
             }
-            x_.shadowBlur = 0;
+            drawShock(cx - wheel_dx, cy + car_h/2, rear_x,  rear_y,  '#ffb968');
+            drawShock(cx + wheel_dx, cy + car_h/2, front_x, front_y, '#ffb968');
+
+            // Chassis (rounded box, neon cyan, glowing)
+            r_.shadowColor = '#7ce0d3'; r_.shadowBlur = 14;
+            r_.fillStyle = 'rgba(124,224,211,0.18)';
+            r_.strokeStyle = '#7ce0d3'; r_.lineWidth = 2.2;
+            roundRect(r_, cx - car_w/2, cy - car_h/2, car_w, car_h, 8, true, true);
+            // little 'cabin' on top
+            r_.beginPath();
+            r_.moveTo(cx - 26, cy - car_h/2);
+            r_.lineTo(cx - 14, cy - car_h/2 - 16);
+            r_.lineTo(cx + 14, cy - car_h/2 - 16);
+            r_.lineTo(cx + 26, cy - car_h/2);
+            r_.closePath();
+            r_.fillStyle = 'rgba(124,224,211,0.12)';
+            r_.fill(); r_.stroke();
+            r_.shadowBlur = 0;
+
+            // Wheels (filled grey with a rim glow)
+            function drawWheel(x, y) {
+              r_.shadowColor = '#9ed8ff'; r_.shadowBlur = 8;
+              r_.fillStyle = '#16223a'; r_.strokeStyle = '#9ed8ff'; r_.lineWidth = 2;
+              r_.beginPath(); r_.arc(x, y, wheel_r, 0, 6.2832); r_.fill(); r_.stroke();
+              r_.shadowBlur = 0;
+              // rotating spoke
+              var ang = (-t * 3.2) % 6.2832;
+              r_.strokeStyle = '#7aa6ff'; r_.lineWidth = 1.4;
+              r_.beginPath();
+              r_.moveTo(x, y);
+              r_.lineTo(x + wheel_r * Math.cos(ang), y + wheel_r * Math.sin(ang));
+              r_.stroke();
+            }
+            drawWheel(rear_x,  rear_y  - wheel_r);
+            drawWheel(front_x, front_y - wheel_r);
           }
 
-          function advanceParticles(dt, i_now) {
-            // ds/dt = V_VIS_SCALE * i  (positive i -> clockwise stream)
-            // Floor a tiny passive drift so the loop is alive at i ~ 0.
-            var ds = V_VIS_SCALE * i_now * dt + 0.0005 * Math.sign(i_now || 1);
-            for (var k = 0; k < particles.length; k++) {
-              particles[k].s = ((particles[k].s + ds) % 1 + 1) % 1;
-            }
+          // Tiny rounded-rect helper.
+          function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            if (fill) ctx.fill();
+            if (stroke) ctx.stroke();
           }
 
-          // --- waveform chart (neon, dark) --------------------------------
-          var T_HIST = 30;
+          // --- chart (rolling) --------------------------------------------
+          var T_HIST = 14;
           var hist = [];
           function drawChart(t, y) {
             g_.fillStyle = '#0c1118'; g_.fillRect(0, 0, GW, GH);
             var L_pad = 50, R_pad = 14, T_pad = 16, B_pad = 26;
             var tmin = Math.max(0, t - T_HIST), tmax = Math.max(t, T_HIST);
-            var lo = -1, hi = 1, i;
-            for (i = 0; i < hist.length; i++) {
+            var lo = -1, hi = 1;
+            for (var i = 0; i < hist.length; i++) {
               if (hist[i].t < tmin) continue;
-              lo = Math.min(lo, hist[i].q, hist[i].v);
-              hi = Math.max(hi, hist[i].q, hist[i].v);
+              lo = Math.min(lo, hist[i].q, hist[i].u);
+              hi = Math.max(hi, hist[i].q, hist[i].u);
             }
             var pad = (hi - lo) * 0.12; lo -= pad; hi += pad;
             function cx(tv) { return L_pad + (tv - tmin) / (tmax - tmin) * (GW - L_pad - R_pad); }
             function cy(yv) { return T_pad + (1 - (yv - lo) / (hi - lo)) * (GH - T_pad - B_pad); }
 
-            // grid
             g_.strokeStyle = '#1d2638'; g_.lineWidth = 1;
             g_.beginPath();
             g_.moveTo(L_pad, T_pad); g_.lineTo(L_pad, GH - B_pad); g_.lineTo(GW - R_pad, GH - B_pad);
             g_.stroke();
             if (lo < 0 && hi > 0) {
-              g_.strokeStyle = '#1d2638';
               g_.beginPath(); g_.moveTo(L_pad, cy(0)); g_.lineTo(GW - R_pad, cy(0)); g_.stroke();
             }
-            // labels
             g_.fillStyle = '#7c8aa0'; g_.font = '11px sans-serif';
             g_.textAlign = 'left';   g_.textBaseline = 'top';
-            g_.fillText('q(t) — solid · V(t) — dashed', L_pad + 2, T_pad - 1);
+            g_.fillText('road u(t) — amber dashed (forcing) · chassis y(t) — cyan solid (response)', L_pad + 2, T_pad - 1);
             g_.textAlign = 'center'; g_.textBaseline = 'top';
             g_.fillText('time  t', (L_pad + GW - R_pad) / 2, GH - B_pad + 6);
 
-            // V(t) trace — dashed warm
-            g_.strokeStyle = '#ff5e7a'; g_.lineWidth = 1.4; g_.setLineDash([5, 4]);
-            g_.shadowColor = '#ff5e7a'; g_.shadowBlur = 6;
+            // u(t)
+            g_.strokeStyle = '#ffb968'; g_.lineWidth = 1.5; g_.setLineDash([5, 4]);
+            g_.shadowColor = '#ffb968'; g_.shadowBlur = 6;
             g_.beginPath();
             var first = true;
-            for (i = 0; i < hist.length; i++) {
+            for (var i = 0; i < hist.length; i++) {
               if (hist[i].t < tmin) continue;
-              var px = cx(hist[i].t), py = cy(hist[i].v);
+              var px = cx(hist[i].t), py = cy(hist[i].u);
               if (first) { g_.moveTo(px, py); first = false; } else { g_.lineTo(px, py); }
             }
             g_.stroke(); g_.setLineDash([]);
 
-            // q(t) trace — neon cyan, glowing
+            // y(t)
             g_.strokeStyle = '#7ce0d3'; g_.lineWidth = 2.6;
             g_.shadowColor = '#7ce0d3'; g_.shadowBlur = 10;
             g_.beginPath();
             first = true;
-            for (i = 0; i < hist.length; i++) {
+            for (var i = 0; i < hist.length; i++) {
               if (hist[i].t < tmin) continue;
               var qx = cx(hist[i].t), qy = cy(hist[i].q);
               if (first) { g_.moveTo(qx, qy); first = false; } else { g_.lineTo(qx, qy); }
             }
             g_.stroke(); g_.shadowBlur = 0;
 
-            // moving marker at the right edge
             if (hist.length > 0) {
               var last = hist[hist.length - 1];
               g_.fillStyle = '#7ce0d3';
@@ -2294,33 +2309,31 @@ def _():
             }
           }
 
-          // --- status line ------------------------------------------------
+          // --- status -----------------------------------------------------
           function updateStatus(t, y) {
-            var omega0 = 1 / Math.sqrt(L * C);
-            var resonant = (src === 'ac') ? ' · ω = ' + omega.toFixed(2) +
-              (Math.abs(omega - omega0) < 0.05 ? '  ← AT RESONANCE' : '') : '';
-            var info = 'ω₀ = 1/√(LC) = ' + omega0.toFixed(3) +
-              ' · q(' + t.toFixed(1) + ') = ' + y[0].toFixed(3) +
-              ' · i(t) = ' + y[1].toFixed(3) + resonant;
+            var info = 't = ' + t.toFixed(1) + 's · road u(t) = ' + roadFn(t).toFixed(3) +
+                       ' · chassis y(t) = ' + y[0].toFixed(3) +
+                       ' · natural bounce ω₀ = ' + omega0.toFixed(2);
+            if (roadKind === 'wavy') {
+              info += '  · road ω = 1.50' + (Math.abs(omega0 - 1.5) < 0.08 ? '  ← AT RESONANCE' : '');
+            }
             el.querySelector('[data-stat]').textContent = info;
           }
 
           // --- state + main loop ------------------------------------------
           var t = 0, y = [0.0, 0.0];
-          function reset() { t = 0; y = [0.0, 0.0]; hist = []; seedParticles(); }
+          function reset() { t = 0; y = [0.0, 0.0]; hist = []; buildRoad(); }
           readControls();
 
           var raf, running = true, lastWall = performance.now();
           function frame(now) {
             if (!running) return;
             var dtw = Math.min(0.05, (now - lastWall) / 1000); lastWall = now;
-            var sim_dt = dtw * 1.0;
-            var h = 0.01, n = Math.max(1, Math.round(sim_dt / h));
-            for (var k = 0; k < n; k++) { y = step(t, y, h); t += h; }
-            hist.push({ t: t, q: y[0], v: V(t) });
+            var h = 0.01, n = Math.max(1, Math.round(dtw / h));
+            for (var k = 0; k < n; k++) { y = rk4step(t, y, h); t += h; }
+            hist.push({ t: t, q: y[0], u: roadFn(t) });
             while (hist.length > 0 && hist[0].t < t - T_HIST - 2.0) hist.shift();
-            advanceParticles(dtw, y[1]);
-            drawCircuit(t, y); drawChart(t, y); updateStatus(t, y);
+            drawScene(t, y); drawChart(t, y); updateStatus(t, y);
             raf = requestAnimationFrame(frame);
           }
           raf = requestAnimationFrame(frame);
@@ -2329,13 +2342,13 @@ def _():
         export default { render };
         """
 
-    driven_rlc = _DrivenRLC()
-    return (driven_rlc,)
+    road_test = _RoadTest()
+    return (road_test,)
 
 
 @app.cell(hide_code=True)
-def _(driven_rlc, mo):
-    mo.ui.anywidget(driven_rlc)
+def _(mo, road_test):
+    mo.ui.anywidget(road_test)
     return
 
 
