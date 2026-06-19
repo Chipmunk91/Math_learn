@@ -37,6 +37,7 @@ from delib.widgets import (
     solution_anatomy,
     rumor_crowd,
     cooling_coffee,
+    road_test,
 )
 from delib.animate import (
     animate_time,
@@ -95,6 +96,7 @@ __all__ = [
     "solution_anatomy",
     "rumor_crowd",
     "cooling_coffee",
+    "road_test",
     "animate_time",
     "animate_plotly",
     "flow_field",

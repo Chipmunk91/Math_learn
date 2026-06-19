@@ -38,63 +38,111 @@ def _(mo):
           touch — using the Wronskian formula.
         - Use **superposition** to handle a sum of forcings by
           solving each piece separately and adding the results.
-        - Recognise the driven RLC circuit as the same equation as
-          the driven spring, with $m \leftrightarrow L$,
-          $c \leftrightarrow R$, $k \leftrightarrow 1/C$,
-          $F \leftrightarrow V$.
+        - Justify the split $y = y_h + y_p$ as the **complete**
+          general solution — settling the "we just assumed it"
+          feeling Chapter 7 left behind.
         """
     )
     return
 
 
-# === Section 1 — Hook: the driven RLC circuit =====================================
+# === Section 1 — Hook: from one push to any push ==================================
 @app.cell(hide_code=True)
 def _(mo):
-    # TODO (user): opening animation for the driven RLC hook.
-    # Story: a battery / AC source / arbitrary V(t) on an L-R-C loop;
-    # charge q(t) on the capacitor obeys L q'' + R q' + (1/C) q = V(t).
-    # The shape is identical to the driven spring of Ch 7 -- the bridge
-    # the chapter rests on. Animation slot is here; replace this cell
-    # (or vstack one below) when the asset is ready.
+    # Hook prose, picking up Ch 7's thread. Two loose ends drive the
+    # whole chapter: (1) Ch 7 drove with ONE cosine -- what if the push
+    # is any shape? (2) Ch 7 *assumed* x = x_h + x_p -- this chapter
+    # justifies that split as the complete general solution. The road
+    # animation (delib.road_test, below) makes "any shape of push"
+    # literal: road profile = forcing, chassis bob = response.
     mo.md(
         r"""
-        ## Driving an RLC circuit
+        ## From one push to any push
 
-        > **🎬 Opening animation goes here** *(scaffold placeholder —
-        > the chapter's hook is the driven RLC circuit, mirroring
-        > Ch 7's swing).*
+        Chapter 7 left two loose ends, and this chapter is about
+        tying them off.
 
-        Ch 7 drove a spring with a single cosine and chased the
-        steady state. This chapter generalises in two directions:
-        **any forcing** (not just a single sinusoid) and **a
-        systematic method** for finding the particular response —
-        with **superposition** stitching the answers back together
-        when the forcing is a sum.
-
-        The natural setting for "any forcing" is the **driven RLC
-        circuit**: an inductor $L$, resistor $R$, and capacitor $C$
-        in series, plus a voltage source $V(t)$ that you choose.
-        Kirchhoff's voltage law gives
+        **The first is a question we dodged.** We drove the swing
+        with a single, tidy cosine — one rhythm — and found the
+        response. But the world rarely pushes you with a clean
+        cosine. A pothole is a single jolt. A washboard road is a
+        sum of many rhythms. Pulling away from a stop is a steady
+        ramp. So: **what if the push on the right-hand side is *any*
+        shape at all?** That's the first thing we hunt down — a way
+        to solve
 
         $$
-        L\, \ddot q + R\, \dot q + \frac{1}{C}\, q \;=\; V(t),
+        y'' + 2\gamma\, y' + \omega_0^2\, y \;=\; g(t)
         $$
 
-        where $q(t)$ is the charge on the capacitor. The equation
-        has the **same shape** as Ch 7's spring — only the names
-        change:
+        for a forcing $g(t)$ we get to *choose*, not just
+        $\cos(\omega t)$.
 
-        | spring | circuit |
-        |---|---|
-        | mass $m$ | inductance $L$ |
-        | damping $c$ | resistance $R$ |
-        | spring stiffness $k$ | reciprocal capacitance $1/C$ |
-        | external force $F(t)$ | source voltage $V(t)$ |
+        **The second is something we quietly assumed.** Back in
+        Chapter 7 we wrote the answer as $x = x_h + x_p$ — transient
+        plus steady state — and pressed on as if that were obviously
+        the whole story. It worked, but it had an uncanny, too-good
+        feeling: *who said the solution splits so cleanly, and who
+        said those two pieces are all of it?* This chapter pays that
+        debt. We'll see that $y = y_h + y_p$ isn't a lucky guess but
+        the **complete** general solution — every solution, no more
+        and no fewer — and that fact is exactly what licenses the
+        whole hunt.
 
-        Circuits are a good lab because $V(t)$ can naturally be **anything**:
-        a battery (constant), a ramp, a decaying surge, an AC source
-        (sinusoid), or — most importantly — a **sum** of these. Ch 7's
-        cosine trick answered one of those cases; we need a system.
+        Here's the picture to hold onto while we do it.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    # The graduated road-test widget (delib.road_test, shared with the
+    # animation Lab's Demo 15). Road profile u(t) = the forcing g(t);
+    # chassis bob y(t) = the response. Opens on the wavy (sinusoidal)
+    # road so it reads as a direct continuation of Ch 7's cosine drive.
+    delib.road_test(road="wavy", omega0=1.5, gamma=0.3)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Narrative tying the animation to the chapter's two questions.
+    mo.md(
+        r"""
+        A car rolls at a steady speed over a road. **The road's
+        up-and-down profile *is* the push $g(t)$** — whatever shape
+        you give the road is the shape of the forcing. **The car's
+        chassis bobbing *is* the response $y(t)$.** One shape goes
+        in (the road); another comes out (the ride). It's the same
+        damped oscillator as Chapter 7 — *stiffness* sets the natural
+        bounce $\omega_0$, *damping* is the shock absorbers $\gamma$ —
+        only now the right-hand side can be any road you draw.
+
+        Play with the **road** menu and watch how the response
+        answers each kind of push:
+
+        - **Flat road** — no push at all. Whatever bounce the car
+          starts with dies away and it settles. That dying bounce is
+          $y_h$ alone, the Chapter 6 homogeneous part.
+        - **Single bump** — one sharp jolt. The car bounces once and
+          recovers. (This is the "impulse" we'll meet properly in
+          Chapter 9.)
+        - **Wavy road** — a pure cosine push: *exactly* Chapter 7.
+          Tune the stiffness so the car's natural bounce matches the
+          road's rhythm and the ride blows up — resonance, the same
+          peak as last chapter, now under your wheels.
+        - **Stairs** — a sum of step-pushes. Watch each step kick a
+          fresh bounce that rides on top of the ones already there.
+          **That stacking is superposition**, happening in front of
+          you — and it's the visual heart of why $y_h + y_p$ works.
+
+        The chart underneath strips away the scenery and says the
+        same thing as two curves on one time axis: the **amber
+        dashed** line is the road $g(t)$ going *in*; the **cyan**
+        line is the chassis $y(t)$ coming *out*. The whole rest of
+        the chapter is about turning that "road in → ride out" arrow
+        into formulas — for any road you can draw.
         """
     )
     return
@@ -127,11 +175,27 @@ def _(mo):
         of $y_h$ are *all* the freedom — $y_p$ is determined by the
         forcing alone.
 
-        > **Why this is allowed.** If $y_p$ solves the full equation
-        > and $y_h$ solves the homogeneous one, then by linearity
-        > $y_h + y_p$ also solves the full equation. We met exactly
-        > this argument in Ch 7. The whole chapter is now about
-        > **how to find one $y_p$**.
+        > **Why this is the whole story (the Ch 7 debt, paid).** Two
+        > directions, and you need both.
+        >
+        > *It's a solution.* If $y_p$ solves the full equation and
+        > $y_h$ solves the homogeneous one, then feeding $y_h + y_p$
+        > into the linear left side gives $0 + g = g$ — so the sum
+        > solves the full equation. (Same argument as Ch 7's
+        > $x = x_h + x_p$.)
+        >
+        > *It's **every** solution.* Suppose $Y$ is any solution at
+        > all of the full equation. Subtract our particular one:
+        > feed $Y - y_p$ into the left side and you get $g - g = 0$,
+        > so $Y - y_p$ is a homogeneous solution — i.e. $Y - y_p =
+        > y_h$ for some $y_h$. Rearranged, $Y = y_h + y_p$. There is
+        > **no** solution that escapes the form.
+        >
+        > That second direction is what makes the uncanny Ch 7 split
+        > honest: $y_h + y_p$ isn't *a* family of solutions, it's
+        > *the* family. So the entire job reduces to **finding one
+        > particular $y_p$** — the rest is Chapter 6's $y_h$, already
+        > in hand.
 
         ### Superposition: many forcings, one method
 
@@ -163,8 +227,8 @@ def _(mo):
         That's exactly what Ch 7 did with $A\cos(\omega t - \varphi)$
         — now generalised and named.
 
-        > **🚧 Placeholder.** The guess table, the worked RLC example
-        > (battery + AC source via superposition), and the
+        > **🚧 Placeholder.** The guess table, a worked example
+        > (a sum of forcings handled via superposition), and the
         > **multiply-by-$x$ rescue** for the resonance overlap — the
         > general statement of Ch 7's $t\sin(\omega_0 t)$ disaster
         > — go here.
@@ -498,9 +562,9 @@ def _(mo):
           Resonance overlap: multiply by $x$.
         - **Variation of parameters** — slower (two integrals) but
           works for any continuous $g(x)$.
-        - **Same equation, many worlds.** Spring, RLC, and many
-          other linear oscillators all wear this form; once you
-          know the method, you know all of them.
+        - **Same equation, many worlds.** A swing, a car over a
+          road, an RLC circuit — all linear oscillators wear this
+          form; once you know the method, you know all of them.
 
         **Next.** Chapter 9 introduces the **Laplace transform** —
         the natural tool for *switched* and *impulse* inputs (a
@@ -559,10 +623,16 @@ def _(api_field, delib, key_bridge, picked_get):
         api_field, key_bridge,
         "This is Chapter 8 of a differential-equations course: "
         "non-homogeneous second-order linear equations of the form "
-        "y'' + p(x) y' + q(x) y = g(x). The story is built around "
-        "the driven RLC circuit, L q'' + R q' + (1/C) q = V(t), "
-        "shown as the electrical mirror of Ch 7's driven spring "
-        "(m <-> L, c <-> R, k <-> 1/C, F <-> V). Key ideas: the "
+        "y'' + 2 gamma y' + omega0^2 y = g(t). It picks up Ch 7's "
+        "two loose ends: (1) Ch 7 drove with a single cosine -- now "
+        "the forcing g(t) can be ANY shape; (2) Ch 7 assumed "
+        "x = x_h + x_p -- this chapter proves y = y_h + y_p is the "
+        "COMPLETE general solution (it's a solution by linearity, and "
+        "every solution has this form since Y - y_p solves the "
+        "homogeneous equation). The hook is a car driving over a road "
+        "whose vertical profile IS the forcing g(t) and whose chassis "
+        "bob IS the response y(t) (same damped oscillator as the "
+        "swing; stiffness = omega0, shocks = gamma). Key ideas: "
         "general solution splits as y = y_h + y_p with y_h handling "
         "initial conditions and y_p set entirely by the forcing; "
         "linearity gives superposition (sum of forcings -> sum of "
