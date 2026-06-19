@@ -44,6 +44,7 @@ def _(mo):
         | 12 | Rumor through a crowd | Canvas 2D agents + live logistic fit | $\dot y = b\,y(K-y)$ — spatial vs. well-mixed | ✅ `rumor_crowd` · Ch 1 hook |
         | 13 | Cooling coffee | Canvas 2D + steam particles | $T' + kT = kT_r$ — Newton's cooling | ✅ `cooling_coffee` · Ch 2 hook |
         | 14 | Two ways up the hill | Canvas 2D + accumulated line-integral chart | $\oint M\,dx + N\,dy$ path-independence — exactness as a consistent height | ○ candidate · Ch 3a |
+        | 15 | The driven RLC circuit | Canvas 2D circuit diagram + waveform chart, RK4 in JS | $L\ddot q + R\dot q + (1/C) q = V(t)$ — non-homogeneous, any source | ○ candidate · Ch 8 |
 
         The **Status** column is the single place this page tracks
         graduation: ✅ means the demo has moved into `delib` and now
@@ -1890,6 +1891,317 @@ def _():
 @app.cell(hide_code=True)
 def _(hidden_hillside, mo):
     mo.ui.anywidget(hidden_hillside)
+    return
+
+
+# ============================================================================
+# Demo 15 — The driven RLC circuit (Canvas 2D + waveform chart, RK4 in JS)
+# ============================================================================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## 15 · The driven RLC circuit
+
+        Chapter 8 is built around the **non-homogeneous** equation
+        $L\ddot q + R\dot q + (1/C)\,q = V(t)$ — same shape as
+        Ch 7's driven spring, with $m \leftrightarrow L$,
+        $c \leftrightarrow R$, $k \leftrightarrow 1/C$, and
+        $F \leftrightarrow V$. Circuits are a better laboratory than
+        springs for studying *any* forcing, because the source
+        voltage $V(t)$ can naturally be anything you like — a
+        battery, an AC source, a sudden switch-on, a ramp, or a
+        sum of these.
+
+        Below: a series RLC loop with an adjustable source. Pick a
+        waveform from the menu, tune $L$, $R$, $C$, and the source
+        parameters; the kernel-side RK4 integrator turns Kirchhoff's
+        voltage law into a live trace of $q(t)$ (capacitor charge)
+        and $i(t) = \dot q$ (loop current). The decomposition
+        $q = q_h + q_p$ that Ch 8 names — homogeneous transient plus
+        particular response to the source — plays out as the
+        startup wobble settles into the source-locked steady state.
+
+        Try the canonical sequence:
+
+        - **DC battery.** Charge climbs and settles at $q_\infty = CV$.
+          (No surprise: with $\dot q = \ddot q = 0$ in steady state,
+          the equation reads $q/C = V$.)
+        - **AC source at $\omega \neq \omega_0$.** Tiny startup
+          oscillation that dies; the rest of the time, $q(t)$
+          tracks the source at its frequency, scaled.
+        - **AC source at $\omega = 1/\sqrt{LC}$.** Resonance — the
+          steady-state amplitude soars; lighter $R$ → sharper peak.
+        - **Switch (step).** The transient is the whole story for
+          the first few $L/R$ timescales; then it settles.
+
+        *Why it matters:* the **same** equation answers every one
+        of these — and the **same** $q = q_h + q_p$ split lets you
+        chase the particular piece with whichever method (UC, VoP)
+        suits the source.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    import anywidget as _aw
+
+    class _DrivenRLC(_aw.AnyWidget):
+        _esm = r"""
+        function render({ model, el }) {
+          el.innerHTML = `
+            <div style="font:13px sans-serif;color:#333">
+              <canvas data-circuit style="width:100%;max-width:680px;height:160px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff"></canvas>
+              <canvas data-chart   style="width:100%;max-width:680px;height:280px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff;margin-top:8px"></canvas>
+              <div style="display:flex;gap:14px;margin-top:8px;align-items:center;flex-wrap:wrap">
+                <label>source
+                  <select data-k="src" style="margin-left:4px;padding:2px 6px">
+                    <option value="dc">DC battery</option>
+                    <option value="ac" selected>AC sinusoid</option>
+                    <option value="step">step at t=0</option>
+                    <option value="ramp">linear ramp</option>
+                  </select>
+                </label>
+                <label>L <input type="range" min="0.2" max="3.0" step="0.1" value="1.0" data-k="L"> <span data-v="L">1.0</span></label>
+                <label>R <input type="range" min="0.0" max="3.0" step="0.05" value="0.4" data-k="R"> <span data-v="R">0.40</span></label>
+                <label>C <input type="range" min="0.1" max="2.0" step="0.05" value="1.0" data-k="C"> <span data-v="C">1.00</span></label>
+                <label>V₀ <input type="range" min="0.0" max="3.0" step="0.1" value="1.0" data-k="V0"> <span data-v="V0">1.0</span></label>
+                <label data-acrow>ω <input type="range" min="0.1" max="3.0" step="0.05" value="1.0" data-k="omega"> <span data-v="omega">1.00</span></label>
+                <button data-b="reset" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">↺ restart</button>
+              </div>
+              <div data-stat style="color:#7c8aa0;margin-top:4px"></div>
+              <div style="color:#8a96a5;margin-top:2px">L q̈ + R q̇ + q/C = V(t) · trace = capacitor charge q(t); RK4 in the browser, ~60 fps · resonance at ω = 1/√(LC)</div>
+            </div>`;
+
+          var cc = el.querySelector('[data-circuit]');
+          var ch = el.querySelector('[data-chart]');
+          var dpr = window.devicePixelRatio || 1;
+          var CW = 680, CH = 160, GW = 680, GH = 280;
+          cc.width = CW * dpr; cc.height = CH * dpr;
+          ch.width = GW * dpr; ch.height = GH * dpr;
+          var x_ = cc.getContext('2d'); x_.setTransform(dpr,0,0,dpr,0,0);
+          var g_ = ch.getContext('2d'); g_.setTransform(dpr,0,0,dpr,0,0);
+
+          // --- parameters (driven by the controls) -------------------------
+          var src = 'ac', L = 1.0, R = 0.4, C = 1.0, V0 = 1.0, omega = 1.0;
+          function readControls() {
+            src   = el.querySelector('select[data-k="src"]').value;
+            L     = parseFloat(el.querySelector('input[data-k="L"]').value);
+            R     = parseFloat(el.querySelector('input[data-k="R"]').value);
+            C     = parseFloat(el.querySelector('input[data-k="C"]').value);
+            V0    = parseFloat(el.querySelector('input[data-k="V0"]').value);
+            omega = parseFloat(el.querySelector('input[data-k="omega"]').value);
+            el.querySelector('[data-v="L"]').textContent = L.toFixed(1);
+            el.querySelector('[data-v="R"]').textContent = R.toFixed(2);
+            el.querySelector('[data-v="C"]').textContent = C.toFixed(2);
+            el.querySelector('[data-v="V0"]').textContent = V0.toFixed(1);
+            el.querySelector('[data-v="omega"]').textContent = omega.toFixed(2);
+            // The ω slider is only meaningful for AC; dim it otherwise.
+            el.querySelector('[data-acrow]').style.opacity = (src === 'ac') ? 1 : 0.4;
+          }
+          el.querySelectorAll('input,select').forEach(function (i) {
+            i.addEventListener('input',  readControls);
+            i.addEventListener('change', readControls);
+          });
+          el.querySelector('[data-b="reset"]').addEventListener('click', function () { reset(); });
+
+          // --- the source V(t) --------------------------------------------
+          function V(t) {
+            if (src === 'dc')   return V0;
+            if (src === 'ac')   return V0 * Math.cos(omega * t);
+            if (src === 'step') return t >= 0.0 ? V0 : 0.0;
+            if (src === 'ramp') return V0 * Math.max(0.0, Math.min(1.0, t / 4.0));
+            return 0.0;
+          }
+
+          // --- RK4 step on the 2-state system [q, i = dq/dt] --------------
+          function rhs(t, y) {
+            var q = y[0], i = y[1];
+            // L*qdd + R*qd + q/C = V(t)  =>  qdd = (V - R*i - q/C) / L
+            var qdd = (V(t) - R * i - q / C) / L;
+            return [i, qdd];
+          }
+          function step(t, y, h) {
+            var k1 = rhs(t, y);
+            var k2 = rhs(t + h/2, [y[0] + h/2*k1[0], y[1] + h/2*k1[1]]);
+            var k3 = rhs(t + h/2, [y[0] + h/2*k2[0], y[1] + h/2*k2[1]]);
+            var k4 = rhs(t + h,   [y[0] + h*k3[0],   y[1] + h*k3[1]  ]);
+            return [
+              y[0] + h/6 * (k1[0] + 2*k2[0] + 2*k3[0] + k4[0]),
+              y[1] + h/6 * (k1[1] + 2*k2[1] + 2*k3[1] + k4[1]),
+            ];
+          }
+
+          // --- rolling buffers --------------------------------------------
+          var T_HIST = 30;            // seconds of history shown on the chart
+          var hist = [];              // {t, q, v}
+          var t = 0, y = [0.0, 0.0];  // start with capacitor uncharged, no current
+          function reset() { t = 0; y = [0.0, 0.0]; hist = []; }
+          readControls();
+
+          // --- circuit diagram --------------------------------------------
+          function drawCircuit() {
+            x_.clearRect(0, 0, CW, CH);
+            x_.fillStyle = '#fbfcfe'; x_.fillRect(0, 0, CW, CH);
+            // Loop rectangle
+            var pad = 30, top = 28, bot = CH - 28;
+            var left = pad, right = CW - pad;
+            x_.strokeStyle = '#334155'; x_.lineWidth = 2;
+            x_.beginPath();
+            x_.moveTo(left,  top); x_.lineTo(right, top);
+            x_.lineTo(right, bot); x_.lineTo(left,  bot);
+            x_.closePath(); x_.stroke();
+            x_.font = '12px sans-serif'; x_.fillStyle = '#334155';
+
+            // Source symbol on the left wire (top -> bot) -- 50/50 of left side
+            var sx = left, midy = (top + bot) / 2;
+            x_.beginPath(); x_.arc(sx, midy, 14, 0, 6.2832); x_.fillStyle = '#fff'; x_.fill();
+            x_.strokeStyle = '#c15a46'; x_.lineWidth = 2; x_.stroke();
+            x_.fillStyle = '#c15a46'; x_.textAlign='center'; x_.textBaseline='middle';
+            x_.fillText('V', sx, midy);
+            x_.fillStyle = '#334155'; x_.textAlign='left';
+            x_.fillText('V(t) = ' + V(t).toFixed(2), sx + 22, midy - 4);
+            x_.fillText('source: ' + ({dc:'DC', ac:'AC', step:'step', ramp:'ramp'}[src]), sx + 22, midy + 12);
+
+            // L on the top wire (inductor coils symbol)
+            var lx = (left + right) / 2 - 80, ly = top;
+            x_.strokeStyle = '#2a5d9c'; x_.lineWidth = 2;
+            x_.beginPath();
+            for (var k = 0; k < 4; k++) {
+              var cx_ = lx - 22 + k * 14;
+              x_.moveTo(cx_, ly);
+              x_.arc(cx_ + 7, ly, 7, Math.PI, 0, true);
+            }
+            x_.stroke();
+            x_.fillStyle = '#2a5d9c'; x_.textAlign='center';
+            x_.fillText('L = ' + L.toFixed(1), lx + 7, ly - 14);
+
+            // R on the top wire (zigzag)
+            var rx = (left + right) / 2 + 70;
+            x_.strokeStyle = '#16223a'; x_.lineWidth = 2;
+            x_.beginPath();
+            var rsegs = 6, rdx = 6, rdy = 6;
+            x_.moveTo(rx - rsegs * rdx, ly);
+            for (var s = 0; s < rsegs; s++) {
+              x_.lineTo(rx - rsegs * rdx + (s + 0.5) * rdx, ly + (s % 2 === 0 ? -rdy : rdy));
+              x_.lineTo(rx - rsegs * rdx + (s + 1) * rdx, ly);
+            }
+            x_.stroke();
+            x_.fillStyle = '#16223a';
+            x_.fillText('R = ' + R.toFixed(2), rx, ly - 14);
+
+            // C on the right wire (two parallel plates)
+            var c_x = right, c_y = midy;
+            x_.strokeStyle = '#4e9a6b'; x_.lineWidth = 2;
+            x_.beginPath();
+            x_.moveTo(c_x - 8, c_y - 14); x_.lineTo(c_x - 8, c_y + 14);
+            x_.moveTo(c_x + 8, c_y - 14); x_.lineTo(c_x + 8, c_y + 14);
+            x_.stroke();
+            x_.fillStyle = '#4e9a6b';
+            x_.fillText('C = ' + C.toFixed(2), c_x - 26, c_y - 4);
+            x_.fillText('q = ' + y[0].toFixed(3), c_x - 26, c_y + 12);
+          }
+
+          // --- waveform chart ---------------------------------------------
+          function drawChart() {
+            g_.clearRect(0, 0, GW, GH);
+            g_.fillStyle = '#fbfcfe'; g_.fillRect(0, 0, GW, GH);
+            var L_pad = 46, R_pad = 14, T_pad = 14, B_pad = 26;
+            // domain in time = [t - T_HIST, t]
+            var tmin = Math.max(0, t - T_HIST), tmax = Math.max(t, T_HIST);
+            // y-range from the visible history (q AND v on same axes; q is the star)
+            var lo = -1, hi = 1, i;
+            for (i = 0; i < hist.length; i++) {
+              if (hist[i].t < tmin) continue;
+              lo = Math.min(lo, hist[i].q, hist[i].v);
+              hi = Math.max(hi, hist[i].q, hist[i].v);
+            }
+            var pad = (hi - lo) * 0.12; lo -= pad; hi += pad;
+            function cx(tv) { return L_pad + (tv - tmin) / (tmax - tmin) * (GW - L_pad - R_pad); }
+            function cy(yv) { return T_pad + (1 - (yv - lo) / (hi - lo)) * (GH - T_pad - B_pad); }
+            // axes
+            g_.strokeStyle = '#dde4ec'; g_.lineWidth = 1;
+            g_.beginPath();
+            g_.moveTo(L_pad, T_pad); g_.lineTo(L_pad, GH - B_pad); g_.lineTo(GW - R_pad, GH - B_pad);
+            g_.stroke();
+            if (lo < 0 && hi > 0) {
+              g_.strokeStyle = '#eef2f7';
+              g_.beginPath(); g_.moveTo(L_pad, cy(0)); g_.lineTo(GW - R_pad, cy(0)); g_.stroke();
+            }
+            // labels
+            g_.fillStyle = '#7c8aa0'; g_.font = '11px sans-serif';
+            g_.textAlign='left';  g_.textBaseline='top';     g_.fillText('charge q(t) — solid blue · source V(t) — dashed red', L_pad + 2, T_pad - 1);
+            g_.textAlign='center';g_.textBaseline='top';     g_.fillText('time  t', (L_pad + GW - R_pad) / 2, GH - B_pad + 6);
+            // V(t) dashed reference
+            g_.strokeStyle = '#c15a46'; g_.lineWidth = 1.4; g_.setLineDash([5, 4]);
+            g_.beginPath();
+            var first = true;
+            for (i = 0; i < hist.length; i++) {
+              if (hist[i].t < tmin) continue;
+              var px = cx(hist[i].t), py = cy(hist[i].v);
+              if (first) { g_.moveTo(px, py); first = false; } else { g_.lineTo(px, py); }
+            }
+            g_.stroke(); g_.setLineDash([]);
+            // q(t) solid
+            g_.strokeStyle = '#2a5d9c'; g_.lineWidth = 2.5;
+            g_.beginPath();
+            first = true;
+            for (i = 0; i < hist.length; i++) {
+              if (hist[i].t < tmin) continue;
+              var qx = cx(hist[i].t), qy = cy(hist[i].q);
+              if (first) { g_.moveTo(qx, qy); first = false; } else { g_.lineTo(qx, qy); }
+            }
+            g_.stroke();
+            // moving marker at the right edge
+            if (hist.length > 0) {
+              var last = hist[hist.length - 1];
+              g_.fillStyle = '#2a5d9c';
+              g_.beginPath(); g_.arc(cx(last.t), cy(last.q), 4, 0, 6.2832); g_.fill();
+            }
+          }
+
+          // --- status line ------------------------------------------------
+          function updateStatus() {
+            var omega0 = 1 / Math.sqrt(L * C);
+            var resonant = (src === 'ac') ? ' · ω = ' + omega.toFixed(2) +
+              (Math.abs(omega - omega0) < 0.05 ? '  ← AT RESONANCE' : '') : '';
+            var info = 'ω₀ = 1/√(LC) = ' + omega0.toFixed(3) +
+              ' · q(t=' + t.toFixed(1) + ') = ' + y[0].toFixed(3) +
+              ' · i(t) = ' + y[1].toFixed(3) + resonant;
+            el.querySelector('[data-stat]').textContent = info;
+          }
+
+          // --- main loop --------------------------------------------------
+          var raf, running = true, lastWall = performance.now();
+          function frame(now) {
+            if (!running) return;
+            var dtw = Math.min(0.05, (now - lastWall) / 1000); lastWall = now;
+            // simulate up to 4x real time, sub-step to keep RK4 stable
+            var sim_dt = dtw * 1.0;
+            var h = 0.01, n = Math.max(1, Math.round(sim_dt / h));
+            for (var k = 0; k < n; k++) { y = step(t, y, h); t += h; }
+            // record
+            hist.push({ t: t, q: y[0], v: V(t) });
+            // keep only what fits on screen + a small overflow margin
+            while (hist.length > 0 && hist[0].t < t - T_HIST - 2.0) hist.shift();
+            drawCircuit(); drawChart(); updateStatus();
+            raf = requestAnimationFrame(frame);
+          }
+          raf = requestAnimationFrame(frame);
+          return function () { running = false; cancelAnimationFrame(raf); };
+        }
+        export default { render };
+        """
+
+    driven_rlc = _DrivenRLC()
+    return (driven_rlc,)
+
+
+@app.cell(hide_code=True)
+def _(driven_rlc, mo):
+    mo.ui.anywidget(driven_rlc)
     return
 
 
