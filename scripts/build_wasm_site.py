@@ -93,6 +93,7 @@ CHAPTER_CARDS = {
     "ch05_fixed_points_stability": ("Chapter 5", "Fixed points & stability"),
     "ch06_second_order": ("Chapter 6", "Second-order ODEs"),
     "ch07_damping_forcing_resonance": ("Chapter 7", "Damping, forcing, resonance"),
+    "ch08_nonhomogeneous": ("Chapter 8", "Non-homogeneous equations"),
 }
 
 # Per-chapter export mode. Chapters in WIP_CHAPTERS are exported with
@@ -103,7 +104,7 @@ CHAPTER_CARDS = {
 # don't want every load to re-render everything. Add a slug here while
 # you work on it; remove it before shipping so visitors get the polished
 # auto-run experience.
-WIP_CHAPTERS: set[str] = set()
+WIP_CHAPTERS: set[str] = {"ch08_nonhomogeneous"}
 
 # Optional slug -> external fast-preview URL (e.g. a Hugging Face Space running
 # `marimo run` on a real Python kernel, which loads in <1s vs the WASM page's
