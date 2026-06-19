@@ -1952,39 +1952,54 @@ def _():
         _esm = r"""
         function render({ model, el }) {
           el.innerHTML = `
-            <div style="font:13px sans-serif;color:#333">
-              <canvas data-circuit style="width:100%;max-width:680px;height:160px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff"></canvas>
-              <canvas data-chart   style="width:100%;max-width:680px;height:280px;border:1px solid #dde4ec;border-radius:8px;display:block;background:#fff;margin-top:8px"></canvas>
-              <div style="display:flex;gap:14px;margin-top:8px;align-items:center;flex-wrap:wrap">
+            <div style="font:13px sans-serif;color:#dfe7f2">
+              <div data-r style="position:relative;width:100%;max-width:680px;border:1px solid #1d2638;border-radius:8px;overflow:hidden;background:#0c1118">
+                <canvas data-circuit style="display:block;width:100%;height:200px"></canvas>
+              </div>
+              <div data-r2 style="position:relative;width:100%;max-width:680px;border:1px solid #1d2638;border-radius:8px;overflow:hidden;background:#0c1118;margin-top:8px">
+                <canvas data-chart style="display:block;width:100%;height:260px"></canvas>
+              </div>
+              <div style="display:flex;gap:14px;margin-top:10px;align-items:center;flex-wrap:wrap;color:#cdd6e0">
                 <label>source
-                  <select data-k="src" style="margin-left:4px;padding:2px 6px">
+                  <select data-k="src" style="margin-left:4px;padding:3px 6px;background:#16223a;color:#dfe7f2;border:1px solid #2a3654;border-radius:4px">
                     <option value="dc">DC battery</option>
                     <option value="ac" selected>AC sinusoid</option>
                     <option value="step">step at t=0</option>
                     <option value="ramp">linear ramp</option>
                   </select>
                 </label>
-                <label>L <input type="range" min="0.2" max="3.0" step="0.1" value="1.0" data-k="L"> <span data-v="L">1.0</span></label>
-                <label>R <input type="range" min="0.0" max="3.0" step="0.05" value="0.4" data-k="R"> <span data-v="R">0.40</span></label>
-                <label>C <input type="range" min="0.1" max="2.0" step="0.05" value="1.0" data-k="C"> <span data-v="C">1.00</span></label>
-                <label>V₀ <input type="range" min="0.0" max="3.0" step="0.1" value="1.0" data-k="V0"> <span data-v="V0">1.0</span></label>
-                <label data-acrow>ω <input type="range" min="0.1" max="3.0" step="0.05" value="1.0" data-k="omega"> <span data-v="omega">1.00</span></label>
-                <button data-b="reset" style="padding:6px 14px;border:1px solid #c7d2e0;border-radius:6px;background:#f3f7fc;cursor:pointer">↺ restart</button>
+                <label>L <input type="range" min="0.2" max="3.0" step="0.1" value="1.0" data-k="L"> <span data-v="L" style="color:#7aa6ff">1.0</span></label>
+                <label>R <input type="range" min="0.0" max="3.0" step="0.05" value="0.4" data-k="R"> <span data-v="R" style="color:#ffb968">0.40</span></label>
+                <label>C <input type="range" min="0.1" max="2.0" step="0.05" value="1.0" data-k="C"> <span data-v="C" style="color:#7ce0a8">1.00</span></label>
+                <label>V₀ <input type="range" min="0.0" max="3.0" step="0.1" value="1.0" data-k="V0"> <span data-v="V0" style="color:#ff7a8a">1.0</span></label>
+                <label data-acrow>ω <input type="range" min="0.1" max="3.0" step="0.05" value="1.0" data-k="omega"> <span data-v="omega" style="color:#ff7a8a">1.00</span></label>
+                <button data-b="reset" style="padding:6px 12px;background:#16223a;color:#dfe7f2;border:1px solid #2a3654;border-radius:6px;cursor:pointer">↺ restart</button>
               </div>
-              <div data-stat style="color:#7c8aa0;margin-top:4px"></div>
-              <div style="color:#8a96a5;margin-top:2px">L q̈ + R q̇ + q/C = V(t) · trace = capacitor charge q(t); RK4 in the browser, ~60 fps · resonance at ω = 1/√(LC)</div>
+              <div data-stat style="color:#8a96a5;margin-top:6px"></div>
+              <div style="color:#56636f;margin-top:2px">L q̈ + R q̇ + q/C = V(t) · pulsing dot is the source (glow ∝ |V|, hue = sign) · neon stream is the current (direction = sign of i, speed ∝ |i|) · trace below = capacitor charge q(t)</div>
             </div>`;
 
+          // --- canvases / sizing ------------------------------------------
           var cc = el.querySelector('[data-circuit]');
           var ch = el.querySelector('[data-chart]');
           var dpr = window.devicePixelRatio || 1;
-          var CW = 680, CH = 160, GW = 680, GH = 280;
-          cc.width = CW * dpr; cc.height = CH * dpr;
-          ch.width = GW * dpr; ch.height = GH * dpr;
-          var x_ = cc.getContext('2d'); x_.setTransform(dpr,0,0,dpr,0,0);
-          var g_ = ch.getContext('2d'); g_.setTransform(dpr,0,0,dpr,0,0);
+          function fitCanvas(c, hpx) {
+            var w = c.parentElement.clientWidth || 680;
+            c.width = w * dpr; c.height = hpx * dpr;
+            c.style.height = hpx + 'px';
+            var k = c.getContext('2d'); k.setTransform(dpr, 0, 0, dpr, 0, 0);
+            return { ctx: k, W: w, H: hpx };
+          }
+          var fitC = fitCanvas(cc, 200), fitG = fitCanvas(ch, 260);
+          var x_ = fitC.ctx, CW = fitC.W, CH = fitC.H;
+          var g_ = fitG.ctx, GW = fitG.W, GH = fitG.H;
+          window.addEventListener('resize', function () {
+            fitC = fitCanvas(cc, 200); x_ = fitC.ctx; CW = fitC.W; CH = fitC.H;
+            fitG = fitCanvas(ch, 260); g_ = fitG.ctx; GW = fitG.W; GH = fitG.H;
+            computeLoop();
+          });
 
-          // --- parameters (driven by the controls) -------------------------
+          // --- parameters (driven by the controls) ------------------------
           var src = 'ac', L = 1.0, R = 0.4, C = 1.0, V0 = 1.0, omega = 1.0;
           function readControls() {
             src   = el.querySelector('select[data-k="src"]').value;
@@ -1998,7 +2013,6 @@ def _():
             el.querySelector('[data-v="C"]').textContent = C.toFixed(2);
             el.querySelector('[data-v="V0"]').textContent = V0.toFixed(1);
             el.querySelector('[data-v="omega"]').textContent = omega.toFixed(2);
-            // The ω slider is only meaningful for AC; dim it otherwise.
             el.querySelector('[data-acrow]').style.opacity = (src === 'ac') ? 1 : 0.4;
           }
           el.querySelectorAll('input,select').forEach(function (i) {
@@ -2016,12 +2030,10 @@ def _():
             return 0.0;
           }
 
-          // --- RK4 step on the 2-state system [q, i = dq/dt] --------------
+          // --- RK4 on the 2-state system [q, i = dq/dt] -------------------
           function rhs(t, y) {
             var q = y[0], i = y[1];
-            // L*qdd + R*qd + q/C = V(t)  =>  qdd = (V - R*i - q/C) / L
-            var qdd = (V(t) - R * i - q / C) / L;
-            return [i, qdd];
+            return [i, (V(t) - R * i - q / C) / L];
           }
           function step(t, y, h) {
             var k1 = rhs(t, y);
@@ -2034,53 +2046,87 @@ def _():
             ];
           }
 
-          // --- rolling buffers --------------------------------------------
-          var T_HIST = 30;            // seconds of history shown on the chart
-          var hist = [];              // {t, q, v}
-          var t = 0, y = [0.0, 0.0];  // start with capacitor uncharged, no current
-          function reset() { t = 0; y = [0.0, 0.0]; hist = []; }
-          readControls();
+          // --- loop geometry & parametric perimeter -----------------------
+          // The loop is a rectangle in pixel space; we parametrise its
+          // perimeter as s in [0, 1) going clockwise starting from the
+          // top-left corner. Particles ride this s coordinate; their x,y
+          // pixel positions follow.  ds/dt = +i means "current flows
+          // clockwise" (sign is a visual convention).
+          var loop = { L: 60, R: CW - 60, T: 40, B: CH - 36 };
+          var len = { top: 0, right: 0, bot: 0, left: 0, total: 0 };
+          function computeLoop() {
+            loop.L = 60; loop.R = CW - 60; loop.T = 40; loop.B = CH - 36;
+            len.top   = loop.R - loop.L;
+            len.right = loop.B - loop.T;
+            len.bot   = loop.R - loop.L;
+            len.left  = loop.B - loop.T;
+            len.total = len.top + len.right + len.bot + len.left;
+          }
+          computeLoop();
+          function loopXY(s) {
+            // s in [0,1). Returns [x,y, tx,ty] (position + unit tangent).
+            s = ((s % 1) + 1) % 1;
+            var d = s * len.total;
+            if (d < len.top)                       return [loop.L + d,                    loop.T,                          1, 0];
+            d -= len.top;
+            if (d < len.right)                     return [loop.R,                        loop.T + d,                      0, 1];
+            d -= len.right;
+            if (d < len.bot)                       return [loop.R - d,                    loop.B,                         -1, 0];
+            d -= len.bot;
+            return                                        [loop.L,                        loop.B - d,                      0,-1];
+          }
 
-          // --- circuit diagram --------------------------------------------
-          function drawCircuit() {
-            x_.clearRect(0, 0, CW, CH);
-            x_.fillStyle = '#fbfcfe'; x_.fillRect(0, 0, CW, CH);
-            // Loop rectangle
-            var pad = 30, top = 28, bot = CH - 28;
-            var left = pad, right = CW - pad;
-            x_.strokeStyle = '#334155'; x_.lineWidth = 2;
+          // --- the particle stream ----------------------------------------
+          var N_PARTICLES = 90;
+          var particles = [];
+          function seedParticles() {
+            particles.length = 0;
+            for (var k = 0; k < N_PARTICLES; k++) particles.push({ s: k / N_PARTICLES });
+          }
+          seedParticles();
+          // Each frame, every particle's s advances by k * i * dt (clockwise
+          // when i > 0). v_visual is the scaled current we render with.
+          var V_VIS_SCALE = 0.08;   // converts "current units" to "fraction of loop per second"
+
+          // --- circuit drawing helpers (neon glow) ------------------------
+          function neonStroke(color, width, alpha, blur) {
+            x_.shadowColor = color; x_.shadowBlur = blur || 12;
+            x_.strokeStyle = color; x_.lineWidth = width; x_.globalAlpha = alpha;
+          }
+          function clearGlow() { x_.shadowBlur = 0; x_.globalAlpha = 1; }
+
+          // --- circuit rendering ------------------------------------------
+          function drawCircuit(t, y) {
+            // dark fill
+            x_.fillStyle = '#0c1118';
+            x_.fillRect(0, 0, CW, CH);
+
+            // very faint loop outline as a guide
+            neonStroke('#2a3654', 1.4, 0.85, 0);
             x_.beginPath();
-            x_.moveTo(left,  top); x_.lineTo(right, top);
-            x_.lineTo(right, bot); x_.lineTo(left,  bot);
+            x_.moveTo(loop.L, loop.T); x_.lineTo(loop.R, loop.T);
+            x_.lineTo(loop.R, loop.B); x_.lineTo(loop.L, loop.B);
             x_.closePath(); x_.stroke();
-            x_.font = '12px sans-serif'; x_.fillStyle = '#334155';
+            clearGlow();
 
-            // Source symbol on the left wire (top -> bot) -- 50/50 of left side
-            var sx = left, midy = (top + bot) / 2;
-            x_.beginPath(); x_.arc(sx, midy, 14, 0, 6.2832); x_.fillStyle = '#fff'; x_.fill();
-            x_.strokeStyle = '#c15a46'; x_.lineWidth = 2; x_.stroke();
-            x_.fillStyle = '#c15a46'; x_.textAlign='center'; x_.textBaseline='middle';
-            x_.fillText('V', sx, midy);
-            x_.fillStyle = '#334155'; x_.textAlign='left';
-            x_.fillText('V(t) = ' + V(t).toFixed(2), sx + 22, midy - 4);
-            x_.fillText('source: ' + ({dc:'DC', ac:'AC', step:'step', ramp:'ramp'}[src]), sx + 22, midy + 12);
-
-            // L on the top wire (inductor coils symbol)
-            var lx = (left + right) / 2 - 80, ly = top;
-            x_.strokeStyle = '#2a5d9c'; x_.lineWidth = 2;
+            // L (inductor) — coil arches on the top wire, blue glow
+            var lx = (loop.L + loop.R) / 2 - 90, ly = loop.T;
+            neonStroke('#7aa6ff', 2.0, 1.0, 10);
             x_.beginPath();
             for (var k = 0; k < 4; k++) {
               var cx_ = lx - 22 + k * 14;
               x_.moveTo(cx_, ly);
-              x_.arc(cx_ + 7, ly, 7, Math.PI, 0, true);
+              x_.arc(cx_ + 7, ly - 1, 7, Math.PI, 0, true);
             }
             x_.stroke();
-            x_.fillStyle = '#2a5d9c'; x_.textAlign='center';
+            clearGlow();
+            x_.fillStyle = '#7aa6ff'; x_.font = '11px sans-serif';
+            x_.textAlign = 'center';  x_.textBaseline = 'bottom';
             x_.fillText('L = ' + L.toFixed(1), lx + 7, ly - 14);
 
-            // R on the top wire (zigzag)
-            var rx = (left + right) / 2 + 70;
-            x_.strokeStyle = '#16223a'; x_.lineWidth = 2;
+            // R (resistor) — neon zigzag on the top wire, amber glow
+            var rx = (loop.L + loop.R) / 2 + 70;
+            neonStroke('#ffb968', 2.0, 1.0, 10);
             x_.beginPath();
             var rsegs = 6, rdx = 6, rdy = 6;
             x_.moveTo(rx - rsegs * rdx, ly);
@@ -2089,29 +2135,107 @@ def _():
               x_.lineTo(rx - rsegs * rdx + (s + 1) * rdx, ly);
             }
             x_.stroke();
-            x_.fillStyle = '#16223a';
+            clearGlow();
+            x_.fillStyle = '#ffb968';
             x_.fillText('R = ' + R.toFixed(2), rx, ly - 14);
 
-            // C on the right wire (two parallel plates)
-            var c_x = right, c_y = midy;
-            x_.strokeStyle = '#4e9a6b'; x_.lineWidth = 2;
+            // C (capacitor) — two glowing plates on the right wire, green glow
+            var c_x = loop.R, c_y = (loop.T + loop.B) / 2;
+            neonStroke('#7ce0a8', 2.4, 1.0, 12);
             x_.beginPath();
-            x_.moveTo(c_x - 8, c_y - 14); x_.lineTo(c_x - 8, c_y + 14);
-            x_.moveTo(c_x + 8, c_y - 14); x_.lineTo(c_x + 8, c_y + 14);
+            x_.moveTo(c_x - 8, c_y - 16); x_.lineTo(c_x - 8, c_y + 16);
+            x_.moveTo(c_x + 8, c_y - 16); x_.lineTo(c_x + 8, c_y + 16);
             x_.stroke();
-            x_.fillStyle = '#4e9a6b';
-            x_.fillText('C = ' + C.toFixed(2), c_x - 26, c_y - 4);
-            x_.fillText('q = ' + y[0].toFixed(3), c_x - 26, c_y + 12);
+            clearGlow();
+            x_.fillStyle = '#7ce0a8';
+            x_.textAlign = 'left'; x_.textBaseline = 'middle';
+            x_.fillText('C = ' + C.toFixed(2),  c_x + 18, c_y - 6);
+            x_.fillText('q = ' + y[0].toFixed(3), c_x + 18, c_y + 10);
+
+            // V source on the left wire — pulsing dot, color encodes sign,
+            // glow radius/intensity encodes |V|.  This is the "push" point.
+            var vx = loop.L, vy = (loop.T + loop.B) / 2;
+            var Vnow = V(t);
+            var mag = Math.min(1.0, Math.abs(Vnow) / Math.max(V0, 0.001));
+            // hue: positive (push +) -> warm; negative (push -) -> cool; zero -> dim grey
+            var hot_rgb = '255, 94, 122', cold_rgb = '94, 161, 255', dim_rgb = '86, 99, 111';
+            var rgb = (Math.abs(Vnow) < 1e-3) ? dim_rgb : (Vnow > 0 ? hot_rgb : cold_rgb);
+            var color = 'rgb(' + rgb + ')';
+
+            // Big halo: radial gradient, fades to transparent
+            var halo_r = 14 + 32 * mag;
+            var grad = x_.createRadialGradient(vx, vy, 4, vx, vy, halo_r);
+            grad.addColorStop(0,   'rgba(' + rgb + ', 1.0)');
+            grad.addColorStop(0.4, 'rgba(' + rgb + ', 0.35)');
+            grad.addColorStop(1,   'rgba(12, 17, 24, 0)');
+            x_.globalAlpha = 0.45 + 0.55 * mag;
+            x_.fillStyle = grad;
+            x_.beginPath(); x_.arc(vx, vy, halo_r, 0, 6.2832); x_.fill();
+            x_.globalAlpha = 1;
+
+            // Core dot
+            neonStroke(color, 0, 1.0, 14);
+            x_.fillStyle = color;
+            x_.beginPath(); x_.arc(vx, vy, 8 + 4 * mag, 0, 6.2832); x_.fill();
+            x_.shadowBlur = 0;
+
+            // Label + live readout to the right of the source
+            x_.fillStyle = '#dfe7f2'; x_.font = 'bold 13px sans-serif';
+            x_.textAlign = 'left'; x_.textBaseline = 'middle';
+            x_.fillText('V(t)', vx + halo_r + 8, vy - 8);
+            x_.fillStyle = color; x_.font = '12px sans-serif';
+            x_.fillText(Vnow.toFixed(2) + ' V', vx + halo_r + 8, vy + 8);
+            x_.fillStyle = '#56636f';
+            x_.fillText('(' + ({dc:'DC', ac:'AC', step:'step', ramp:'ramp'}[src]) + ')',
+                        vx + halo_r + 8, vy + 22);
+
+            // ---- the particle stream (current) --------------------------
+            // Stream intensity: |i(t)| -> alpha + tail length;
+            // direction (sign of i) is already baked into ds/dt below.
+            var i_now = y[1];
+            var speed = Math.abs(i_now);
+            var stream_alpha = Math.min(1.0, 0.25 + 1.6 * speed);
+            // Each particle: short comet tail along the loop direction.
+            for (var pi = 0; pi < particles.length; pi++) {
+              var p = particles[pi];
+              var pos = loopXY(p.s);
+              // Tail of N segments backwards along the loop (i.e. -direction-of-motion).
+              var TAIL = 6, ds_tail = 0.006;
+              var prev_s = p.s - Math.sign(i_now || 1) * ds_tail * TAIL;
+              x_.strokeStyle = 'rgba(220, 244, 255, ' + (stream_alpha * 0.55).toFixed(3) + ')';
+              x_.shadowColor = '#9ed8ff'; x_.shadowBlur = 8;
+              x_.lineWidth = 1.6;
+              x_.beginPath();
+              for (var tt = 0; tt <= TAIL; tt++) {
+                var ss = prev_s + Math.sign(i_now || 1) * ds_tail * tt;
+                var pp = loopXY(ss);
+                if (tt === 0) x_.moveTo(pp[0], pp[1]); else x_.lineTo(pp[0], pp[1]);
+              }
+              x_.stroke();
+              // Bright head
+              x_.shadowBlur = 12;
+              x_.fillStyle = 'rgba(220, 244, 255, ' + stream_alpha.toFixed(3) + ')';
+              x_.beginPath(); x_.arc(pos[0], pos[1], 1.8, 0, 6.2832); x_.fill();
+            }
+            x_.shadowBlur = 0;
           }
 
-          // --- waveform chart ---------------------------------------------
-          function drawChart() {
-            g_.clearRect(0, 0, GW, GH);
-            g_.fillStyle = '#fbfcfe'; g_.fillRect(0, 0, GW, GH);
-            var L_pad = 46, R_pad = 14, T_pad = 14, B_pad = 26;
-            // domain in time = [t - T_HIST, t]
+          function advanceParticles(dt, i_now) {
+            // ds/dt = V_VIS_SCALE * i  (positive i -> clockwise stream)
+            // Floor a tiny passive drift so the loop is alive at i ~ 0.
+            var ds = V_VIS_SCALE * i_now * dt + 0.0005 * Math.sign(i_now || 1);
+            for (var k = 0; k < particles.length; k++) {
+              particles[k].s = ((particles[k].s + ds) % 1 + 1) % 1;
+            }
+          }
+
+          // --- waveform chart (neon, dark) --------------------------------
+          var T_HIST = 30;
+          var hist = [];
+          function drawChart(t, y) {
+            g_.fillStyle = '#0c1118'; g_.fillRect(0, 0, GW, GH);
+            var L_pad = 50, R_pad = 14, T_pad = 16, B_pad = 26;
             var tmin = Math.max(0, t - T_HIST), tmax = Math.max(t, T_HIST);
-            // y-range from the visible history (q AND v on same axes; q is the star)
             var lo = -1, hi = 1, i;
             for (i = 0; i < hist.length; i++) {
               if (hist[i].t < tmin) continue;
@@ -2121,21 +2245,26 @@ def _():
             var pad = (hi - lo) * 0.12; lo -= pad; hi += pad;
             function cx(tv) { return L_pad + (tv - tmin) / (tmax - tmin) * (GW - L_pad - R_pad); }
             function cy(yv) { return T_pad + (1 - (yv - lo) / (hi - lo)) * (GH - T_pad - B_pad); }
-            // axes
-            g_.strokeStyle = '#dde4ec'; g_.lineWidth = 1;
+
+            // grid
+            g_.strokeStyle = '#1d2638'; g_.lineWidth = 1;
             g_.beginPath();
             g_.moveTo(L_pad, T_pad); g_.lineTo(L_pad, GH - B_pad); g_.lineTo(GW - R_pad, GH - B_pad);
             g_.stroke();
             if (lo < 0 && hi > 0) {
-              g_.strokeStyle = '#eef2f7';
+              g_.strokeStyle = '#1d2638';
               g_.beginPath(); g_.moveTo(L_pad, cy(0)); g_.lineTo(GW - R_pad, cy(0)); g_.stroke();
             }
             // labels
             g_.fillStyle = '#7c8aa0'; g_.font = '11px sans-serif';
-            g_.textAlign='left';  g_.textBaseline='top';     g_.fillText('charge q(t) — solid blue · source V(t) — dashed red', L_pad + 2, T_pad - 1);
-            g_.textAlign='center';g_.textBaseline='top';     g_.fillText('time  t', (L_pad + GW - R_pad) / 2, GH - B_pad + 6);
-            // V(t) dashed reference
-            g_.strokeStyle = '#c15a46'; g_.lineWidth = 1.4; g_.setLineDash([5, 4]);
+            g_.textAlign = 'left';   g_.textBaseline = 'top';
+            g_.fillText('q(t) — solid · V(t) — dashed', L_pad + 2, T_pad - 1);
+            g_.textAlign = 'center'; g_.textBaseline = 'top';
+            g_.fillText('time  t', (L_pad + GW - R_pad) / 2, GH - B_pad + 6);
+
+            // V(t) trace — dashed warm
+            g_.strokeStyle = '#ff5e7a'; g_.lineWidth = 1.4; g_.setLineDash([5, 4]);
+            g_.shadowColor = '#ff5e7a'; g_.shadowBlur = 6;
             g_.beginPath();
             var first = true;
             for (i = 0; i < hist.length; i++) {
@@ -2144,8 +2273,10 @@ def _():
               if (first) { g_.moveTo(px, py); first = false; } else { g_.lineTo(px, py); }
             }
             g_.stroke(); g_.setLineDash([]);
-            // q(t) solid
-            g_.strokeStyle = '#2a5d9c'; g_.lineWidth = 2.5;
+
+            // q(t) trace — neon cyan, glowing
+            g_.strokeStyle = '#7ce0d3'; g_.lineWidth = 2.6;
+            g_.shadowColor = '#7ce0d3'; g_.shadowBlur = 10;
             g_.beginPath();
             first = true;
             for (i = 0; i < hist.length; i++) {
@@ -2153,40 +2284,43 @@ def _():
               var qx = cx(hist[i].t), qy = cy(hist[i].q);
               if (first) { g_.moveTo(qx, qy); first = false; } else { g_.lineTo(qx, qy); }
             }
-            g_.stroke();
+            g_.stroke(); g_.shadowBlur = 0;
+
             // moving marker at the right edge
             if (hist.length > 0) {
               var last = hist[hist.length - 1];
-              g_.fillStyle = '#2a5d9c';
+              g_.fillStyle = '#7ce0d3';
               g_.beginPath(); g_.arc(cx(last.t), cy(last.q), 4, 0, 6.2832); g_.fill();
             }
           }
 
           // --- status line ------------------------------------------------
-          function updateStatus() {
+          function updateStatus(t, y) {
             var omega0 = 1 / Math.sqrt(L * C);
             var resonant = (src === 'ac') ? ' · ω = ' + omega.toFixed(2) +
               (Math.abs(omega - omega0) < 0.05 ? '  ← AT RESONANCE' : '') : '';
             var info = 'ω₀ = 1/√(LC) = ' + omega0.toFixed(3) +
-              ' · q(t=' + t.toFixed(1) + ') = ' + y[0].toFixed(3) +
+              ' · q(' + t.toFixed(1) + ') = ' + y[0].toFixed(3) +
               ' · i(t) = ' + y[1].toFixed(3) + resonant;
             el.querySelector('[data-stat]').textContent = info;
           }
 
-          // --- main loop --------------------------------------------------
+          // --- state + main loop ------------------------------------------
+          var t = 0, y = [0.0, 0.0];
+          function reset() { t = 0; y = [0.0, 0.0]; hist = []; seedParticles(); }
+          readControls();
+
           var raf, running = true, lastWall = performance.now();
           function frame(now) {
             if (!running) return;
             var dtw = Math.min(0.05, (now - lastWall) / 1000); lastWall = now;
-            // simulate up to 4x real time, sub-step to keep RK4 stable
             var sim_dt = dtw * 1.0;
             var h = 0.01, n = Math.max(1, Math.round(sim_dt / h));
             for (var k = 0; k < n; k++) { y = step(t, y, h); t += h; }
-            // record
             hist.push({ t: t, q: y[0], v: V(t) });
-            // keep only what fits on screen + a small overflow margin
             while (hist.length > 0 && hist[0].t < t - T_HIST - 2.0) hist.shift();
-            drawCircuit(); drawChart(); updateStatus();
+            advanceParticles(dtw, y[1]);
+            drawCircuit(t, y); drawChart(t, y); updateStatus(t, y);
             raf = requestAnimationFrame(frame);
           }
           raf = requestAnimationFrame(frame);
