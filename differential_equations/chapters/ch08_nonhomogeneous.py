@@ -204,48 +204,6 @@ def _(mo):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    # §2 continued — superposition's NEW role: decomposing the forcing
-    # (distinct from Ch 7's solution split). Kept in its own cell so the
-    # signpost above stays under the KaTeX-density threshold (§4.10).
-    mo.md(
-        r"""
-        ### Superposition splits the *forcing*
-
-        Method 1 has a built-in limitation: the trial table only has
-        rows for single nice shapes. What if the push is a *sum*,
-        like $g = x + 4 e^{2x}$? Linearity rescues us. Solve each
-        piece **separately** — find a particular $y_{p,1}$ for the
-        forcing $g_1$, and a particular $y_{p,2}$ for $g_2$ — and
-        their sum is a particular solution for the whole forcing:
-
-        $$
-        y_p \;=\; y_{p,1} + y_{p,2}.
-        $$
-
-        Quick check: the left side is linear, so it sends
-        $y_{p,1} + y_{p,2}$ to $g_1 + g_2 = g$. ✓
-
-        Two cautions, because this is where it's easy to go wrong:
-
-        - This produces only the **particular** part. There is **no**
-          $y_{h,1} + y_{h,2}$ — the homogeneous solution $y_h$ is
-          found **once** for the whole equation (it never saw $g$),
-          and added at the very end.
-        - The point isn't to make the problem bigger; it's that each
-          piece $g_i$ now matches a **single row** of the table even
-          when the sum $g$ matched none. Decompose into table-friendly
-          pieces, solve each by the recipe below, add the particulars.
-
-        This is a *different* use of superposition from Chapter 7's
-        $y = y_h + y_p$: that split decomposes the **solution**; this
-        one decomposes the **forcing**.
-        """
-    )
-    return
-
-
 # === Section 3 — Undetermined coefficients ========================================
 # Split into three cells (table / worked example / multiply-by-x rescue)
 # to keep each below the KaTeX-triplication density threshold
@@ -289,9 +247,9 @@ def _(mo):
         | $e^{a x}$ | $A\, e^{a x}$ |
         | $\cos(b x)$ or $\sin(b x)$ | $A\cos(b x) + B\sin(b x)$ |
         | $e^{a x}\cos(b x)$ or $e^{a x}\sin(b x)$ | $e^{a x}\bigl(A\cos(b x) + B\sin(b x)\bigr)$ |
-        | a sum like $g_1 + g_2$ | the sum of the trials for $g_1$ and $g_2$ &nbsp;*(superposition — §2)* |
+        | a sum like $g_1 + g_2$ | the sum of the trials for $g_1$ and $g_2$ &nbsp;*(see below)* |
 
-        Three points to read off the table:
+        Two points to read off the table:
 
         1. **Always include the full family**, never just the term
            you see. For $g = \cos b x$, the trial is $A\cos b x +
@@ -302,12 +260,9 @@ def _(mo):
         2. **For polynomials, include every lower power** down to
            the constant — differentiating the highest term feeds
            into all the lower ones.
-        3. **Sums split into table-friendly pieces.** The last row
-           is §2's superposition rule applied here: a forcing like
-           $g = x + 4 e^{2x} - \cos 3x$ matches no single row, but
-           each summand does. Solve three independent UC problems
-           and add the particulars. (The worked example below does
-           this with two summands.)
+
+        The last row (sums) needs its own paragraph — that's the
+        next subsection.
         """
     )
     return
@@ -315,8 +270,52 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # §3b — a fully worked example using superposition #2 to split a
-    # sum-of-forcings into table-friendly pieces, solve each, add.
+    # §3a-bis — superposition splits the FORCING. Moved here (was in §2)
+    # so it sits right next to the trial-form table row that introduces
+    # it, and immediately precedes the worked example that uses it.
+    # Distinct from Ch 7's solution-side superposition (y = y_h + y_p).
+    mo.md(
+        r"""
+        ### Superposition splits the *forcing*
+
+        Method 1 has a built-in limitation: the trial table only has
+        rows for single nice shapes. What if the push is a *sum*,
+        like $g = x + 4 e^{2x}$? Linearity rescues us. Solve each
+        piece **separately** — find a particular $y_{p,1}$ for the
+        forcing $g_1$, and a particular $y_{p,2}$ for $g_2$ — and
+        their sum is a particular solution for the whole forcing:
+
+        $$
+        y_p \;=\; y_{p,1} + y_{p,2}.
+        $$
+
+        Quick check: the left side is linear, so it sends
+        $y_{p,1} + y_{p,2}$ to $g_1 + g_2 = g$. ✓
+
+        Two cautions, because this is where it's easy to go wrong:
+
+        - This produces only the **particular** part. There is **no**
+          $y_{h,1} + y_{h,2}$ — the homogeneous solution $y_h$ is
+          found **once** for the whole equation (it never saw $g$),
+          and added at the very end.
+        - The point isn't to make the problem bigger; it's that each
+          piece $g_i$ now matches a **single row** of the table even
+          when the sum $g$ matched none. Decompose into table-friendly
+          pieces, solve each by the recipe, add the particulars.
+
+        This is a *different* use of superposition from Chapter 7's
+        $y = y_h + y_p$: that split decomposes the **solution**; this
+        one decomposes the **forcing**.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # §3b — a fully worked example using superposition (the previous
+    # subsection) to split a sum-of-forcings into table-friendly
+    # pieces, solve each, add.
     mo.md(
         r"""
         ### A worked example — sum-of-forcings via superposition
