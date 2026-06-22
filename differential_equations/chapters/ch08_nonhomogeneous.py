@@ -148,105 +148,213 @@ def _(mo):
     return
 
 
-# === Section 2 — Recall the split + name superposition ============================
+# === Section 2 — One job, two methods (the short signpost) ========================
 @app.cell(hide_code=True)
 def _(mo):
+    # Was a long re-derivation of x = x_h + x_p (redundant after Ch 7).
+    # Now: one tight signpost. Recall the split in one line; pay the
+    # one Ch 7 debt (completeness -- y_h + y_p is EVERY solution); then
+    # name the chapter's actual job (find a particular y_p) and the two
+    # methods that will do it, plus the *new* role of superposition.
     mo.md(
         r"""
-        ## The split, named once and for all
+        ## One job — find a particular solution
 
-        For any linear second-order non-homogeneous equation
-
-        $$
-        y'' + p(x)\, y' + q(x)\, y \;=\; g(x),
-        $$
-
-        the general solution is
+        Recall from Chapter 7 that the answer splits as
 
         $$
         y(x) \;=\; \underbrace{y_h(x)}_{\text{homogeneous}}
         \;+\; \underbrace{y_p(x)}_{\text{particular}},
         $$
 
-        where $y_h$ is *any* solution of the same equation with
-        $g \equiv 0$ (Ch 6's territory: characteristic equation, two
-        free constants set by initial conditions) and $y_p$ is *any
-        one* solution of the full equation. The two free constants
-        of $y_h$ are *all* the freedom — $y_p$ is determined by the
-        forcing alone.
+        and Chapter 6 already hands us $y_h$ for free — it's the
+        characteristic-equation business with its two free constants.
+        So the only outstanding work in this chapter is finding **one**
+        particular $y_p$ for the forcing $g(x)$.
 
-        > **Why this is the whole story (the Ch 7 debt, paid).** Two
-        > directions, and you need both.
-        >
-        > *It's a solution.* If $y_p$ solves the full equation and
-        > $y_h$ solves the homogeneous one, then feeding $y_h + y_p$
-        > into the linear left side gives $0 + g = g$ — so the sum
-        > solves the full equation. (Same argument as Ch 7's
-        > $x = x_h + x_p$.)
-        >
-        > *It's **every** solution.* Suppose $Y$ is any solution at
-        > all of the full equation. Subtract our particular one:
-        > feed $Y - y_p$ into the left side and you get $g - g = 0$,
-        > so $Y - y_p$ is a homogeneous solution — i.e. $Y - y_p =
-        > y_h$ for some $y_h$. Rearranged, $Y = y_h + y_p$. There is
-        > **no** solution that escapes the form.
-        >
-        > That second direction is what makes the uncanny Ch 7 split
-        > honest: $y_h + y_p$ isn't *a* family of solutions, it's
-        > *the* family. So the entire job reduces to **finding one
-        > particular $y_p$** — the rest is Chapter 6's $y_h$, already
-        > in hand.
+        > **The one new claim** — small but worth stating once. Ch 7
+        > *assumed* the split. The completeness fact is: any solution
+        > $Y$ of the full equation satisfies $Y - y_p = $ a homogeneous
+        > solution (because feeding $Y - y_p$ to the left side gives
+        > $g - g = 0$). So $Y = y_h + y_p$ for some $y_h$ — there is
+        > no solution that escapes the form. **Any single $y_p$
+        > finishes the job.**
 
-        ### Superposition: many forcings, one method
+        From here the chapter is two methods, each one a way to pin
+        down a particular $y_p$:
 
-        Linearity gives us one more gift. If $g(x) = g_1(x) + g_2(x)$,
-        find a particular solution $y_{p,1}$ for $g_1$ alone and a
-        particular solution $y_{p,2}$ for $g_2$ alone. Then
+        - **Undetermined coefficients** (this section). When $g(x)$ is
+          "nice" — a polynomial, an exponential, a sinusoid, a
+          product, or a sum of these — you can write down the *shape*
+          of $y_p$ in advance and pin it down with a little algebra.
+          Chapter 7 did this for *one* case (the cosine); we're about
+          to see the rest of the table.
+        - **Variation of parameters** (next section). When $g(x)$
+          isn't nice — anything continuous goes — you let the
+          homogeneous solution's constants become *functions* and
+          solve for them. Always works, costs you two integrals.
 
-        $$
-        y_p \;=\; y_{p,1} + y_{p,2}
-        $$
-
-        solves the equation with the full $g$. So "a battery plus an
-        AC source" splits into a battery problem plus an AC problem,
-        each tackled with whichever method is easiest for that piece.
+        Linearity throws in one bonus. If $g = g_1 + g_2$, solve each
+        piece on its own and add the answers: $y_p = y_{p,1} + y_{p,2}$.
+        (Quick check: the left side, being linear, sends the sum to
+        $g_1 + g_2 = g$.) This is **a different role for
+        superposition** than Chapter 7's $y = y_h + y_p$ split: that
+        one decomposes the *solution*; this one decomposes the
+        *forcing*. The chapter leans on it constantly when a push
+        doesn't fit a single row of the table.
         """
     )
     return
 
 
 # === Section 3 — Undetermined coefficients ========================================
+# Split into three cells (table / worked example / multiply-by-x rescue)
+# to keep each below the KaTeX-triplication density threshold
+# (AUTHORING.md §4.10: heavy inline math in a single mo.md block can
+# trigger MathML triplication even in --mode run).
 @app.cell(hide_code=True)
 def _(mo):
+    # §3a — name the method, give the closure-under-d/dt reason it works,
+    # show the trial-form table, and unpack three things to read off it.
     mo.md(
         r"""
-        ## Method 1 — Undetermined coefficients (the guess table)
+        ## Method 1 — Undetermined coefficients
 
-        For a small zoo of "nice" forcings $g(x)$, you can write down
-        the *shape* of $y_p$ in advance and pin it down with algebra.
-        That's exactly what Ch 7 did with $A\cos(\omega t - \varphi)$
-        — now generalised and named.
+        Chapter 7's cosine drive was a worked example of this method.
+        We didn't name it then, but the move was: **guess that $y_p$
+        has the same shape as the forcing** (a sinusoid at the same
+        frequency, with two unknowns $A$ and $\varphi$), plug it in,
+        and match coefficients to pin the unknowns down.
 
-        > **🚧 Placeholder.** The guess table, a worked example
-        > (a sum of forcings handled via superposition), and the
-        > **multiply-by-$x$ rescue** for the resonance overlap — the
-        > general statement of Ch 7's $t\sin(\omega_0 t)$ disaster
-        > — go here.
+        That trick generalises to a whole table of "nice" forcings.
+        The reason it works is one fact: each of these families is
+        **closed under differentiation** — differentiate a polynomial
+        and you get another polynomial; differentiate $e^{ax}$ and
+        you get $a\,e^{ax}$; differentiate $\cos bx$ and you get
+        $-b\sin bx$. The left side of the equation only
+        differentiates, scales, and adds — so if you put in a member
+        of the family, you get back another member of the same
+        family. Match the unknown coefficients term by term, and the
+        equation collapses into a small algebra problem.
 
-        Rough shape of the table:
+        ### The trial-form table
 
-        | $g(x)$ form | trial $y_p$ |
+        Pick the trial form on the right of the row that matches your
+        forcing on the left. The capital letters are the unknowns to
+        be solved for.
+
+        | forcing $g(x)$ | trial $y_p$ |
         |---|---|
-        | polynomial of degree $n$ | polynomial of degree $n$ |
-        | $e^{ax}$ | $C e^{ax}$ |
-        | $\cos(bx)$ or $\sin(bx)$ | $A\cos(bx) + B\sin(bx)$ |
-        | $e^{ax}\cos(bx)$ | $e^{ax}(A\cos(bx) + B\sin(bx))$ |
-        | sum of the above | sum of the trials (superposition) |
+        | constant $c$ | $A$ |
+        | polynomial of degree $n$ | full polynomial $A_n x^n + \cdots + A_1 x + A_0$ |
+        | $e^{a x}$ | $A\, e^{a x}$ |
+        | $\cos(b x)$ or $\sin(b x)$ | $A\cos(b x) + B\sin(b x)$ |
+        | $e^{a x}\cos(b x)$ or $e^{a x}\sin(b x)$ | $e^{a x}\bigl(A\cos(b x) + B\sin(b x)\bigr)$ |
+        | a sum like $g_1 + g_2$ | the sum of the trials for $g_1$ and $g_2$ |
 
-        **Resonance rule.** If a piece of your trial $y_p$ is already
-        a homogeneous solution, multiply that piece by $x$ (or $x^2$
-        for a repeated overlap). Ch 7's $\gamma=0,\omega=\omega_0$
-        case is the canonical example.
+        Three points to read off the table:
+
+        1. **Always include the full family**, never just the term
+           you see. For $g = \cos b x$, the trial is $A\cos b x +
+           B\sin b x$ — because the left side produces a $\sin b x$
+           piece from the $y'$ term and you'll need a $B$ to balance
+           it. That's the lesson Chapter 7's "first attempt" beat
+           into us.
+        2. **For polynomials, include every lower power** down to
+           the constant — differentiating the highest term feeds
+           into all the lower ones.
+        3. **Sums split**, by the superposition bonus from §2: a
+           forcing like $g = x + 4 e^{2x} - \cos 3x$ becomes three
+           independent UC problems — pick three trial forms, solve
+           each, add.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # §3b — a fully worked example using superposition #2 to split a
+    # sum-of-forcings into table-friendly pieces, solve each, add.
+    mo.md(
+        r"""
+        ### A worked example — sum-of-forcings via superposition
+
+        Take
+
+        $$
+        y'' - 3 y' + 2 y \;=\; 6 \;+\; e^{4x}.
+        $$
+
+        The forcing is a sum, so superposition lets us find
+        $y_{p,1}$ for the $6$ piece and $y_{p,2}$ for the $e^{4x}$
+        piece independently, then add.
+
+        **Piece 1.** For $y'' - 3 y' + 2 y = 6$, the table says trial
+        $y_{p,1} = A$ (constant). Then $y_{p,1}' = 0$ and $y_{p,1}''
+        = 0$, so the equation reads $2A = 6$, giving $A = 3$. So
+        $y_{p,1} = 3$.
+
+        **Piece 2.** For $y'' - 3 y' + 2 y = e^{4x}$, the table says
+        trial $y_{p,2} = B\,e^{4x}$. Differentiate: $y_{p,2}' = 4 B
+        e^{4x}$ and $y_{p,2}'' = 16 B e^{4x}$. Plug in:
+
+        $$
+        (16 - 12 + 2)\,B\,e^{4x} \;=\; e^{4x}
+        \;\Longrightarrow\; 6 B = 1
+        \;\Longrightarrow\; B = \tfrac{1}{6}.
+        $$
+
+        So $y_{p,2} = \tfrac{1}{6} e^{4x}$.
+
+        Add the pieces:
+
+        $$
+        y_p(x) \;=\; 3 \;+\; \tfrac{1}{6}\, e^{4x}.
+        $$
+
+        That's a particular solution of the original. The full
+        general solution is $y = y_h + y_p$, with $y_h$ coming from
+        the characteristic equation of the *homogeneous* part —
+        Chapter 6's job, untouched by anything we just did.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # §3c — the multiply-by-x rescue when the trial collides with y_h.
+    # Make the explicit Ch 7 callback: the gamma=0 resonance disaster
+    # is exactly the rule applied to one specific case.
+    mo.md(
+        r"""
+        ### When the trial collides with $y_h$ — multiply by $x$
+
+        One trap. If a piece of your trial $y_p$ is already a
+        solution of the homogeneous equation, the left side will
+        send it to zero — there's nothing for the unknown
+        coefficient to balance against, and you can't solve for it.
+
+        The fix: **multiply that piece by $x$** (or by $x^2$ if both
+        characteristic roots collide with it).
+
+        We've seen exactly this. In Chapter 7, with $\gamma = 0$ and
+        the drive at the natural frequency $\omega = \omega_0$, the
+        trial $A\cos(\omega_0 t) + B\sin(\omega_0 t)$ *was* a
+        homogeneous solution — every coefficient cancelled and the
+        equation was unsatisfiable. The honest particular solution
+        turned out to be
+
+        $$
+        x_p(t) \;=\; \frac{F_0}{2\omega_0}\, t\, \sin(\omega_0 t),
+        $$
+
+        a sine with the linearly-growing envelope $t$. That extra
+        $t$ is the multiply-by-$x$ rule made concrete: when the
+        family collides with the homogeneous solutions, push the
+        trial up one rung. The general statement is the rule above;
+        the resonance disaster is one example of it.
         """
     )
     return
