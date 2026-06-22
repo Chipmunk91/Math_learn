@@ -118,6 +118,38 @@ def _(delib, mo, np):
 
 
 @app.cell(hide_code=True)
+def _(delib, mo):
+    # Beat 1b — the same hillside in 3-D, to make "constant altitude"
+    # something you can literally watch (the flat map hides it). Orbit,
+    # and click to send a hiker walking a contour; the water plane marks
+    # the held altitude and the gradient arrow stays square to the path.
+    mo.vstack([
+        mo.md(
+            r"""
+            The map above flattens the hill onto the page, which makes
+            "staying at the same altitude" hard to *see* — it's just a
+            number. So here is the same hillside as an actual 3-D surface
+            you can handle. **Drag to orbit, scroll to zoom, and click
+            anywhere on the hill** to send a hiker off along a contour.
+
+            Two things to watch, because they *are* the chapter:
+
+            - The hiker never goes up or down. A translucent water plane
+              sits at its altitude — it glides along the waterline. That
+              constant-height path is a **solution** of the equation
+              we're about to write.
+            - The little arrow is the steepest-uphill direction. It stays
+              **perpendicular to the path** at every step — which is
+              exactly what "altitude doesn't change as you step" will
+              turn out to mean.
+            """
+        ),
+        delib.hillside_3d(),
+    ])
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo):
     # Beat 2 — concept bridge.
     mo.md(

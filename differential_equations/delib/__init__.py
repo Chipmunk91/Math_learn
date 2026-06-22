@@ -38,6 +38,7 @@ from delib.widgets import (
     rumor_crowd,
     cooling_coffee,
     road_test,
+    hillside_3d,
 )
 from delib.animate import (
     animate_time,
@@ -97,6 +98,7 @@ __all__ = [
     "rumor_crowd",
     "cooling_coffee",
     "road_test",
+    "hillside_3d",
     "animate_time",
     "animate_plotly",
     "flow_field",
