@@ -364,43 +364,52 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # §3c-i — what "the trial is already a homogeneous solution" means,
-    # made concrete on the SAME operator as the §3b worked example:
-    # e^{4x} was fine (4 not a root); e^{2x} collides (2 is a root).
+    # §3c-i — make 'trial is a homogeneous solution' bite. User feedback:
+    # lead with the failing case (don't bother contrasting with a working
+    # case first); the naive table-trial just doesn't work, and you can
+    # see why in the algebra.
     mo.md(
         r"""
         ### When the trial collides with $y_h$ — multiply by $x$
 
-        One trap is worth seeing concretely, because the words
-        "the trial is already a homogeneous solution" don't mean
-        much until they bite.
+        The trial-form table is a recipe, and the recipe occasionally
+        breaks. The cleanest way to see how is to push the same
+        operator from the worked example one step harder.
 
-        Reuse the operator from the worked example, $y'' - 3y' + 2y$.
-        Its characteristic equation is $r^2 - 3r + 2 = (r-1)(r-2) = 0$,
-        so the homogeneous solutions are built from $e^{x}$ and
-        $e^{2x}$:
+        Consider
+
+        $$
+        y'' - 3 y' + 2 y \;=\; e^{2x}.
+        $$
+
+        The table says trial $y_p = A e^{2x}$. Differentiate twice
+        and substitute:
+
+        $$
+        y_p'' - 3 y_p' + 2 y_p
+        \;=\; (4 - 6 + 2)\, A\, e^{2x} \;=\; 0.
+        $$
+
+        The left side sends our trial to **zero**, not to $e^{2x}$.
+        The coefficient $A$ has dropped out entirely, so there's
+        nothing left to solve for — and the equation $0 = e^{2x}$
+        obviously can't hold. The recipe has failed.
+
+        Why? Look at the characteristic equation of the homogeneous
+        part: $r^2 - 3 r + 2 = (r-1)(r-2) = 0$, with roots $r = 1$
+        and $r = 2$. So
 
         $$
         y_h \;=\; C_1\, e^{x} + C_2\, e^{2x}.
         $$
 
-        In that example the forcing was $e^{4x}$, and $4$ is *not* a
-        root — so the trial $B e^{4x}$ was something genuinely new,
-        and it worked. But suppose the forcing were $e^{2x}$ instead.
-        The table still says trial $y_p = A e^{2x}$ — except $e^{2x}$
-        is **already** one of the homogeneous pieces (the $r = 2$
-        one). Watch it fail. With $y_p = A e^{2x}$:
-
-        $$
-        y_p'' - 3 y_p' + 2 y_p \;=\; (4 - 6 + 2)\,A\, e^{2x} \;=\; 0.
-        $$
-
-        The left side sends it to **zero**, never to $e^{2x}$ — the
-        $A$ cancels completely and there's nothing left to solve for.
-        And of course it does: $e^{2x}$ is a homogeneous solution, and
-        homogeneous solutions are *exactly* the functions the left
-        side sends to zero. **That** is what "the trial is already a
-        solution of the homogeneous equation" means.
+        Our naive trial $A\, e^{2x}$ is **one of those homogeneous
+        pieces** (the $r = 2$ one). And homogeneous solutions are
+        *exactly* the functions the left side sends to zero — that's
+        their defining property. So the operator annihilates our
+        trial, and an annihilated trial can never match a non-zero
+        forcing on the right. **That** is what "the trial is already
+        a solution of the homogeneous equation" means.
         """
     )
     return
@@ -408,41 +417,79 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # §3c-ii — the fix (multiply by x), worked on the same e^{2x} case,
-    # then the Ch 7 resonance callback as the same rule with t.
+    # §3c-ii — the fix, worked on the same e^{2x} case. Ch 7 callback
+    # now makes the structural parallel explicit (cos/sin IS the
+    # homogeneous family of the undamped oscillator, so a cosine
+    # forcing at omega_0 collides for exactly the same reason).
     mo.md(
         r"""
-        **The fix: multiply that piece by $x$.** Try
-        $y_p = A x\, e^{2x}$ instead. Differentiating,
-        $y_p' = A e^{2x}(1 + 2x)$ and $y_p'' = A e^{2x}(4 + 4x)$, so
+        **The fix: multiply by $x$.** Try $y_p = A\, x\, e^{2x}$
+        instead. Differentiating, $y_p' = A\, e^{2x}(1 + 2x)$ and
+        $y_p'' = A\, e^{2x}(4 + 4x)$, so
 
         $$
         y_p'' - 3 y_p' + 2 y_p
-        \;=\; A e^{2x}\bigl[(4 + 4x) - 3(1 + 2x) + 2x\bigr]
+        \;=\; A\, e^{2x}\bigl[(4 + 4x) - 3(1 + 2x) + 2x\bigr]
         \;=\; A\, e^{2x}.
         $$
 
         The $x$-terms cancel ($4x - 6x + 2x = 0$), leaving a clean
-        $A e^{2x} = e^{2x}$, so $A = 1$ and $y_p = x\, e^{2x}$. The
-        extra factor of $x$ is precisely what produces a leftover the
-        operator *doesn't* annihilate. (If the root were doubled —
-        both characteristic roots equal to $2$ — you'd need
+        $A\, e^{2x} = e^{2x}$, so $A = 1$ and $y_p = x\, e^{2x}$.
+        The extra factor of $x$ is precisely what produces a
+        leftover the operator *doesn't* annihilate. (If the root
+        were doubled — both characteristic roots equal to $2$ —
+        $x\, e^{2x}$ would also be homogeneous and you'd need
         $x^2 e^{2x}$, one rung higher again.)
+        """
+    )
+    return
 
-        We met this once already. In Chapter 7, with $\gamma = 0$ and
-        the drive at the natural frequency $\omega = \omega_0$, the
-        trial $A\cos(\omega_0 t) + B\sin(\omega_0 t)$ *was* a
-        homogeneous solution — so it collided, every coefficient
-        cancelled, and the honest particular solution gained a factor
-        of $t$:
+
+@app.cell(hide_code=True)
+def _(mo):
+    # §3c-iii — the Ch 7 resonance disaster as the SAME rule,
+    # structural parallel made explicit (cos/sin IS the homogeneous
+    # family of the undamped oscillator). Split out for KaTeX density.
+    mo.md(
+        r"""
+        ### Chapter 7's resonance disaster is the same trap
+
+        The connection to Chapter 7 isn't an analogy — it's
+        literally the same rule applied to a different operator.
+        Chapter 7's equation was
 
         $$
-        x_p(t) \;=\; \frac{F_0}{2\omega_0}\, t\, \sin(\omega_0 t).
+        \ddot x + 2\gamma\,\dot x + \omega_0^2\, x \;=\; F_0\cos(\omega\, t).
         $$
 
-        That linearly-growing envelope is the resonance disaster —
-        and it's nothing but the multiply-by-$x$ rule, with $t$ as
-        the variable.
+        With $\gamma = 0$, the homogeneous equation reduces to
+        $\ddot x + \omega_0^2\, x = 0$, whose solutions are
+        $\cos(\omega_0 t)$ and $\sin(\omega_0 t)$. So the
+        homogeneous family is
+
+        $$
+        x_h \;=\; C_1 \cos(\omega_0 t) + C_2 \sin(\omega_0 t).
+        $$
+
+        Now drive at $\omega = \omega_0$. The forcing $F_0\cos(\omega_0 t)$
+        is *exactly the shape* of $x_h$, and the table's trial
+        $A\cos(\omega_0 t) + B\sin(\omega_0 t)$ is the **whole**
+        homogeneous family. Apply the operator and every coefficient
+        cancels — same collision as the $e^{2x}$ case above, just
+        with cosines and sines instead of exponentials.
+
+        Multiply by $t$ (the independent variable here is time) —
+        the same fix — and the honest particular solution is
+
+        $$
+        x_p(t) \;=\; \frac{F_0}{2\omega_0}\, t\, \sin(\omega_0 t),
+        $$
+
+        a sinusoid with a linearly-growing envelope. That envelope
+        is the resonance disaster, and it appears for one and only
+        one reason: the natural trial family was already the
+        homogeneous solution. Push the trial up one rung — by $t$
+        here, by $x$ over there — and the recipe works again.
         """
     )
     return
