@@ -343,18 +343,23 @@ These are real bugs we hit. Each entry: **symptom → cause → fix**.
 - **Symptom:** A math span shows three overlaid copies — rendered glyphs +
   raw TeX source + MathML — so `$x$` reads "xxx", `$x_h$` reads "xhx_hxh",
   and plain words between spans repeat ("and and and").
-- **Cause:** KaTeX's hidden MathML/annotation layer leaks visible. It
-  correlated with **one `mo.md` block carrying too many math spans** (worst
-  case: 6 `$$` displays + 10 inline `$...$` in a single block). The
-  server-side HTML was correct; the failure was client-side and
-  density-driven.
-- **Fix:** Keep each `mo.md` light — at most ~3 display blocks, and don't
-  cram many inline spans alongside several displays. Split a heavy
-  derivation into multiple cells: **display-only equation blocks** kept
-  apart from **inline-only prose blocks**. Sanity-check a block by piping it
-  through `marimo._output.md.md(...)` and counting `||[` (display) vs `||(`
-  (inline) marimo-tex spans, and scanning for raw `\`-commands leaking
-  *outside* `<marimo-tex>`.
+- **Cause:** KaTeX's hidden MathML/annotation layer leaks visible. **Two
+  independent triggers**:
+  (a) Density — one `mo.md` block with many math spans (worst case in ch07:
+  6 `$$` displays + 10 inline `$...$` in a single block). The server-side
+  HTML was correct; failure was client-side.
+  (b) `--mode edit` — un-executed cells render through marimo's static
+  fallback path which routes math through MathML, so the moment a cell is
+  dense at all, it triples. This is why ch08 looked correct in `--mode run`
+  but tripled badly under `--mode edit` even with moderate density.
+- **Fix:** (a) Keep each `mo.md` light — at most ~3 display blocks, and
+  split heavy derivations into multiple cells (display-only equation blocks
+  apart from inline-only prose blocks). (b) Always export `--mode run` with
+  `--execute`; the embedded snapshot bypasses the MathML fallback entirely.
+  We don't use `--mode edit` anywhere anymore (see §8). Sanity-check a
+  block by piping it through `marimo._output.md.md(...)` and counting
+  `||[` (display) vs `||(` (inline) marimo-tex spans, and scanning for raw
+  `\`-commands leaking *outside* `<marimo-tex>`.
 
 ### 4.11 — Inline `$...$` split across source lines renders as raw LaTeX
 - **Symptom:** `\omega`, `\cos`, … appear literally instead of rendering.
@@ -577,9 +582,13 @@ chapter.py → strip stray PEP723 + inline_delib() + prepend PEP723_HEADER
   hydrate the interactive widgets (§4.9). `--no-sandbox` runs that
   build-time execution in the build's own environment, so CI must install
   the full chapter stack (§4.12).
-- `WIP_CHAPTERS` (a set, currently **empty** = everything is production)
-  flips a listed slug to `--mode edit` + a dashed "Draft" card while it's
-  being authored. Remove the slug to promote a chapter to production.
+- `WIP_CHAPTERS` (a set) flags a chapter as a work in progress: the
+  landing-page card gets dashed-gold "Draft" styling and a Draft pill so
+  visitors know. **The page itself still exports `--mode run` with
+  `--execute`** (same as production) — `--execute` makes draft loads as
+  fast as prod, and the old `--mode edit` path triggered MathML
+  triplication on dense math (§4.10), so it bought us nothing and cost
+  legibility. Add a slug while authoring; remove it when shipped.
 - Each page gets the nav bar (3-col grid: Previous / All chapters / Next +
   absolute-right Tutor button) and the shadow-DOM-aware KaTeX renderer.
 
@@ -723,8 +732,10 @@ feedback_form(chapter_name)   # end-of-chapter star + comment
 - **Build executes cells:** needs the full chapter stack in the build env
   (`pip install . anywidget sympy`) + every runtime import declared in
   `PEP723_HEADER` (now incl. matplotlib); `--no-sandbox` for determinism. (§4.12)
-- **Production promotion:** empty `WIP_CHAPTERS` = all chapters `--mode run`;
-  add a slug to draft-mode one (dashed card, no auto-run) while authoring.
+- **Production promotion:** every chapter exports `--mode run` + `--execute`
+  regardless. `WIP_CHAPTERS` is purely a *display* flag now — listed slugs
+  get the dashed-gold "Draft" card on the landing page so visitors know;
+  remove to clear the badge when shipped.
 - **Lab demo design (Ch 99):** dramatize the chapter's *thesis*, not a
   consequence — and a top-down 2-D map can't show "altitude," so it can't
   convey "stay at the same height." Demo 14 was rebuilt from a single

@@ -96,14 +96,20 @@ CHAPTER_CARDS = {
     "ch08_nonhomogeneous": ("Chapter 8", "Non-homogeneous equations"),
 }
 
-# Per-chapter export mode. Chapters in WIP_CHAPTERS are exported with
-# `--mode edit` so cells DO NOT auto-run on page load — the reader (you,
-# during iteration) runs them by hand, one at a time. This skips the
-# ~10–15s "cell execution + chart/widget mount" phase, leaving only the
-# unavoidable Pyodide boot. Useful when you're drafting a chapter and
-# don't want every load to re-render everything. Add a slug here while
-# you work on it; remove it before shipping so visitors get the polished
-# auto-run experience.
+# Chapters listed here are flagged as drafts on the landing-page index
+# (dashed-gold "Draft" card + Draft pill) so visitors know they're a
+# work in progress. The page itself still exports in `--mode run` with
+# `--execute` (same as production), so the reader gets the polished
+# auto-run experience with fast first paint — only the index card is
+# visually different. Add a slug while you're writing the chapter;
+# remove it when you consider it shipped.
+#
+# (Earlier this set also flipped a chapter to `--mode edit`, which kept
+# Pyodide cold and required clicks to render each cell. With `--execute`
+# now embedding rendered outputs into MOUNT_CONFIG for first paint,
+# `--mode edit` no longer saves any meaningful time and its un-executed-
+# cell render path triggers MathML triplication on dense math — so it's
+# gone.)
 WIP_CHAPTERS: set[str] = {"ch08_nonhomogeneous"}
 
 # Optional slug -> external fast-preview URL (e.g. a Hugging Face Space running
@@ -507,11 +513,14 @@ def inline_delib(source: str) -> str:
 def export(notebook: Path, out_dir: Path) -> None:
     """Export a chapter to a single WASM HTML page.
 
-    Polished chapters export with ``--mode run`` (auto-runs every cell, code
-    hidden — the clean reader experience). Slugs in ``WIP_CHAPTERS`` export
-    with ``--mode edit`` instead: Pyodide still boots, but cells don't
-    auto-run, charts/widgets don't auto-mount, so the page lands fast and
-    the author runs only the cells they're iterating on.
+    Every chapter exports with ``--mode run`` (auto-runs every cell, code
+    hidden — the clean reader experience). Slugs in ``WIP_CHAPTERS`` get
+    the dashed-gold "Draft" card on the landing page so visitors know it's
+    in progress, but they read the same way as production chapters; with
+    ``--execute`` pre-rendering the outputs into ``__MARIMO_MOUNT_CONFIG__``
+    the page lands in ~2-3s either way, so the old ``--mode edit`` (cells
+    don't auto-run, charts don't mount, math falls back to MathML and
+    triples at high density) bought us nothing and cost us legibility.
 
     We pass ``--execute`` so marimo runs every cell at build time and
     embeds the rendered outputs into the HTML as ``__MARIMO_MOUNT_CONFIG__``.
@@ -538,14 +547,14 @@ def export(notebook: Path, out_dir: Path) -> None:
     # Some tooling (marimo/uv) injects a minimal header naming only marimo.
     source = re.sub(r"^# /// script\n(?:#[^\n]*\n)*# ///\n", "", source, count=1)
     transformed = PEP723_HEADER + inline_delib(source)
-    mode = "edit" if notebook.stem in WIP_CHAPTERS else "run"
-    print(f"  -> {notebook.stem}: --mode {mode}{'  [WIP]' if mode == 'edit' else ''}")
+    is_wip = notebook.stem in WIP_CHAPTERS
+    print(f"  -> {notebook.stem}: --mode run{'  [Draft]' if is_wip else ''}")
     with tempfile.TemporaryDirectory() as tmp:
         staged = Path(tmp) / notebook.name
         staged.write_text(transformed, encoding="utf-8")
         subprocess.run(
             [sys.executable, "-m", "marimo", "export", "html-wasm",
-             str(staged), "-o", str(out_dir), "--mode", mode,
+             str(staged), "-o", str(out_dir), "--mode", "run",
              "--execute", "--no-sandbox"],
             check=True,
         )
