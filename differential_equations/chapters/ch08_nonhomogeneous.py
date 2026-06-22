@@ -289,7 +289,7 @@ def _(mo):
         | $e^{a x}$ | $A\, e^{a x}$ |
         | $\cos(b x)$ or $\sin(b x)$ | $A\cos(b x) + B\sin(b x)$ |
         | $e^{a x}\cos(b x)$ or $e^{a x}\sin(b x)$ | $e^{a x}\bigl(A\cos(b x) + B\sin(b x)\bigr)$ |
-        | a sum like $g_1 + g_2$ | the sum of the trials for $g_1$ and $g_2$ |
+        | a sum like $g_1 + g_2$ | the sum of the trials for $g_1$ and $g_2$ &nbsp;*(superposition — §2)* |
 
         Three points to read off the table:
 
@@ -302,10 +302,12 @@ def _(mo):
         2. **For polynomials, include every lower power** down to
            the constant — differentiating the highest term feeds
            into all the lower ones.
-        3. **Sums split**, by the superposition bonus from §2: a
-           forcing like $g = x + 4 e^{2x} - \cos 3x$ becomes three
-           independent UC problems — pick three trial forms, solve
-           each, add.
+        3. **Sums split into table-friendly pieces.** The last row
+           is §2's superposition rule applied here: a forcing like
+           $g = x + 4 e^{2x} - \cos 3x$ matches no single row, but
+           each summand does. Solve three independent UC problems
+           and add the particulars. (The worked example below does
+           this with two summands.)
         """
     )
     return
