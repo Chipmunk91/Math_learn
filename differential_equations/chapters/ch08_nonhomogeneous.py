@@ -168,20 +168,26 @@ def _(mo):
         $$
 
         and Chapter 6 already hands us $y_h$ for free — it's the
-        characteristic-equation business with its two free constants.
-        So the only outstanding work in this chapter is finding **one**
-        particular $y_p$ for the forcing $g(x)$.
+        characteristic-equation business with its two free constants,
+        and it doesn't depend on the forcing $g$ at all. So the only
+        outstanding work in this chapter is finding **one** particular
+        $y_p$ for the forcing $g(x)$.
 
-        > **The one new claim** — small but worth stating once. Ch 7
-        > *assumed* the split. The completeness fact is: any solution
-        > $Y$ of the full equation satisfies $Y - y_p = $ a homogeneous
-        > solution (because feeding $Y - y_p$ to the left side gives
-        > $g - g = 0$). So $Y = y_h + y_p$ for some $y_h$ — there is
-        > no solution that escapes the form. **Any single $y_p$
-        > finishes the job.**
+        > **You only need one $y_p$ — any one will do.** That sounds
+        > too easy, so here's why nothing is lost. Suppose you've
+        > found one particular solution $y_p$, and let $Y$ be *any
+        > other* solution of the full equation. Look at their
+        > difference $Y - y_p$: plug it into the left side and the
+        > forcing cancels, $g - g = 0$, so $Y - y_p$ solves the
+        > *homogeneous* equation. In other words $Y - y_p$ is one of
+        > Chapter 6's $y_h$'s — and rearranging, $Y = y_h + y_p$. So
+        > every solution is your one $y_p$ plus some homogeneous
+        > piece. (Note $y_h$ is *not* produced by finding $y_p$; it's
+        > the separate Chapter 6 family, with the free constants that
+        > later match initial conditions.)
 
-        From here the chapter is two methods, each one a way to pin
-        down a particular $y_p$:
+        From here the chapter is two methods, each a way to pin down
+        a particular $y_p$:
 
         - **Undetermined coefficients** (this section). When $g(x)$ is
           "nice" — a polynomial, an exponential, a sinusoid, a
@@ -190,18 +196,51 @@ def _(mo):
           Chapter 7 did this for *one* case (the cosine); we're about
           to see the rest of the table.
         - **Variation of parameters** (next section). When $g(x)$
-          isn't nice — anything continuous goes — you let the
-          homogeneous solution's constants become *functions* and
-          solve for them. Always works, costs you two integrals.
+          isn't "nice", undetermined coefficients has no shape to
+          guess. There's a universal formula that works for *any*
+          continuous $g(x)$ — we build it from scratch next time.
+        """
+    )
+    return
 
-        Linearity throws in one bonus. If $g = g_1 + g_2$, solve each
-        piece on its own and add the answers: $y_p = y_{p,1} + y_{p,2}$.
-        (Quick check: the left side, being linear, sends the sum to
-        $g_1 + g_2 = g$.) This is **a different role for
-        superposition** than Chapter 7's $y = y_h + y_p$ split: that
-        one decomposes the *solution*; this one decomposes the
-        *forcing*. The chapter leans on it constantly when a push
-        doesn't fit a single row of the table.
+
+@app.cell(hide_code=True)
+def _(mo):
+    # §2 continued — superposition's NEW role: decomposing the forcing
+    # (distinct from Ch 7's solution split). Kept in its own cell so the
+    # signpost above stays under the KaTeX-density threshold (§4.10).
+    mo.md(
+        r"""
+        ### Superposition splits the *forcing*
+
+        Method 1 has a built-in limitation: the trial table only has
+        rows for single nice shapes. What if the push is a *sum*,
+        like $g = x + 4 e^{2x}$? Linearity rescues us. Solve each
+        piece **separately** — find a particular $y_{p,1}$ for the
+        forcing $g_1$, and a particular $y_{p,2}$ for $g_2$ — and
+        their sum is a particular solution for the whole forcing:
+
+        $$
+        y_p \;=\; y_{p,1} + y_{p,2}.
+        $$
+
+        Quick check: the left side is linear, so it sends
+        $y_{p,1} + y_{p,2}$ to $g_1 + g_2 = g$. ✓
+
+        Two cautions, because this is where it's easy to go wrong:
+
+        - This produces only the **particular** part. There is **no**
+          $y_{h,1} + y_{h,2}$ — the homogeneous solution $y_h$ is
+          found **once** for the whole equation (it never saw $g$),
+          and added at the very end.
+        - The point isn't to make the problem bigger; it's that each
+          piece $g_i$ now matches a **single row** of the table even
+          when the sum $g$ matched none. Decompose into table-friendly
+          pieces, solve each by the recipe below, add the particulars.
+
+        This is a *different* use of superposition from Chapter 7's
+        $y = y_h + y_p$: that split decomposes the **solution**; this
+        one decomposes the **forcing**.
         """
     )
     return
