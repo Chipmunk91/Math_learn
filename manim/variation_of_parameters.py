@@ -154,7 +154,15 @@ class SceneVariationOfParameters(Scene):
             "Differentiate x_p' once more (again product rule). Then plug "
             "x_p, x_p', x_p'' into the original ODE  y'' + p y' + q y = g."
         )
-        self.play(FadeOut(step_lbl), FadeIn(step_lbl_new), FadeIn(cap3))
+        # Park the constraint into the upper-right corner so it doesn't
+        # collide with deriv2 (which lands below deriv_clean -- exactly
+        # where constraint currently sits). Keep it visible at small scale
+        # because Step 4 references it as the second of the two equations.
+        constraint_parked = constraint.copy().scale(0.6).to_corner(UR, buff=0.7)
+        self.play(
+            FadeOut(step_lbl), FadeIn(step_lbl_new), FadeIn(cap3),
+            Transform(constraint, constraint_parked),
+        )
         deriv2 = MathTex(
             r"x_p'' \;=\; u_1' y_1' + u_1 y_1''",
             r"\;+\; u_2' y_2' + u_2 y_2''"
