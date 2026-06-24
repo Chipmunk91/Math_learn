@@ -1371,12 +1371,37 @@ def _(mo):
     return
 
 
-# === Section 6 — Try it (3 graded exercises) ======================================
+# === Section 6 — Try it (graded exercises) ========================================
+# Two practices per method: Method 1 (UC) tests trial-form picking AND
+# the collision rescue from §3; Method 2 (VoP) tests the Wronskian as
+# a warm-up and then a full y_p computation on a forcing UC can't
+# touch (sec x), so the student exercises the whole pipeline from
+# Saga 8-10.
 
-# --- Challenge 1: pick the right trial form -------------------------------------
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## Try it
+
+        Two short practices for each method — the first checks you
+        can pick the trial / read the formula; the second pushes you
+        into the case the method was *invented* for.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""### Practice — Method 1 (undetermined coefficients)""")
+    return
+
+
+# --- M1.a: basic trial form -----------------------------------------------------
 @app.cell
 def _(mo):
-    # TODO: refine prompt + check once Section 3's table is filled in.
     e1_get, e1_set = mo.state(
         "# For  y'' + 4y = 3 e^{2x},  the standard trial form is\n"
         "# y_p = C e^{2x}. Substitute and solve for C.\n"
@@ -1429,16 +1454,19 @@ def _(delib, e1_code, e1_run):
     return
 
 
-# --- Challenge 2: superposition --------------------------------------------------
+# --- M1.b: collision rescue (multiply by x) -------------------------------------
 @app.cell
 def _(mo):
     e2_get, e2_set = mo.state(
-        "# For  y'' - y = 6 + e^{2x},  superposition says split the\n"
-        "# forcing: y_p = y_{p,1} + y_{p,2} with\n"
-        "#   y_{p,1} solves y'' - y = 6    (constant; try y_{p,1} = A)\n"
-        "#   y_{p,2} solves y'' - y = e^{2x}  (try y_{p,2} = B e^{2x})\n"
-        "# Compute y_p(0) = A + B.\n"
-        "# Put the answer in `answer`.\n"
+        "# For  y'' - 3 y' + 2 y = 2 e^{2x},  the naive trial C e^{2x}\n"
+        "# COLLIDES with the homogeneous solution (the characteristic\n"
+        "# equation r^2 - 3r + 2 = 0 has a root r = 2).\n"
+        "#\n"
+        "# Use the rescue: trial y_p = A x e^{2x}.\n"
+        "# Differentiate, substitute, solve for A.\n"
+        "# (Hint: the x-terms in the LHS cancel and you are left\n"
+        "#  with A e^{2x} = 2 e^{2x}.)\n"
+        "# Put A in `answer`.\n"
         "answer = ...\n"
     )
     return e2_get, e2_set
@@ -1455,12 +1483,13 @@ async def _(api_field, delib, e2_ai, e2_code, e2_gen, e2_set, key_bridge):
     await delib.exercise_ai(
         e2_gen, e2_ai, e2_code, e2_set,
         api_field.value or (key_bridge.value or {}).get("key", ""),
-        context="Piece 1: y'' - y = 6, try y = A constant. Then "
-                "y'' = 0 so -A = 6 -> A = -6. "
-                "Piece 2: y'' - y = e^{2x}, try y = B e^{2x}. Then "
-                "y'' = 4B e^{2x} so 4B - B = 1 -> B = 1/3. "
-                "y_p(0) = -6 + 1/3 = -17/3 ~= -5.6667. "
-                "Put -5.6667 in `answer`.",
+        context="Characteristic equation r^2 - 3r + 2 = 0 has roots r = 1, "
+                "r = 2, so e^{2x} is homogeneous and C e^{2x} would be "
+                "annihilated. Rescue: trial y_p = A x e^{2x}. Then "
+                "y_p' = A(1 + 2x) e^{2x} and y_p'' = A(4 + 4x) e^{2x}. "
+                "LHS = A e^{2x}[(4 + 4x) - 3(1 + 2x) + 2 x] = "
+                "A e^{2x}[1 + 0 x] = A e^{2x}. Set equal to 2 e^{2x}: "
+                "A = 2. Put 2 in `answer`.",
     )
     return
 
@@ -1468,8 +1497,9 @@ async def _(api_field, delib, e2_ai, e2_code, e2_gen, e2_set, key_bridge):
 @app.cell(hide_code=True)
 def _(delib, e2_ai, e2_code, e2_gen, e2_run):
     delib.exercise_view(
-        "**2.** Use superposition: for $y'' - y = 6 + e^{2x}$, find "
-        "$y_p(0)$.",
+        "**2.** For $y'' - 3 y' + 2 y = 2\\, e^{2x}$, the bare trial "
+        "$C e^{2x}$ collides with the homogeneous family. Use the "
+        "rescue $y_p = A\\, x\\, e^{2x}$ and find $A$.",
         e2_ai, e2_gen, e2_code, e2_run,
     )
     return
@@ -1478,17 +1508,26 @@ def _(delib, e2_ai, e2_code, e2_gen, e2_run):
 @app.cell(hide_code=True)
 def _(delib, e2_code, e2_run):
     delib.run_exercise(e2_code.value, e2_run.value, check=lambda ns: delib.check_number(
-        ns, target=-17/3, tol=0.01,
-        ok="Right — constant piece: $-A = 6 \\Rightarrow A = -6$; "
-           "exponential piece: $4B - B = 1 \\Rightarrow B = 1/3$; "
-           "$y_p(0) = A + B = -17/3 \\approx -5.667$.",
-        hint="Solve each forcing piece separately, then add the two "
-             "particular solutions. Evaluate the sum at $x = 0$.",
+        ns, target=2.0, tol=0.005,
+        ok="Right — with $y_p = A x e^{2x}$: $y_p' = A(1+2x)e^{2x}$, "
+           "$y_p'' = A(4+4x)e^{2x}$, and the $x$-terms cancel "
+           "($4x - 6x + 2x = 0$), leaving $A e^{2x} = 2 e^{2x}$, so "
+           "$A = 2$. The extra $x$ is exactly what the operator can't "
+           "annihilate.",
+        hint="The $x$-terms in the LHS cancel by design — that's why "
+             "the rescue works. After they cancel, just match the "
+             "remaining $e^{2x}$ coefficient on both sides.",
     ))
     return
 
 
-# --- Challenge 3: variation of parameters (Wronskian) ----------------------------
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""### Practice — Method 2 (variation of parameters)""")
+    return
+
+
+# --- M2.a: compute the Wronskian (warm-up) --------------------------------------
 @app.cell
 def _(mo):
     e3_get, e3_set = mo.state(
@@ -1538,9 +1577,97 @@ def _(delib, e3_code, e3_run):
         ns, target=1.0, tol=0.001,
         ok="Right — $W = \\cos(x)\\cos(x) - \\sin(x)(-\\sin x) = "
            "\\cos^2 + \\sin^2 = 1$. The Wronskian is identically $1$, "
-           "which makes the VoP integrals especially clean for this basis.",
+           "which makes the next exercise's VoP integrals especially "
+           "clean.",
         hint="Plug in $y_1' = -\\sin x$ and $y_2' = \\cos x$, then use "
              "$\\cos^2 + \\sin^2 = 1$.",
+    ))
+    return
+
+
+# --- M2.b: full VoP on a forcing UC can't touch ---------------------------------
+# Pick g(x) = sec x — the canonical "Method 1 can't help you" forcing.
+# Build on M2.a: the Wronskian is already known to be 1, so the
+# integrals collapse to clean closed forms.
+@app.cell
+def _(mo):
+    e4_get, e4_set = mo.state(
+        "# For  y'' + y = sec(x),  use variation of parameters on the\n"
+        "# basis y_1 = cos x, y_2 = sin x with W = 1 (from the\n"
+        "# previous exercise). The Saga 10 formula gives\n"
+        "#\n"
+        "#   u_1(x) = - integral( y_2 g / W ) dx\n"
+        "#          = - integral( sin x / cos x ) dx\n"
+        "#          =   ln|cos x|.\n"
+        "#\n"
+        "#   u_2(x) =   integral( y_1 g / W ) dx\n"
+        "#          =   integral( cos x / cos x ) dx\n"
+        "#          =   x.\n"
+        "#\n"
+        "# So y_p(x) = cos(x) * ln|cos x|  +  x * sin(x).\n"
+        "# Evaluate y_p at x = pi/4 and put the number in `answer`.\n"
+        "#\n"
+        "# (Numerically:  sqrt(2)/2 * ln(sqrt(2)/2)  +  pi/4 * sqrt(2)/2 .)\n"
+        "import math\n"
+        "answer = ...\n"
+    )
+    return e4_get, e4_set
+
+
+@app.cell
+def _(delib, e4_get):
+    e4_ai, e4_gen, e4_code, e4_run = delib.exercise_inputs(e4_get())
+    return e4_ai, e4_code, e4_gen, e4_run
+
+
+@app.cell
+async def _(api_field, delib, e4_ai, e4_code, e4_gen, e4_set, key_bridge):
+    await delib.exercise_ai(
+        e4_gen, e4_ai, e4_code, e4_set,
+        api_field.value or (key_bridge.value or {}).get("key", ""),
+        context="y_1 = cos x, y_2 = sin x, W = 1, g(x) = sec x. "
+                "By the Saga 10 formula: "
+                "u_1 = -integral(y_2 g / W) dx = -integral(tan x) dx "
+                "= ln|cos x|; "
+                "u_2 = integral(y_1 g / W) dx = integral(1) dx = x. "
+                "So y_p(x) = cos(x) ln|cos x| + x sin(x). "
+                "At x = pi/4: cos(pi/4) = sin(pi/4) = sqrt(2)/2 ~ 0.7071, "
+                "ln(sqrt(2)/2) = -ln(2)/2 ~ -0.3466, pi/4 ~ 0.7854. "
+                "y_p(pi/4) = 0.7071 * (-0.3466) + 0.7854 * 0.7071 "
+                "~ -0.2451 + 0.5554 ~ 0.3103. "
+                "Put 0.3103 in `answer`.",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, e4_ai, e4_code, e4_gen, e4_run):
+    delib.exercise_view(
+        "**4.** For $y'' + y = \\sec x$ — a forcing the UC table "
+        "can't touch — use variation of parameters with the basis "
+        "$y_1 = \\cos x$, $y_2 = \\sin x$ (so $W = 1$ from the "
+        "previous exercise) to find $y_p\\bigl(\\tfrac{\\pi}{4}\\bigr)$.",
+        e4_ai, e4_gen, e4_code, e4_run,
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib, e4_code, e4_run):
+    delib.run_exercise(e4_code.value, e4_run.value, check=lambda ns: delib.check_number(
+        ns, target=0.3103, tol=0.01,
+        ok="Right — the integrals collapse because $W = 1$: "
+           "$u_1 = -\\!\\int\\tan x\\,dx = \\ln|\\cos x|$ and "
+           "$u_2 = \\int 1\\,dx = x$, so "
+           "$y_p = \\cos(x)\\ln|\\cos x| + x\\sin x$. At "
+           "$x = \\pi/4$ this is "
+           "$(\\sqrt{2}/2)\\bigl(\\ln(\\sqrt{2}/2) + \\pi/4\\bigr) "
+           "\\approx 0.3103$. UC couldn't have produced this — "
+           "$\\sec x$ isn't on the table.",
+        hint="Two integrals, then plug $x = \\pi/4$. With $W = 1$ "
+             "the integrals are $-\\!\\int\\tan x\\,dx$ and "
+             "$\\int 1\\,dx$. Use `math.log`, `math.cos`, `math.sin`, "
+             "`math.pi`.",
     ))
     return
 
