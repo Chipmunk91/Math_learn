@@ -367,8 +367,28 @@ These are real bugs we hit. Each entry: **symptom → cause → fix**.
   inline expression wrapped across two source lines inside the `r"""..."""`
   (e.g. `$x_p(t) = A\cos(\omega t -` ⏎ `\varphi)$`) is never recognised.
 - **Fix:** Keep every inline `$...$` on a **single physical source line**.
-  Expressions too long to fit go in a `$$...$$` display block (which *can*
-  span lines).
+  Expressions too long to fit go in a `$$...$$` display block — but mind
+  §4.11b.
+
+### 4.11b — A `$$` block with a continuation line starting `+ ` silently fails
+- **Symptom:** A multi-line `$$ … $$` display renders as raw LaTeX
+  (`$$`, `\bigl`, `L[y_p]` all literal). marimo's md pipeline reports the
+  block as inline/none, not display.
+- **Cause:** Markdown sees a line beginning with `+ ` (also `- ` / `* `) as
+  a **bullet-list item**, which terminates the display block mid-LaTeX. So
+  ```
+  $$
+  L = a + b
+  + c          ← markdown reads this as a list bullet
+  $$
+  ```
+  breaks, while the same content split with a leading `\;` / `&` does not.
+- **Fix (most robust):** put the whole equation's content on **one physical
+  line** between the `$$` delimiters (the delimiters may stay on their own
+  lines). Long lines are fine — KaTeX scrolls. Alternatively wrap in
+  `\begin{aligned} … \end{aligned}` and lead each continuation with `&`
+  (never a bare `+`). Single-line content is the bulletproof choice; verify
+  with the `marimo._output.md.md(...)` → count `||[` probe.
 
 ### 4.12 — `--execute` runs every cell at build time → build env needs the full stack
 - **Symptom (CI):** `ModuleNotFoundError: No module named 'anywidget'` /

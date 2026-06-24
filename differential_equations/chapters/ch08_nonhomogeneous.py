@@ -978,6 +978,114 @@ def _(mo):
     return
 
 
+# === Section 4.6 — Saga 5: the second derivative (y_p'') ==========================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Saga 5 — look closer: the second derivative
+
+        $L$ also needs $y_p''$. Differentiate the simplified first
+        derivative $y_p' = u_1 y_1' + u_2 y_2'$ once more — product
+        rule again, on each of its two terms:
+
+        $$
+        y_p'' \;=\; u_1' y_1' + u_1 y_1'' \;+\; u_2' y_2' + u_2 y_2''.
+        $$
+
+        This time we *keep* all four pieces — we already spent our
+        one free constraint back in Saga 4, so there's no second
+        bracket to set to zero. We now hold all three ingredients
+        $L$ wants:
+
+        $$
+        \begin{aligned}
+        y_p   &= u_1 y_1 + u_2 y_2, \\
+        y_p'  &= u_1 y_1' + u_2 y_2', \\
+        y_p'' &= u_1' y_1' + u_1 y_1'' + u_2' y_2' + u_2 y_2''.
+        \end{aligned}
+        $$
+        """
+    )
+    return
+
+
+# === Section 4.7 — Saga 6: push y_p through L; the null space collapses it =========
+@app.cell(hide_code=True)
+def _(mo):
+    # Saga 6a — substitute the three pieces into L and regroup into the
+    # "u_i' " survivor term plus two u_i * L[y_i] groups.
+    mo.md(
+        r"""
+        ### Saga 6 — through the gauntlet
+
+        Now assemble $L[y_p] = y_p'' + p\,y_p' + q\,y_p$ from the
+        three ingredients and demand it equal $g$. Substituting:
+
+        $$
+        L[y_p] = \bigl(u_1' y_1' + u_1 y_1'' + u_2' y_2' + u_2 y_2''\bigr) + p\bigl(u_1 y_1' + u_2 y_2'\bigr) + q\bigl(u_1 y_1 + u_2 y_2\bigr).
+        $$
+
+        It looks like a wall of symbols, but it sorts itself the
+        moment you group by relic. Collect everything multiplying
+        $u_1$, everything multiplying $u_2$, and the leftover
+        $u_i'$ pieces:
+
+        $$
+        L[y_p] = \underbrace{\bigl(u_1' y_1' + u_2' y_2'\bigr)}_{\text{survivor term}} + u_1\underbrace{\bigl(y_1'' + p y_1' + q y_1\bigr)}_{L[y_1]} + u_2\underbrace{\bigl(y_2'' + p y_2' + q y_2\bigr)}_{L[y_2]}.
+        $$
+
+        Look at the two braced groups: each is exactly $L$ applied
+        to a *basis* function.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Saga 6b — invoke the null space (Saga 1) to kill the L[y_i] terms,
+    # collapsing L[y_p] to the survivor term; set = g for the 2nd eqn.
+    mo.md(
+        r"""
+        And here Saga 1 pays off. The basis functions $y_1, y_2$
+        live in the **null space** of $L$ — that was the whole point
+        — so $L[y_1] = 0$ and $L[y_2] = 0$. Both of those big groups
+        simply **vanish**:
+
+        $$
+        L[y_p] = \bigl(u_1' y_1' + u_2' y_2'\bigr) + u_1\!\cdot\!0 + u_2\!\cdot\!0 = u_1' y_1' + u_2' y_2'.
+        $$
+
+        Everything built from the fragile basis got annihilated, as
+        it always does. The **only** thing $L$ couldn't destroy is
+        the relic-derivative term $u_1' y_1' + u_2' y_2'$ — the
+        survivor's true substance. And that survivor must equal the
+        forcing:
+
+        $$
+        \boxed{\; u_1' y_1' \;+\; u_2' y_2' \;=\; g. \;}
+        $$
+
+        We now have **two** equations in the two relic-rates
+        $u_1', u_2'$ — the convenience choice from Saga 4 and the
+        survivor equation from just now:
+
+        $$
+        \begin{aligned}
+        u_1' y_1 \;+\; u_2' y_2 &\;=\; 0, \\
+        u_1' y_1' \;+\; u_2' y_2' &\;=\; g.
+        \end{aligned}
+        $$
+
+        Two equations, two unknowns. This is precisely where the
+        linear algebra we signed up for finally does the work — the
+        next saga writes it as a matrix and the Wronskian appears.
+        """
+    )
+    return
+
+
 # === Section 6 — Try it (3 graded exercises) ======================================
 
 # --- Challenge 1: pick the right trial form -------------------------------------
