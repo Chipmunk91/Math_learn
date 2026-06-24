@@ -1130,9 +1130,9 @@ def _(mo):
 # with W = 0. Makes "Wronskian = linear-independence test" visceral.
 @app.cell(hide_code=True)
 def _(go, mo, np):
-    from plotly.subplots import make_subplots
+    from plotly.subplots import make_subplots as _make_subplots
 
-    _fig = make_subplots(
+    _fig = _make_subplots(
         rows=1, cols=2,
         subplot_titles=(
             "Independent basis:  W = area ≠ 0",
