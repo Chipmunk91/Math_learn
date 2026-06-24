@@ -843,6 +843,60 @@ def _(mo):
     return
 
 
+# === Section 4.4 — Saga 3: the ansatz — constants become functions (relics) =======
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Saga 3 — arm the survivor with relics
+
+        We know the survivor can't be the homogeneous build,
+        $c_1 y_1 + c_2 y_2$ with *constant* $c_1, c_2$. Look again
+        at exactly why it dies:
+
+        $$
+        L\bigl[c_1 y_1 + c_2 y_2\bigr]
+        \;=\; c_1\, L[y_1] + c_2\, L[y_2] \;=\; 0.
+        $$
+
+        The constants slide straight out through $L$'s linearity and
+        leave only $L[y_1], L[y_2]$ — both zero. The constants never
+        *interact* with $L$; they just ride along and get
+        annihilated with their basis functions.
+
+        So here's the upgrade. Keep the same humble basis $y_1, y_2$,
+        but replace the inert constants with **functions** of $x$ —
+        call them $u_1(x), u_2(x)$:
+
+        $$
+        \boxed{\; y_p \;=\; u_1(x)\, y_1 \;+\; u_2(x)\, y_2. \;}
+        $$
+
+        Think of $u_1, u_2$ as *relics* fastened onto the basis. The
+        functions $y_1, y_2$ are the same fragile things as before —
+        but now, when $L$ differentiates $y_p$, the product rule
+        forces it to also differentiate the relics, producing
+        $u_1', u_2'$ terms that the constant version simply did not
+        have. Those new terms are the foothold: they're what can
+        come out the other side as $g$ instead of as $0$. The relics
+        let the survivor *interact* with $L$ rather than ride
+        through it untouched.
+
+        This move — letting the constants of the homogeneous
+        solution vary as functions — is the whole idea, and it's
+        where the method gets its name: **variation of parameters**.
+        The "parameters" are $c_1, c_2$; we let them vary.
+
+        Of course, smuggling two unknown functions into one equation
+        is a lot of new freedom — more than one equation can pin
+        down. We'll spend that surplus freedom deliberately in
+        Saga 4, where we finally put $y_p$ through $L$ and watch the
+        relics go to work.
+        """
+    )
+    return
+
+
 # === Section 5 — See it: the decomposition slider =================================
 @app.cell(hide_code=True)
 def _(mo):
