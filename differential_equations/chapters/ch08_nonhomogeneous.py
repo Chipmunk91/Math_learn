@@ -560,6 +560,250 @@ def _(mo):
     return
 
 
+# === Section 4.1 — Prologue: c1 y1 + c2 y2 as a basis expansion ===================
+# First step of the LA detour. Re-see y_h = c1*y1 + c2*y2 as a basis
+# decomposition (same idea as P = 3*e1 + 2*e2 in R^2). The side-by-side
+# figure makes the analogy visceral: same coefficients on both sides.
+@app.cell(hide_code=True)
+def _(go, mo, np):
+    from plotly.subplots import make_subplots
+
+    _fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=(
+            "In ℝ²:  P = 3·e₁ + 2·e₂",
+            "In span(y₁, y₂):  y = 3·y₁ + 2·y₂",
+        ),
+        horizontal_spacing=0.12,
+    )
+
+    # --- left: 2-D vector decomposition --------------------------------
+    # gridlines (faint)
+    _fig.add_trace(go.Scatter(x=[-0.5, 4], y=[0, 0], mode="lines",
+        line=dict(color="#e0e6ee", width=1), showlegend=False, hoverinfo="skip"),
+        row=1, col=1)
+    _fig.add_trace(go.Scatter(x=[0, 0], y=[-0.5, 3], mode="lines",
+        line=dict(color="#e0e6ee", width=1), showlegend=False, hoverinfo="skip"),
+        row=1, col=1)
+    # basis e1 (red, horizontal)
+    _fig.add_trace(go.Scatter(x=[0, 1], y=[0, 0], mode="lines+markers",
+        line=dict(color="#c15a46", width=4),
+        marker=dict(symbol=["circle", "triangle-right"], size=[6, 14], color="#c15a46"),
+        showlegend=False, hoverinfo="skip"), row=1, col=1)
+    # basis e2 (blue, vertical)
+    _fig.add_trace(go.Scatter(x=[0, 0], y=[0, 1], mode="lines+markers",
+        line=dict(color="#2a5d9c", width=4),
+        marker=dict(symbol=["circle", "triangle-up"], size=[6, 14], color="#2a5d9c"),
+        showlegend=False, hoverinfo="skip"), row=1, col=1)
+    # vector P
+    _fig.add_trace(go.Scatter(x=[0, 3], y=[0, 2], mode="lines+markers",
+        line=dict(color="#16223a", width=3),
+        marker=dict(symbol=["circle", "circle"], size=[1, 10], color="#16223a"),
+        showlegend=False, hoverinfo="skip"), row=1, col=1)
+    # decomposition helper lines
+    _fig.add_trace(go.Scatter(x=[3, 3], y=[0, 2], mode="lines",
+        line=dict(color="#16223a", width=1, dash="dot"),
+        showlegend=False, hoverinfo="skip"), row=1, col=1)
+    _fig.add_trace(go.Scatter(x=[0, 3], y=[2, 2], mode="lines",
+        line=dict(color="#16223a", width=1, dash="dot"),
+        showlegend=False, hoverinfo="skip"), row=1, col=1)
+    # labels (annotations bound to first subplot)
+    for _ann in [
+        dict(x=1.15, y=-0.22, text="<b>e₁</b>", color="#c15a46", size=14),
+        dict(x=-0.18, y=1.15, text="<b>e₂</b>", color="#2a5d9c", size=14),
+        dict(x=3.15, y=2.25, text="<b>P</b>", color="#16223a", size=14),
+        dict(x=1.5, y=-0.4, text="3 steps right", color="#6c7a90", size=10),
+        dict(x=3.42, y=1.0, text="2 steps up", color="#6c7a90", size=10),
+    ]:
+        _fig.add_annotation(x=_ann["x"], y=_ann["y"], text=_ann["text"],
+            showarrow=False, font=dict(color=_ann["color"], size=_ann["size"]),
+            xref="x", yref="y")
+
+    # --- right: function-basis decomposition ---------------------------
+    _x = np.linspace(0, 2*np.pi, 220)
+    _y1 = np.cos(_x)
+    _y2 = np.sin(_x)
+    _ycombo = 3*_y1 + 2*_y2
+    _fig.add_trace(go.Scatter(x=_x, y=_y1, mode="lines",
+        name="y₁(x) = cos x",
+        line=dict(color="#c15a46", width=2)), row=1, col=2)
+    _fig.add_trace(go.Scatter(x=_x, y=_y2, mode="lines",
+        name="y₂(x) = sin x",
+        line=dict(color="#2a5d9c", width=2)), row=1, col=2)
+    _fig.add_trace(go.Scatter(x=_x, y=_ycombo, mode="lines",
+        name="y = 3·y₁ + 2·y₂",
+        line=dict(color="#16223a", width=2.5)), row=1, col=2)
+
+    _fig.update_xaxes(range=[-0.6, 4.2], row=1, col=1,
+        showgrid=False, zeroline=False)
+    _fig.update_yaxes(range=[-0.7, 3], row=1, col=1,
+        showgrid=False, zeroline=False, scaleanchor="x", scaleratio=1)
+    _fig.update_xaxes(title="x", row=1, col=2, range=[0, 2*np.pi])
+
+    _fig.update_layout(
+        template="plotly_white",
+        height=340,
+        margin=dict(l=40, r=20, t=60, b=70),
+        showlegend=True,
+        legend=dict(orientation="h", x=0.78, xanchor="center", y=-0.18,
+                    font=dict(size=11)),
+        paper_bgcolor="white", plot_bgcolor="white",
+    )
+
+    mo.vstack([
+        mo.md(
+            r"""
+            ### Prologue — coordinates, in space and in functions
+
+            Before we wade into the linear-algebra realm, take this
+            one conceptual leap with me. It's not new math — it's a
+            *re-seeing* of math you already know.
+
+            You wouldn't think twice about writing the point
+            $\mathbf{P} = (3, 2)$ as a *recipe* — three steps right,
+            two steps up:
+
+            $$
+            \mathbf{P} \;=\; 3\,\mathbf{e}_1 \;+\; 2\,\mathbf{e}_2.
+            $$
+
+            Here $\mathbf{e}_1 = (1, 0)$ and $\mathbf{e}_2 = (0, 1)$
+            are the **basis** — the two directions you're allowed to
+            combine — and the numbers $(3, 2)$ are the **coordinates**
+            in that basis. The two coordinates don't mix: "three
+            steps right" is a separate fact from "two steps up".
+
+            Now look at what Chapter 6 wrote as the homogeneous
+            solution:
+
+            $$
+            y_h(x) \;=\; c_1\, y_1(x) \;+\; c_2\, y_2(x).
+            $$
+
+            It is the **same recipe** — only the "directions" are
+            now whole *functions* instead of unit arrows. $y_1$ and
+            $y_2$ play the role of $\mathbf{e}_1, \mathbf{e}_2$;
+            $c_1$ and $c_2$ are the coordinates in this new basis.
+            The figure below shows the analogy with the same
+            coefficients $(3, 2)$ on both sides.
+            """
+        ),
+        _fig,
+        mo.md(
+            r"""
+            Pick a $(c_1, c_2)$ and you've picked a specific
+            function. The set of *all* such choices sweeps out a
+            whole **two-dimensional space of functions**, with basis
+            $(y_1, y_2)$.
+
+            That's the lens for the rest of this section. $y_h$
+            isn't a clever family someone discovered — it's the
+            **2-D function space spanned by your basis**.
+            Everything that follows (variation of parameters, the
+            Wronskian, the formula) is linear algebra done inside
+            this function space.
+            """
+        ),
+    ])
+    return
+
+
+# === Section 4.2 — Saga 1: y_h is the null space of "evil" L ======================
+# Name the operator L; show it's linear ("a matrix acting on functions");
+# derive y_h as the null space of L. Set up the next saga (y_p is the
+# survivor that L can't crush to zero).
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Saga 1 — $y_h$ is the **null space** of an "evil" operator $L$
+
+        Let's give the differential operator a name and a personality.
+        Call it $L$:
+
+        $$
+        L[y] \;=\; y'' \;+\; p(x)\, y' \;+\; q(x)\, y.
+        $$
+
+        $L$ is a machine. Feed it a function — it differentiates
+        twice, mixes the results according to the recipe, and hands
+        back another function. The chapter's whole equation is just
+
+        $$
+        L[y] \;=\; g(x),
+        $$
+
+        — find a $y$ whose $L$-output is exactly the forcing $g$.
+
+        Through the linear-algebra lens, **$L$ is a kind of matrix
+        that acts on functions** instead of on column vectors. That
+        is the whole detour, in one sentence: *let matrices act on
+        functions.* Like every respectable matrix, $L$ is
+        **linear** — it distributes over sums and scalar multiples:
+
+        $$
+        L[c\, y] \;=\; c\, L[y],
+        \qquad
+        L[y + z] \;=\; L[y] + L[z].
+        $$
+
+        And linearity is exactly the property that turns the
+        homogeneous family into something with a *name* — that's
+        the next cell.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    # Saga 1 continued — derive y_h = null(L) from linearity.
+    # Split out so each cell stays under the KaTeX density threshold
+    # (§4.10): the 'L is linear' setup + this null-space derivation
+    # together carry 5 displays, which is past the safe band.
+    mo.md(
+        r"""
+        Chapter 6 handed us two basis functions $y_1, y_2$ that $L$
+        annihilates, $L[y_1] = L[y_2] = 0$. By linearity, *every*
+        combination of them is annihilated too:
+
+        $$
+        L\bigl[c_1 y_1 + c_2 y_2\bigr]
+        \;=\; c_1 L[y_1] + c_2 L[y_2]
+        \;=\; c_1\!\cdot\!0 + c_2\!\cdot\!0
+        \;=\; 0.
+        $$
+
+        Every function in the 2-D space we just named in the
+        Prologue gets crushed to zero by $L$.
+
+        This crushing has a name in linear algebra. The set of all
+        vectors a matrix sends to zero is called the **null space**
+        (or *kernel*) of that matrix. We've just seen that the
+        homogeneous family $y_h$ — the *entire* 2-D function space
+        spanned by $(y_1, y_2)$ — is the null space of $L$:
+
+        $$
+        \boxed{\; y_h \;=\; \mathrm{null}(L). \;}
+        $$
+
+        That is the headline of this saga, and worth sitting with.
+        The homogeneous family from Chapter 6 isn't a side-quest;
+        it's the **null space of the operator that defines this
+        whole chapter**. Every function in it is $L$-fragile — the
+        evil machine smashes it to zero. Picture $L$ as a kind of
+        annihilating magic in a fable: any pure-homogeneous
+        combination it touches simply *vanishes*.
+
+        But not everything in the world is fragile. The forcing
+        $g(x)$ isn't zero, so the $y_p$ we're hunting can't be in
+        the null space — it has to *survive* $L$ and come out the
+        other side as $g$. That's where the next saga goes.
+        """
+    )
+    return
+
+
 # === Section 5 — See it: the decomposition slider =================================
 @app.cell(hide_code=True)
 def _(mo):
