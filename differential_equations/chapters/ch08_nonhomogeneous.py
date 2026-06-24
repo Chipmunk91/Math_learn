@@ -1086,6 +1086,291 @@ def _(mo):
     return
 
 
+# === Section 4.8 — Saga 7: write the pair as a matrix equation ====================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Saga 7 — name the matrix
+
+        The two equations from Saga 6 are a linear system in the two
+        unknown rates $u_1', u_2'$. Stack them as a single matrix
+        equation:
+
+        $$
+        \underbrace{\begin{bmatrix} y_1 & y_2 \\ y_1' & y_2' \end{bmatrix}}_{Y(x)}\,\underbrace{\begin{bmatrix} u_1' \\ u_2' \end{bmatrix}}_{\mathbf{u}'} \;=\; \underbrace{\begin{bmatrix} 0 \\ g \end{bmatrix}}_{\text{demand}}.
+        $$
+
+        Read each column of $Y(x)$ as a **state vector** of one basis
+        solution: the top row is the value $y_i$, the bottom row is
+        the velocity $y_i'$. Together they say "in $(y,\,y')$ space,
+        here is where basis function $i$ sits *and* where it's
+        heading right now."
+
+        On the right, the forcing $g$ shows up *only* in the velocity
+        slot — the convenience constraint from Saga 4 zeroed the
+        position slot. The matrix equation is the entire story so
+        far, compressed:
+
+        > **In the basis of homogeneous states, what mixture of rates
+        > produces a position-change of $0$ and a velocity-change of
+        > $g$?**
+
+        That mixture is $\mathbf{u}'$. To solve for it, we need to
+        invert $Y(x)$ — and the moment we ask that, the determinant
+        walks on stage.
+        """
+    )
+    return
+
+
+# === Section 4.9 — Saga 8: the Wronskian is det(Y) ================================
+# Twin state-plane figure: independent basis -> nondegenerate
+# parallelogram with W = area > 0; dependent basis -> collapsed line
+# with W = 0. Makes "Wronskian = linear-independence test" visceral.
+@app.cell(hide_code=True)
+def _(go, mo, np):
+    from plotly.subplots import make_subplots
+
+    _fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=(
+            "Independent basis:  W = area ≠ 0",
+            "Dependent basis:  W = 0 (line, no area)",
+        ),
+        horizontal_spacing=0.14,
+    )
+
+    # ---- LEFT: independent basis -- y1 = cos x, y2 = sin x at x = pi/4 ----
+    # state vectors: v1 = (cos, -sin) = (0.707, -0.707)
+    #                v2 = (sin,  cos) = (0.707,  0.707)
+    _c, _s = np.cos(np.pi/4), np.sin(np.pi/4)
+    _v1 = np.array([_c, -_s])
+    _v2 = np.array([_s,  _c])
+    # parallelogram polygon: 0 -> v1 -> v1+v2 -> v2 -> 0
+    _poly_x = [0, _v1[0], _v1[0]+_v2[0], _v2[0], 0]
+    _poly_y = [0, _v1[1], _v1[1]+_v2[1], _v2[1], 0]
+    _fig.add_trace(go.Scatter(
+        x=_poly_x, y=_poly_y, mode="lines", fill="toself",
+        line=dict(color="#16223a", width=1.5),
+        fillcolor="rgba(120,150,200,0.22)",
+        showlegend=False, hoverinfo="skip"), row=1, col=1)
+    # axes (faint)
+    for _xy in [([-1.2, 1.6], [0, 0]), ([0, 0], [-1.2, 1.6])]:
+        _fig.add_trace(go.Scatter(x=_xy[0], y=_xy[1], mode="lines",
+            line=dict(color="#e0e6ee", width=1),
+            showlegend=False, hoverinfo="skip"), row=1, col=1)
+    # vector v1 (red)
+    _fig.add_trace(go.Scatter(x=[0, _v1[0]], y=[0, _v1[1]],
+        mode="lines+markers",
+        line=dict(color="#c15a46", width=4),
+        marker=dict(symbol=["circle", "triangle-right"], size=[1, 14],
+                    angle=[0, -45], color="#c15a46"),
+        showlegend=False, hoverinfo="skip"), row=1, col=1)
+    # vector v2 (blue)
+    _fig.add_trace(go.Scatter(x=[0, _v2[0]], y=[0, _v2[1]],
+        mode="lines+markers",
+        line=dict(color="#2a5d9c", width=4),
+        marker=dict(symbol=["circle", "triangle-up"], size=[1, 14],
+                    angle=[0, 45], color="#2a5d9c"),
+        showlegend=False, hoverinfo="skip"), row=1, col=1)
+    for _ann in [
+        dict(x=_v1[0]+0.12, y=_v1[1]-0.10, text="<b>(y₁, y₁′)</b>", color="#c15a46"),
+        dict(x=_v2[0]+0.12, y=_v2[1]+0.12, text="<b>(y₂, y₂′)</b>", color="#2a5d9c"),
+        dict(x=(_v1[0]+_v2[0])/2, y=(_v1[1]+_v2[1])/2 + 0.05,
+             text="area = |W| = 1", color="#16223a"),
+    ]:
+        _fig.add_annotation(x=_ann["x"], y=_ann["y"], text=_ann["text"],
+            showarrow=False, font=dict(color=_ann["color"], size=12),
+            xref="x", yref="y")
+
+    # ---- RIGHT: dependent basis -- y2 = 2 y1, so v2 = 2*v1 ----
+    _w1 = np.array([_c, -_s])
+    _w2 = 2 * _w1
+    for _xy in [([-1.2, 2.2], [0, 0]), ([0, 0], [-1.8, 1.2])]:
+        _fig.add_trace(go.Scatter(x=_xy[0], y=_xy[1], mode="lines",
+            line=dict(color="#e0e6ee", width=1),
+            showlegend=False, hoverinfo="skip"), row=1, col=2)
+    # vector w2 first (longer, blue) so red overlays it
+    _fig.add_trace(go.Scatter(x=[0, _w2[0]], y=[0, _w2[1]],
+        mode="lines+markers",
+        line=dict(color="#2a5d9c", width=4),
+        marker=dict(symbol=["circle", "triangle-right"], size=[1, 14],
+                    angle=[0, -45], color="#2a5d9c"),
+        showlegend=False, hoverinfo="skip"), row=1, col=2)
+    _fig.add_trace(go.Scatter(x=[0, _w1[0]], y=[0, _w1[1]],
+        mode="lines+markers",
+        line=dict(color="#c15a46", width=4),
+        marker=dict(symbol=["circle", "triangle-right"], size=[1, 14],
+                    angle=[0, -45], color="#c15a46"),
+        showlegend=False, hoverinfo="skip"), row=1, col=2)
+    for _ann in [
+        dict(x=_w1[0]+0.10, y=_w1[1]+0.15, text="<b>(y₁, y₁′)</b>", color="#c15a46"),
+        dict(x=_w2[0]+0.10, y=_w2[1]-0.18, text="<b>(2y₁, 2y₁′)</b>", color="#2a5d9c"),
+        dict(x=0.75, y=-1.35, text="collinear → no area", color="#6c7a90"),
+    ]:
+        _fig.add_annotation(x=_ann["x"], y=_ann["y"], text=_ann["text"],
+            showarrow=False, font=dict(color=_ann["color"], size=12),
+            xref="x2", yref="y2")
+
+    _fig.update_xaxes(range=[-1.2, 1.8], row=1, col=1, title="y",
+        showgrid=False, zeroline=False)
+    _fig.update_yaxes(range=[-1.2, 1.8], row=1, col=1, title="y′",
+        showgrid=False, zeroline=False, scaleanchor="x", scaleratio=1)
+    _fig.update_xaxes(range=[-1.2, 2.4], row=1, col=2, title="y",
+        showgrid=False, zeroline=False)
+    _fig.update_yaxes(range=[-1.8, 1.4], row=1, col=2, title="y′",
+        showgrid=False, zeroline=False, scaleanchor="x2", scaleratio=1)
+
+    _fig.update_layout(
+        template="plotly_white",
+        height=360,
+        margin=dict(l=50, r=30, t=60, b=50),
+        showlegend=False,
+        paper_bgcolor="white", plot_bgcolor="white",
+    )
+
+    mo.vstack([
+        mo.md(
+            r"""
+            ### Saga 8 — the Wronskian, finally named
+
+            The determinant of $Y(x)$ has a name we've been ducking
+            for two chapters. Define
+
+            $$
+            W(x) \;=\; \det Y(x) \;=\; y_1\,y_2' \;-\; y_2\,y_1'.
+            $$
+
+            This is the **Wronskian**. It is not new machinery — it
+            is the determinant of the state matrix you already had.
+
+            Geometrically (left panel), the columns of $Y(x)$ are
+            two state vectors $(y_i,\,y_i')$ in the $(y, y')$ plane.
+            Their determinant is the **signed area of the parallelogram**
+            they span. If the basis is genuinely independent, that
+            parallelogram has real area — and $W \ne 0$.
+
+            Geometrically (right panel), if one basis function is a
+            multiple of the other, the two state vectors point along
+            the **same line**. The parallelogram collapses; area is
+            zero; $W = 0$.
+
+            So $W(x) \ne 0$ is exactly the statement **"the two basis
+            functions are linearly independent at $x$"** — the
+            condition you've quietly relied on since Chapter 6 every
+            time you wrote "the general solution is $c_1 y_1 + c_2 y_2$."
+            Now it has a name.
+            """
+        ),
+        _fig,
+    ])
+    return
+
+
+# === Section 4.10 — Saga 9: Cramer's rule + integrate =============================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Saga 9 — Cramer's rule unlocks the rates
+
+        Because $W \ne 0$, the matrix $Y(x)$ is invertible and the
+        system has a unique solution. The cleanest way to read it off
+        is **Cramer's rule** — replace one column of $Y$ with the
+        right-hand side $(0, g)^\top$ and divide by $\det Y = W$:
+
+        $$
+        u_1' \;=\; \frac{1}{W}\,\det\!\begin{bmatrix} 0 & y_2 \\ g & y_2' \end{bmatrix} \;=\; \frac{0\cdot y_2' - y_2\cdot g}{W} \;=\; -\,\frac{y_2\,g}{W},
+        $$
+
+        $$
+        u_2' \;=\; \frac{1}{W}\,\det\!\begin{bmatrix} y_1 & 0 \\ y_1' & g \end{bmatrix} \;=\; \frac{y_1\cdot g - 0\cdot y_1'}{W} \;=\; \;\;\,\frac{y_1\,g}{W}.
+        $$
+
+        These are the **relic-rates** — how fast each coefficient
+        must change at every $x$ to keep the survivor $y_p$ tuned to
+        the forcing. To get the relics themselves we just integrate:
+
+        $$
+        u_1(x) \;=\; -\!\int \frac{y_2(x)\,g(x)}{W(x)}\,dx, \qquad u_2(x) \;=\; \;\;\int \frac{y_1(x)\,g(x)}{W(x)}\,dx.
+        $$
+
+        (Any constants of integration just shift $y_p$ by a piece of
+        $y_h$, which gets absorbed into the $c_1 y_1 + c_2 y_2$ part
+        later — they cost us nothing.)
+        """
+    )
+    return
+
+
+# === Section 4.11 — Saga 10: equip the relics, get y_p ============================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Saga 10 — equip the relics
+
+        Plug $u_1(x)$ and $u_2(x)$ back into the armored form
+        $y_p = u_1\,y_1 + u_2\,y_2$ from Saga 3. The survivor walks
+        out of the gauntlet carrying the closed-form answer:
+
+        $$
+        \boxed{\;\; y_p(x) \;=\; -\,y_1(x)\!\int \frac{y_2(x)\,g(x)}{W(x)}\,dx \;\;+\;\; y_2(x)\!\int \frac{y_1(x)\,g(x)}{W(x)}\,dx \;\;}
+        $$
+
+        Read this slowly — every piece is something you already have:
+
+        - $y_1, y_2$ are the basis you found in Chapter 7 (or by
+          characteristic equation, or by guess).
+        - $W = y_1 y_2' - y_2 y_1'$ is one determinant of those two.
+        - $g$ is the forcing you were handed.
+
+        No guess table. No collision rule. **Any** continuous $g(x)$
+        — $\tan x$, $\sec x$, $1/x$, a sampled road profile — goes
+        through the same machine and produces a particular solution.
+        """
+    )
+    return
+
+
+# === Section 4.12 — Finale: assemble the general solution ========================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Finale — the full general solution
+
+        We came in chasing $y_p$. The general solution of the
+        non-homogeneous equation is then exactly what Chapter 7
+        promised — the survivor plus the basis you started from:
+
+        $$
+        \boxed{\;\; y(x) \;=\; \underbrace{y_p(x)}_{\text{forced response}} \;+\; \underbrace{c_1\,y_1(x) \;+\; c_2\,y_2(x)}_{\text{free response}\,=\,y_h} \;\;}
+        $$
+
+        The two constants $c_1, c_2$ are the same two coordinates in
+        the homogeneous basis we re-met in the Prologue — pinned
+        down by initial conditions, exactly as before.
+
+        **Looking back at the climb.** Saga 1 named the basis as a
+        null space. Saga 2 named $y_p$ as the survivor $L$ couldn't
+        crush. Sagas 3–6 armed the survivor with relic-functions and
+        pushed it through $L$ until only the survivor-equation
+        remained. Saga 7 packaged the two equations as a matrix; Saga
+        8 read its determinant as area, and gave it the name
+        Wronskian. Saga 9 inverted with Cramer; Saga 10 integrated
+        and equipped. The Finale just reattaches the homogeneous
+        coordinates.
+
+        The detour into linear-algebra realm is over. You now have
+        the one method that works on *every* continuous forcing — and
+        you can see exactly *why* it works.
+        """
+    )
+    return
+
+
 # === Section 6 — Try it (3 graded exercises) ======================================
 
 # --- Challenge 1: pick the right trial form -------------------------------------
