@@ -897,63 +897,84 @@ def _(mo):
     return
 
 
-# === Section 5 — See it: the decomposition slider =================================
+# === Section 4.5 — Saga 4: the survivor's first move (y_p') =======================
+# Apply L to y_p in pieces. First: differentiate once via product rule;
+# group the four terms into "relic-derived" vs "basis-derived" buckets;
+# spend the surplus freedom from the ansatz by zeroing the relic-derived
+# group. The result -- y_p' looks like the constant-coefficient version.
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
-        ## See it — the decomposition
+        ### Saga 4 — the survivor's first move
 
-        Below is the canonical split $x = x_h + x_p$ made visible.
-        $x_h$ carries the **initial conditions** (drag $x_0$, $v_0$
-        and only the top panel changes). $x_p$ carries the
-        **forcing** (drag the source amplitudes / frequencies and
-        only the middle panel changes). The full motion $x(t)$ at
-        the bottom is their literal sum — the dotted ghosts behind
-        it are the two components.
+        We've armed $y_p$. Now we feed it through $L$ and watch the
+        algebra unfold. $L$ begins by differentiating $y_p$ once,
+        and the product rule on each term gives **four** pieces:
+
+        $$
+        y_p' \;=\; u_1' y_1 + u_1 y_1' + u_2' y_2 + u_2 y_2'.
+        $$
+
+        Four pieces, but they sort cleanly into two kinds. Group:
+
+        $$
+        y_p'
+        \;=\; \underbrace{\,u_1' y_1 + u_2' y_2\,}_{\text{relic-derived (the } u_i' \text{ terms)}}
+        \;+\; \underbrace{\,u_1 y_1' + u_2 y_2'\,}_{\text{basis-derived (the } y_i' \text{ terms)}}.
+        $$
+
+        The first bracket touches the **relics' derivatives**
+        ($u_1', u_2'$); the second touches the **basis's
+        derivatives** ($y_1', y_2'$). In shape they're symmetric,
+        but they play very different roles when we differentiate
+        a second time: the relic-derived bracket would, on the
+        next round, drag in $u_1'', u_2''$. That's a tangle we
+        don't need — and as we'll see in a moment, we have just
+        enough freedom to outlaw it.
         """
     )
     return
 
 
 @app.cell(hide_code=True)
-def _(delib):
-    fr8_panel = delib.param_panel([
-        {"name": "omega0", "label": "natural freq.  ω₀",
-         "start": 0.5, "stop": 3.0, "step": 0.1, "value": 1.5},
-        {"name": "gamma", "label": "damping  γ",
-         "start": 0.05, "stop": 1.0, "step": 0.05, "value": 0.2},
-        {"name": "x0", "label": "initial x(0)",
-         "start": -2.0, "stop": 2.0, "step": 0.1, "value": 1.0},
-        {"name": "v0", "label": "initial ẋ(0)",
-         "start": -2.0, "stop": 2.0, "step": 0.1, "value": 0.0},
-        {"name": "F0", "label": "drive amplitude  F₀",
-         "start": 0.0, "stop": 3.0, "step": 0.1, "value": 1.0},
-        {"name": "omega", "label": "drive freq.  ω",
-         "start": 0.0, "stop": 3.0, "step": 0.1, "value": 1.5},
-    ])
-    return (fr8_panel,)
+def _(mo):
+    # Saga 4 continued — spend the surplus freedom (the convenience
+    # constraint) and simplify y_p'. Split out so each cell stays
+    # under the KaTeX density threshold (§4.10).
+    mo.md(
+        r"""
+        Remember Saga 3 noted a surplus: two unknown functions
+        $u_1, u_2$ against only one equation, $L[y_p] = g$. We get
+        to spend exactly one extra constraint. Spend it here, by
+        **declaring the relic-derived bracket to be zero**:
 
+        $$
+        \boxed{\; u_1' y_1 \;+\; u_2' y_2 \;=\; 0. \;}
+        $$
 
-@app.cell(hide_code=True)
-def _(delib, fr8_panel, mo, np):
-    _v = fr8_panel.value
-    _omega0 = float(_v["omega0"])
-    _gamma  = float(_v["gamma"])
-    _x0     = float(_v["x0"])
-    _v0_    = float(_v["v0"])
-    _F0     = float(_v["F0"])
-    _omega  = float(_v["omega"])
+        This is a *choice*, not a derivation — we have the freedom
+        to impose it, and we use that freedom now because we know
+        it will save us from $u_i''$ terms in a moment.
 
-    _fig = delib.forced_response(
-        _omega0, _gamma,
-        lambda t: _F0 * np.cos(_omega * t),
-        ic=(_x0, _v0_), t_end=30.0, n=600,
-        title=f"x = x_h + x_p   ω₀={_omega0:.2f}, γ={_gamma:.2f}, "
-              f"x₀={_x0:.2f}, ẋ₀={_v0_:.2f},  F₀cos(ωt) with F₀={_F0:.2f}, ω={_omega:.2f}",
-        forcing_label="F₀ cos(ω t)",
+        With the relic-derived bracket annulled, the first
+        derivative simplifies to
+
+        $$
+        y_p' \;=\; u_1 y_1' \;+\; u_2 y_2'.
+        $$
+
+        Notice it now *looks* exactly like the constant-coefficient
+        first derivative $(c_1 y_1 + c_2 y_2)' = c_1 y_1' + c_2 y_2'$ —
+        the relics $u_1, u_2$ sit there as if they weren't varying
+        at all. That's the gift of the choice we just made: from
+        here, the first-derivative algebra reads as if the relics
+        were constants.
+
+        In the next saga we differentiate once more and finally
+        push the whole thing through $L$.
+        """
     )
-    mo.vstack([fr8_panel, _fig])
     return
 
 
