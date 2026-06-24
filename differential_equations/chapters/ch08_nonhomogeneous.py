@@ -804,6 +804,45 @@ def _(mo):
     return
 
 
+# === Section 4.3 — Saga 2: y_p is the survivor (L[y_p] = g, not 0) ================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Saga 2 — $y_p$ is the **survivor**
+
+        Everything in the null space dies: $L$ sends it to zero.
+        But the equation we actually need to solve is
+
+        $$
+        L[y_p] \;=\; g(x), \qquad g \not\equiv 0.
+        $$
+
+        Read that as a demand the null space *cannot meet*. If $y_p$
+        were one of those fragile homogeneous combinations, $L$ would
+        crush it to $0$ — and $0 \neq g$. So the particular solution
+        we're after is, by definition, **not** in the null space. It
+        has to be the rare kind of function that $L$ touches and
+        *doesn't* annihilate: one that comes out the far side
+        carrying exactly the forcing $g$.
+
+        Call $y_p$ the **survivor**. Where the homogeneous
+        functions vanish under $L$'s magic, the survivor walks
+        through it and emerges as $g$. The whole rest of the method
+        is one question:
+
+        > **What does a function have to be made of to survive $L$?**
+
+        It clearly can't be built the homogeneous way — plain
+        constants $c_1, c_2$ in front of $y_1, y_2$ — because we
+        just saw that construction is exactly what dies. The
+        survivor needs something stronger. Finding out what is
+        Saga 3.
+        """
+    )
+    return
+
+
 # === Section 5 — See it: the decomposition slider =================================
 @app.cell(hide_code=True)
 def _(mo):
