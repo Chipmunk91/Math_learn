@@ -495,57 +495,66 @@ def _(mo):
     return
 
 
-# === Section 4 — Variation of parameters (the Manim hero + worked example) ========
+# === Section 4 — Variation of parameters ==========================================
+# Being written from scratch around a linear-algebra framing (Wronskian
+# = determinant / linear-independence test; the 2x2 system as "express the
+# forcing's demand in the basis of homogeneous states"). This cell is the
+# trailhead: a gentle sign that we're about to detour into linear algebra.
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
         ## Method 2 — Variation of parameters
 
-        When $g(x)$ is **not** in the guess table — like $g(x) =
-        \sec x$, or a piecewise / table-defined input — undetermined
-        coefficients can't help. Variation of parameters works for
-        *any* continuous $g$. Trade-off: the guess table is quick;
-        VoP always works but costs you two integrals.
+        Method 1 only works when the forcing belongs to that small,
+        closed-under-differentiation family. The moment the push is
+        something like $g(x) = \sec x$, or $\tan x$, or a signal read
+        off a sensor, there's no shape to guess — the table has no
+        row for it.
 
-        The idea: take the homogeneous basis $y_1, y_2$ (from Ch 6)
-        and let the constants $C_1, C_2$ **vary with $x$**. Ask what
-        $u_1(x), u_2(x)$ must be for $y_p = u_1 y_1 + u_2 y_2$ to
-        solve the full equation. The Manim derives the formula in
-        five steps; the headline is the **Wronskian** formula:
-
-        $$
-        \boxed{\;
-        y_p(x) \;=\; -\, y_1(x)\!\int\! \frac{y_2(x)\, g(x)}{W(x)}\, dx
-        \;+\; y_2(x)\!\int\! \frac{y_1(x)\, g(x)}{W(x)}\, dx,
-        \qquad
-        W \;=\; y_1 y_2' - y_2 y_1'.
-        \;}
-        $$
+        This second method has no such limit. Give it the homogeneous
+        solutions $y_1, y_2$ (Chapter 6's job) and **any** continuous
+        forcing $g(x)$, and it returns a particular solution by a
+        fixed formula. It's the universal fallback. It also happens to
+        be the most beautiful idea in the chapter — but the beauty is
+        linear-algebraic, so it asks a little more of us.
         """
     )
     return
 
 
 @app.cell(hide_code=True)
-def _(delib):
-    delib.video(
-        "variation_of_parameters.mp4",
-        caption="Variation of parameters: five-step derivation of the Wronskian formula",
-        fallback="The variation-of-parameters Manim is being rendered "
-                 "(see manim/variation_of_parameters.py).",
-    )
-    return
-
-
-@app.cell(hide_code=True)
 def _(mo):
+    # The "trailhead sign" — slow down, short detour into linear algebra.
     mo.md(
         r"""
-        > **🚧 Placeholder.** Worked VoP example goes here — pick a
-        > $g(x)$ that the guess table genuinely can't touch (e.g.
-        > $g = \sec x$, or a tabulated input), show the Wronskian
-        > computation, the two integrals, and the resulting $y_p$.
+        > ### 🪧 Trailhead — a short detour into linear algebra
+        >
+        > Up to here the chapter has been pure calculus. From this
+        > point on, the natural way to *understand* (not just execute)
+        > variation of parameters runs through a few ideas from
+        > **linear algebra**:
+        >
+        > - **Linear independence** — when two solutions are genuinely
+        >   different versus secretly the same one rescaled.
+        > - **The determinant of a $2\times 2$** — and its meaning as
+        >   an *area*.
+        > - **Solving a small linear system** — when it has a unique
+        >   solution, and the role of the **null space** in deciding
+        >   that.
+        >
+        > You don't need to be fluent. We'll re-introduce each idea in
+        > a sentence as we reach for it, and only the $2\times 2$ case
+        > matters here. But it *is* worth slowing down: the engine of
+        > this method — the quantity called the **Wronskian** — is
+        > nothing but a determinant that tests linear independence.
+        > Meet that idea first and the whole formula stops looking
+        > like magic; skip it and you'll be memorising symbols.
+        >
+        > So take the detour. The next few cells step off the calculus
+        > trail into the linear-algebra realm, just long enough to
+        > pick up the three ideas above — then we come back and let
+        > them solve the ODE.
         """
     )
     return
