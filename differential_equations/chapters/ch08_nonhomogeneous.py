@@ -1268,74 +1268,71 @@ def _(go, mo, np):
     return
 
 
-# === Section 4.9b — Interlude: the W = 0 abyss (Abel's theorem) ===================
-# The figure showed the collapse geometrically; Saga 9 is about to put
-# W in a denominator. Close the loop: W = 0 means "not a basis," and
-# Abel's identity guarantees a real basis never hits W = 0 on the
-# interval, so the denominator is safe.
+# === Section 4.9b — Optional interlude: the W = 0 abyss (Abel's theorem) ==========
+# Collapsed by default — the saga flow goes Saga 8 -> Saga 9 cleanly
+# without it. Students who notice "Saga 9 divides by W -- what if
+# W = 0?" can expand the accordion for the diagnostic + Abel's
+# all-or-nothing dichotomy.
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
-        ### Interlude — the abyss that never opens
+    mo.accordion({
+        "What if $W = 0$? (optional — why the next saga can safely divide by $W$)": mo.md(
+            r"""
+            Look ahead one step. The formula in the next saga divides
+            by $W$. So before we trust it, we have to stare straight
+            at the right-hand panel above and ask the dangerous
+            question:
 
-        Look ahead one step. The formula in the next saga divides by
-        $W$. So before we trust it, we have to stare straight at the
-        right-hand panel above and ask the dangerous question:
+            > **What if $W = 0$? Doesn't the whole method fall into
+            > the abyss?**
 
-        > **What if $W = 0$? Doesn't the whole method fall into the
-        > abyss?**
+            First, what $W = 0$ even *means*. It is exactly the
+            collapsed case: the two state vectors are collinear, so
+            one function is a constant multiple of the other. They
+            are **linearly dependent** — together they span only a
+            *line*, not the full two-dimensional solution space. If
+            you ever compute $W = 0$, you never had a basis at all.
+            The division-by-zero isn't a bug in the method; it's the
+            method shouting *"these two aren't independent — go find
+            a genuine second solution."*
 
-        First, what $W = 0$ even *means*. It is exactly the collapsed
-        case: the two state vectors are collinear, so one function is
-        a constant multiple of the other. They are **linearly
-        dependent** — together they span only a *line*, not the full
-        two-dimensional solution space. If you ever compute $W = 0$,
-        you never had a basis at all. The division-by-zero isn't a
-        bug in the method; it's the method shouting *"these two aren't
-        independent — go find a genuine second solution."*
+            So the real worry is subtler: could a *legitimate* basis
+            still have $W$ dip to zero at some isolated point $x$,
+            opening the abyss right there? Remarkably, **no** — and
+            the reason is a small theorem worth meeting.
 
-        So the real worry is subtler: could a *legitimate* basis still
-        have $W$ dip to zero at some isolated point $x$, opening the
-        abyss right there? Remarkably, **no** — and the reason is a
-        small theorem worth meeting.
-        """
-    )
-    return
+            **Abel's identity.** Differentiate
+            $W = y_1 y_2' - y_2 y_1'$ once. The $y_1 y_2''$ and
+            $y_2 y_1''$ terms appear, and since $y_1, y_2$ each solve
+            $y'' + p\,y' + q\,y = 0$ we can replace
+            $y_i'' = -p\,y_i' - q\,y_i$. Almost everything cancels,
+            leaving a startlingly simple first-order equation for
+            $W$ itself:
 
+            $$
+            W'(x) \;=\; -\,p(x)\,W(x) \qquad\Longrightarrow\qquad W(x) \;=\; W(x_0)\,e^{-\int p(x)\,dx}.
+            $$
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        **Abel's identity.** Differentiate $W = y_1 y_2' - y_2 y_1'$
-        once. The $y_1 y_2''$ and $y_2 y_1''$ terms appear, and since
-        $y_1, y_2$ each solve $y'' + p\,y' + q\,y = 0$ we can replace
-        $y_i'' = -p\,y_i' - q\,y_i$. Almost everything cancels, leaving
-        a startlingly simple first-order equation for $W$ itself:
+            Now read what that exponential says. $e^{(\,\cdot\,)}$ is
+            **never zero** — so $W(x)$ is just a nonzero number times
+            a constant. There are only two possibilities:
 
-        $$
-        W'(x) \;=\; -\,p(x)\,W(x) \qquad\Longrightarrow\qquad W(x) \;=\; W(x_0)\,e^{-\int p(x)\,dx}.
-        $$
+            - if $W(x_0) = 0$ at even one point, then $W \equiv 0$
+              *everywhere* (linearly dependent — never a basis);
+            - if $W(x_0) \ne 0$ at one point, then $W \ne 0$ at
+              *every* point of the interval (a genuine basis).
 
-        Now read what that exponential says. $e^{(\,\cdot\,)}$ is
-        **never zero** — so $W(x)$ is just a nonzero number times a
-        constant. There are only two possibilities:
-
-        - if $W(x_0) = 0$ at even one point, then $W \equiv 0$
-          *everywhere* (linearly dependent — never a basis);
-        - if $W(x_0) \ne 0$ at one point, then $W \ne 0$ at
-          *every* point of the interval (a genuine basis).
-
-        It is **all or nothing**. A real basis cannot quietly lose its
-        independence at some lone $x$; the Wronskian has no isolated
-        zeros. So the moment Chapter 6 or 7 handed you a true
-        fundamental pair, $W \ne 0$ across the whole interval where
-        $p, q$ are continuous — and the denominator in Saga 9 is
-        guaranteed safe. The abyss in the figure is real, but for an
-        honest basis it never opens.
-        """
-    )
+            It is **all or nothing**. A real basis cannot quietly
+            lose its independence at some lone $x$; the Wronskian has
+            no isolated zeros. So the moment Chapter 6 or 7 handed
+            you a true fundamental pair, $W \ne 0$ across the whole
+            interval where $p, q$ are continuous — and the
+            denominator in the next saga is guaranteed safe. The
+            abyss in the figure is real, but for an honest basis it
+            never opens.
+            """
+        ),
+    })
     return
 
 
