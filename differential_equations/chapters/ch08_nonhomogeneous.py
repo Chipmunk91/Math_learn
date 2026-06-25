@@ -811,20 +811,19 @@ def _(mo):
         r"""
         ### Saga 2 — $y_p$ is the **survivor**
 
-        Everything in the null space dies: $L$ sends it to zero.
-        But the equation we actually need to solve is
+        If everything in the null space dies, then $y_p$ — which has
+        to land on a nonzero $g$ — cannot live there. The equation
+        is, very precisely,
 
         $$
-        L[y_p] \;=\; g(x), \qquad g \not\equiv 0.
+        L[y_p] \;=\; g(x), \qquad g \not\equiv 0,
         $$
 
-        Read that as a demand the null space *cannot meet*. If $y_p$
-        were one of those fragile homogeneous combinations, $L$ would
-        crush it to $0$ — and $0 \neq g$. So the particular solution
-        we're after is, by definition, **not** in the null space. It
-        has to be the rare kind of function that $L$ touches and
-        *doesn't* annihilate: one that comes out the far side
-        carrying exactly the forcing $g$.
+        a demand the null space is constitutionally unable to meet.
+        So the particular solution we're after is, by definition,
+        **not** in the null space. It has to be the rare kind of
+        function that $L$ touches and *doesn't* annihilate: one that
+        comes out the far side carrying exactly the forcing $g$.
 
         Call $y_p$ the **survivor**. Where the homogeneous
         functions vanish under $L$'s magic, the survivor walks
@@ -834,10 +833,9 @@ def _(mo):
         > **What does a function have to be made of to survive $L$?**
 
         It clearly can't be built the homogeneous way — plain
-        constants $c_1, c_2$ in front of $y_1, y_2$ — because we
-        just saw that construction is exactly what dies. The
-        survivor needs something stronger. Finding out what is
-        Saga 3.
+        constants in front of $y_1, y_2$ are exactly the
+        construction that dies. The survivor needs something
+        stronger.
         """
     )
     return
@@ -1005,6 +1003,9 @@ def _(mo):
         y_p'' &= u_1' y_1' + u_1 y_1'' + u_2' y_2' + u_2 y_2''.
         \end{aligned}
         $$
+
+        All three ready. Now feed them through $L$, demand the result
+        equal $g$, and watch what survives.
         """
     )
     return
@@ -1235,8 +1236,7 @@ def _(go, mo, np):
             r"""
             ### Saga 8 — the Wronskian, finally named
 
-            The determinant of $Y(x)$ has a name we've been ducking
-            for two chapters. Define
+            The determinant of $Y(x)$ finally gets a name. Define
 
             $$
             W(x) \;=\; \det Y(x) \;=\; y_1\,y_2' \;-\; y_2\,y_1'.
@@ -1245,16 +1245,14 @@ def _(go, mo, np):
             This is the **Wronskian**. It is not new machinery — it
             is the determinant of the state matrix you already had.
 
-            Geometrically (left panel), the columns of $Y(x)$ are
-            two state vectors $(y_i,\,y_i')$ in the $(y, y')$ plane.
-            Their determinant is the **signed area of the parallelogram**
-            they span. If the basis is genuinely independent, that
-            parallelogram has real area — and $W \ne 0$.
-
-            Geometrically (right panel), if one basis function is a
-            multiple of the other, the two state vectors point along
-            the **same line**. The parallelogram collapses; area is
-            zero; $W = 0$.
+            Geometrically, the columns of $Y(x)$ are two state
+            vectors $(y_i,\,y_i')$ in the $(y, y')$ plane. Their
+            determinant is the **signed area of the parallelogram**
+            they span — that's the picture on the left. If one basis
+            function is a constant multiple of the other, the two
+            state vectors point along the **same line**, the
+            parallelogram collapses, and $W = 0$ — the picture on
+            the right.
 
             So $W(x) \ne 0$ is exactly the statement **"the two basis
             functions are linearly independent at $x$"** — the
@@ -1389,8 +1387,9 @@ def _(mo):
 
         Read this slowly — every piece is something you already have:
 
-        - $y_1, y_2$ are the basis you found in Chapter 7 (or by
-          characteristic equation, or by guess).
+        - $y_1, y_2$ are the basis you found in Chapter 6 (by
+          characteristic equation, or by reduction of order, or by
+          guess).
         - $W = y_1 y_2' - y_2 y_1'$ is one determinant of those two.
         - $g$ is the forcing you were handed.
 
@@ -1421,19 +1420,36 @@ def _(mo):
         the homogeneous basis we re-met in the Prologue — pinned
         down by initial conditions, exactly as before.
 
-        **Looking back at the climb.** Saga 1 named the basis as a
-        null space. Saga 2 named $y_p$ as the survivor $L$ couldn't
-        crush. Sagas 3–6 armed the survivor with relic-functions and
-        pushed it through $L$ until only the survivor-equation
-        remained. Saga 7 packaged the two equations as a matrix; Saga
-        8 read its determinant as area, and gave it the name
-        Wronskian. Saga 9 inverted with Cramer; Saga 10 integrated
-        and equipped. The Finale just reattaches the homogeneous
-        coordinates.
+        **Looking back at the climb.** The Prologue re-saw
+        $c_1 y_1 + c_2 y_2$ as coordinates in a 2-D function space.
+        Saga 1 gave that space its real name — the **null space** of
+        the evil operator $L$ — and Saga 2 turned the chapter's
+        question into a single sentence: *what kind of function
+        survives $L$?* It can't be built the homogeneous way, because
+        $L$ slides clean through the constants and annihilates
+        whatever's left.
 
-        The detour into linear-algebra realm is over. You now have
-        the one method that works on *every* continuous forcing — and
-        you can see exactly *why* it works.
+        So Sagas 3–6 armed the survivor. The constants became
+        **relics** $u_1(x), u_2(x)$ — functions that actually
+        *interact* with $L$ — and we walked the armed $y_p$ through
+        the gauntlet term by term. The convenience constraint of
+        Saga 4 burned the surplus freedom; the null space of Saga 1
+        collapsed two whole groups in Saga 6; and what limped out the
+        far side was the single survivor-equation
+        $u_1' y_1' + u_2' y_2' = g$.
+
+        Saga 7 stacked the two equations into a matrix. Its
+        determinant — the **Wronskian** — turned out to be the signed
+        area of the parallelogram of states, and (the optional Abel
+        detour above) Abel's identity proved the abyss never opens
+        for an honest basis. Cramer inverted the matrix in Saga 9,
+        one integration equipped the relics in Saga 10, and the
+        survivor walked out carrying the boxed formula. The Finale
+        just reattached the homogeneous coordinates.
+
+        The detour into the linear-algebra realm is over. You now
+        have the one method that works on *every* continuous forcing
+        — and you can see exactly *why* it works.
         """
     )
     return
