@@ -89,6 +89,15 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
+def _(delib):
+    # Same chassis as Ch7/Ch8's road_test; new presets land the two
+    # specific forcings -- a periodic impulse train (POTHOLE) and a
+    # smoothed step staircase (CURB) -- that motivate this chapter.
+    delib.pothole_curb()
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo):
     # Why the inherited toolbox stumbles on pothole/curb -- motivates
     # the portal. Kept short; the *real* technical comparison lives in
@@ -160,6 +169,161 @@ def _(mo):
 
 
 # === Section 2 — The portal: defining the Laplace transform =======================
-# TODO: build out next. Definition + linearity + table of canonical
-# pairs (1, t, e^{at}, cos omega t, sin omega t). Each pair derived
-# from the integral, not just asserted, so the table feels earned.
+# Cross from t-space to s-space. Definition + half-line caveat, then
+# derive 4 canonical pairs from the integral so the table feels
+# earned (not memorised). Each derivation gets its own cell to stay
+# under the KaTeX density threshold.
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## The portal — defining $\mathcal{L}$
+
+        Pick a function $f(t)$ on $t \ge 0$. Multiply it by an
+        exponential weight $e^{-st}$, integrate over the whole future,
+        and call the result $F(s)$:
+
+        $$
+        \boxed{\;\; F(s) \;=\; \mathcal{L}\{f(t)\} \;=\; \int_{0}^{\infty} e^{-st}\, f(t)\, dt. \;\;}
+        $$
+
+        That's the entire portal. For each value of $s$, the integral
+        spits out one number — so $F(s)$ is a brand-new function, this
+        time of $s$ instead of $t$. We say $F(s)$ is the **Laplace
+        transform** of $f(t)$, and we'll picture it as $f$'s image on
+        the other side of the door.
+
+        Two pieces of fine print, and we move on. **First**, $s$ has
+        to be large enough that the integral converges; for $f(t) =
+        e^{at}$, for example, the weight $e^{-st}$ only wins if
+        $s > a$. We won't fuss about it — for every function we'll meet
+        there's some half-plane $\mathrm{Re}(s) > s_0$ where the
+        integral converges, and we just live there. **Second**, the
+        lower limit is $0$, not $-\infty$. The portal sees only the
+        *future*. That's not a flaw — it's why Laplace is the right
+        tool for problems that **start at $t = 0$** with initial
+        conditions, and for forcings (like a curb at $t = a$) that
+        *switch on* somewhere along the way.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### The first two pairs — constants and exponentials
+
+        Two transforms do all the work in this chapter, and both fall
+        out of the integral with one line of calculus.
+
+        **A constant.** For $f(t) = 1$:
+
+        $$
+        \mathcal{L}\{1\} \;=\; \int_0^{\infty} e^{-st}\, dt \;=\; \left[-\tfrac{1}{s} e^{-st}\right]_0^{\infty} \;=\; \frac{1}{s} \qquad (s > 0).
+        $$
+
+        A function that is identically $1$ in $t$-space is just
+        $1/s$ in $s$-space. Tiny, but exactly the image we'll need
+        when we transform an initial condition.
+
+        **An exponential.** For $f(t) = e^{at}$, the two exponentials
+        merge:
+
+        $$
+        \mathcal{L}\{e^{at}\} \;=\; \int_0^{\infty} e^{-(s-a)t}\, dt \;=\; \frac{1}{s - a} \qquad (s > a).
+        $$
+
+        Look at what just happened. In $t$-space, $e^{at}$ is the
+        function that "remembers itself" under differentiation
+        ($\frac{d}{dt} e^{at} = a\,e^{at}$). In $s$-space, it became
+        the **simplest possible** rational function — a single pole
+        at $s = a$. That correspondence is the chapter's load-bearing
+        beam. Hold onto it.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Sine and cosine — one Euler-trick away
+
+        The third pair we'll need over and over is $\sin$ and $\cos$.
+        Instead of integrating by parts twice, run a complex
+        $e^{i\omega t}$ through the exponential rule from above:
+
+        $$
+        \mathcal{L}\{e^{i\omega t}\} \;=\; \frac{1}{s - i\omega} \;=\; \frac{s + i\omega}{s^2 + \omega^2}.
+        $$
+
+        But $e^{i\omega t} = \cos\omega t + i\sin\omega t$, and
+        $\mathcal{L}$ is **linear** — it distributes over the real
+        and imaginary parts. So reading off real and imaginary
+        pieces:
+
+        $$
+        \mathcal{L}\{\cos\omega t\} \;=\; \frac{s}{s^2 + \omega^2}, \qquad \mathcal{L}\{\sin\omega t\} \;=\; \frac{\omega}{s^2 + \omega^2}.
+        $$
+
+        Note where those $s$-images live: both have denominators
+        $s^2 + \omega^2$ — the very same polynomial that's the
+        **characteristic polynomial** of the undamped oscillator
+        $\ddot x + \omega^2 x = 0$ from Chapter 6. The portal already
+        knows the answer. We just don't quite see *why* yet — that
+        comes in §3.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### The starter dictionary
+
+        Five entries cover almost every example in this chapter
+        (and a sixth is one differentiation away). The first three
+        are the ones we just derived; the others fall out of exactly
+        the same machinery if you want to do them yourself.
+
+        | $f(t)$ | $F(s) = \mathcal{L}\{f(t)\}$ | converges for |
+        |---|---|---|
+        | $1$ | $\displaystyle \frac{1}{s}$ | $s > 0$ |
+        | $e^{at}$ | $\displaystyle \frac{1}{s - a}$ | $s > a$ |
+        | $\cos\omega t$ | $\displaystyle \frac{s}{s^2 + \omega^2}$ | $s > 0$ |
+        | $\sin\omega t$ | $\displaystyle \frac{\omega}{s^2 + \omega^2}$ | $s > 0$ |
+        | $t$ | $\displaystyle \frac{1}{s^2}$ | $s > 0$ |
+        | $t^n$ | $\displaystyle \frac{n!}{s^{n+1}}$ | $s > 0$ |
+
+        And one structural rule we'll lean on without saying:
+        **linearity.** Because the integral is linear,
+
+        $$
+        \mathcal{L}\{a\,f(t) + b\,g(t)\} \;=\; a\,F(s) + b\,G(s).
+        $$
+
+        Combinations on the $t$ side become the *same* combinations on
+        the $s$ side — no surprises. Six pairs and one rule. With that
+        much in hand, you can already transform any sum of
+        polynomials, exponentials, and sinusoids — the whole UC table
+        from Chapter 8, basically.
+
+        What you *can't* yet do is transform an ODE. For that we need
+        one more piece — the derivative rule, $\mathcal{L}\{y'\}$ —
+        and it's the rule that gives the portal its whole point.
+        """
+    )
+    return
+
+
+# === Section 3 — Why the portal works on ODEs: d/dt → s ===========================
+# TODO: derive L{y'} = sY - y(0) and L{y''} = s²Y - s y(0) - y'(0)
+# from integration by parts. Land the central trick: t-derivatives
+# become s-multiplications, with the initial conditions automatically
+# baked in. Then run one tiny worked example end-to-end.

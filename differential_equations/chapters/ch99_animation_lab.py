@@ -41,7 +41,8 @@ def _(mo):
         | 5 | Rumor through a crowd | Canvas 2D agents + live logistic fit | $\dot y = b\,y(K-y)$ — spatial vs. well-mixed | ✅ `rumor_crowd` · Ch 1 hook |
         | 6 | Cooling coffee | Canvas 2D + steam particles | $T' + kT = kT_r$ — Newton's cooling | ✅ `cooling_coffee` · Ch 2 hook |
         | 7 | The hidden hillside, in 3-D | Three.js surface + contour walk + water-level plane | $M\,dx + N\,dy = 0$ — solutions are contours of $F$ at constant altitude | ○ candidate · Ch 3a |
-        | 8 | Road test — same car, different roads | Canvas 2D side-scrolling road + chassis, RK4 in JS | $y'' + 2\gamma y' + \omega_0^2 y = \omega_0^2\,u(t)$ — non-homogeneous; road profile *is* the forcing | ○ candidate · Ch 8 |
+        | 8 | Road test — same car, different roads | Canvas 2D side-scrolling road + chassis, RK4 in JS | $y'' + 2\gamma y' + \omega_0^2 y = \omega_0^2\,u(t)$ — non-homogeneous; road profile *is* the forcing | ✅ `road_test` · Ch 8 hook |
+        | 9 | Pothole and curb — repeating impulses and steps | Canvas 2D + per-preset $g(t)$, RK4 in JS | $y'' + 2\gamma y' + \omega_0^2 y = \omega_0^2 g(t)$ for $g \in \{\sin\omega t, -\Sigma\delta(t-t_k), \Sigma u(t-t_k)\}$ | ✅ `pothole_curb` · Ch 9 hook |
 
         The **Status** column is the single place this page tracks
         graduation: ✅ means the demo has moved into `delib` and now
@@ -786,276 +787,10 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    import anywidget
-    import traitlets
-
-    class _PotholeCurb(anywidget.AnyWidget):
-        _esm = r"""
-        function render({ model, el }) {
-          el.innerHTML = `
-            <div style="font:13px sans-serif;color:#dfe7f2">
-              <div data-r style="position:relative;width:100%;max-width:680px;border:1px solid #1d2638;border-radius:8px;overflow:hidden;background:#0c1118">
-                <canvas data-road style="display:block;width:100%;height:260px"></canvas>
-                <div data-tag style="position:absolute;top:8px;left:10px;padding:3px 8px;border-radius:5px;background:rgba(20,28,46,0.86);border:1px solid #2a3654;color:#cdd6e0;font:12px sans-serif"></div>
-              </div>
-              <div data-r2 style="position:relative;width:100%;max-width:680px;border:1px solid #1d2638;border-radius:8px;overflow:hidden;background:#0c1118;margin-top:8px">
-                <canvas data-chart style="display:block;width:100%;height:180px"></canvas>
-              </div>
-              <div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap;color:#cdd6e0">
-                <div style="display:flex;gap:6px">
-                  <button data-p="smooth"  style="padding:6px 12px;background:#16223a;color:#dfe7f2;border:1px solid #2a3654;border-radius:6px;cursor:pointer">SMOOTH</button>
-                  <button data-p="pothole" style="padding:6px 12px;background:#16223a;color:#dfe7f2;border:1px solid #2a3654;border-radius:6px;cursor:pointer">POTHOLE</button>
-                  <button data-p="curb"    style="padding:6px 12px;background:#16223a;color:#dfe7f2;border:1px solid #2a3654;border-radius:6px;cursor:pointer">CURB</button>
-                </div>
-                <label style="margin-left:8px">stiffness ω₀ <input type="range" min="0.8" max="3.0" step="0.05" value="1.5" data-k="omega0"> <span data-v="omega0" style="color:#7ce0d3">1.50</span></label>
-                <label>damping γ <input type="range" min="0.05" max="1.2" step="0.05" value="0.30" data-k="gamma"> <span data-v="gamma" style="color:#ffb968">0.30</span></label>
-                <button data-b="reset" style="padding:6px 12px;background:#16223a;color:#dfe7f2;border:1px solid #2a3654;border-radius:6px;cursor:pointer">↺ replay</button>
-              </div>
-              <div data-stat style="color:#8a96a5;margin-top:6px"></div>
-            </div>`;
-
-          var roadEl = el.querySelector('[data-road]');
-          var chartEl = el.querySelector('[data-chart]');
-          var dpr = window.devicePixelRatio || 1;
-          function fitCanvas(c, hpx) {
-            var w = c.parentElement.clientWidth || 680;
-            c.width = w * dpr; c.height = hpx * dpr;
-            c.style.height = hpx + 'px';
-            var k = c.getContext('2d'); k.setTransform(dpr, 0, 0, dpr, 0, 0);
-            return { ctx: k, W: w, H: hpx };
-          }
-          var fitR = fitCanvas(roadEl, 260), fitG = fitCanvas(chartEl, 180);
-          var r_ = fitR.ctx, RW = fitR.W, RH = fitR.H;
-          var g_ = fitG.ctx, GW = fitG.W, GH = fitG.H;
-          window.addEventListener('resize', function () {
-            fitR = fitCanvas(roadEl, 260);  r_ = fitR.ctx; RW = fitR.W; RH = fitR.H;
-            fitG = fitCanvas(chartEl, 180); g_ = fitG.ctx; GW = fitG.W; GH = fitG.H;
-          });
-
-          // --- presets ------------------------------------------------------
-          // POTHOLE is a periodic train of narrow Gaussian dips: each one
-          // integrates to ~ -1 over its support, so it's a smoothed
-          // -delta train. CURB is a short flight of tanh-smoothed steps
-          // (a sum of Heavisides) that climbs to a plateau; smoothed so
-          // RK4 doesn't choke on the corners.
-          var POTHOLE_SIG = 0.16, POTHOLE_T0 = 2.0, POTHOLE_PERIOD = 3.0;
-          var CURB_SHARP = 16.0, CURB_RISE = 0.16;
-          var CURB_STEPS = [2.0, 3.8, 5.6];   // step-up times
-          function smoothStep(x) { return 0.5 * (1 + Math.tanh(CURB_SHARP * x)); }
-          var ROAD_FNS = {
-            smooth:  function (t) { return 0.32 * Math.sin(1.4 * t); },
-            pothole: function (t) {
-              var p = (((t - POTHOLE_T0) % POTHOLE_PERIOD) + POTHOLE_PERIOD) % POTHOLE_PERIOD;
-              var d = (p < POTHOLE_PERIOD / 2) ? p : p - POTHOLE_PERIOD;
-              return -0.55 * Math.exp(-(d*d)/(2*POTHOLE_SIG*POTHOLE_SIG));
-            },
-            curb: function (t) {
-              var s = 0;
-              for (var i = 0; i < CURB_STEPS.length; i++) s += CURB_RISE * smoothStep(t - CURB_STEPS[i]);
-              return s;
-            },
-          };
-          var TAGS = {
-            smooth:  'SMOOTH:  g(t) = sin(ω t)  ·  UC has a row, VoP integrates cleanly',
-            pothole: 'POTHOLE: g(t) ≈ −Σ δ(t − tₖ)  ·  a train of impulses; no UC trial',
-            curb:    'CURB:    g(t) = Σ u(t − tₖ)  ·  a flight of steps; VoP goes piecewise',
-          };
-          var preset = 'smooth';
-          var roadFn = ROAD_FNS.smooth;
-
-          // --- physics state ------------------------------------------------
-          var omega0 = 1.5, gamma = 0.30;
-          var t = 0, y = [0, 0];
-          var hist = [];
-
-          function setPreset(p) {
-            preset = p; roadFn = ROAD_FNS[p];
-            el.querySelector('[data-tag]').textContent = TAGS[p];
-            t = 0; y = [0, 0]; hist = [];
-            // visual highlight on the active button
-            ['smooth','pothole','curb'].forEach(function(name){
-              var b = el.querySelector('button[data-p="'+name+'"]');
-              if (name === p) { b.style.background = '#2a3654'; b.style.borderColor = '#7ce0d3'; }
-              else            { b.style.background = '#16223a'; b.style.borderColor = '#2a3654'; }
-            });
-          }
-          el.querySelectorAll('button[data-p]').forEach(function(b){
-            b.addEventListener('click', function(){ setPreset(b.getAttribute('data-p')); });
-          });
-          el.querySelector('[data-b="reset"]').addEventListener('click', function(){
-            t = 0; y = [0, 0]; hist = [];
-          });
-          el.querySelectorAll('input[data-k]').forEach(function(i){
-            i.addEventListener('input', function(){
-              omega0 = parseFloat(el.querySelector('input[data-k="omega0"]').value);
-              gamma  = parseFloat(el.querySelector('input[data-k="gamma"]').value);
-              el.querySelector('[data-v="omega0"]').textContent = omega0.toFixed(2);
-              el.querySelector('[data-v="gamma"]').textContent  = gamma.toFixed(2);
-            });
-          });
-          setPreset('smooth');
-
-          // --- RK4 on [y, y_dot] -------------------------------------------
-          function rhs(t, s) {
-            return [s[1], omega0*omega0 * (roadFn(t) - s[0]) - 2*gamma * s[1]];
-          }
-          function rk4step(t, s, h) {
-            var k1 = rhs(t, s);
-            var k2 = rhs(t + h/2, [s[0] + h/2*k1[0], s[1] + h/2*k1[1]]);
-            var k3 = rhs(t + h/2, [s[0] + h/2*k2[0], s[1] + h/2*k2[1]]);
-            var k4 = rhs(t + h,   [s[0] + h*k3[0],   s[1] + h*k3[1]  ]);
-            return [
-              s[0] + h/6 * (k1[0] + 2*k2[0] + 2*k3[0] + k4[0]),
-              s[1] + h/6 * (k1[1] + 2*k2[1] + 2*k3[1] + k4[1]),
-            ];
-          }
-
-          // --- world geometry (same look as road_test) ---------------------
-          var T_WIN_BEFORE = 4.0, T_WIN_AFTER = 1.5;
-          var PX_PER_UNIT = 56;
-          var GROUND_PX = 190;
-          var BODY_OFFSET = 60;
-
-          function drawScene(t, y) {
-            var sky = r_.createLinearGradient(0, 0, 0, GROUND_PX);
-            sky.addColorStop(0, '#0c1118'); sky.addColorStop(1, '#141d2e');
-            r_.fillStyle = sky; r_.fillRect(0, 0, RW, GROUND_PX);
-
-            var x_center = RW / 2;
-            var px_per_sec = RW / (T_WIN_BEFORE + T_WIN_AFTER);
-            function tToPx(t_rel) { return x_center + t_rel * px_per_sec; }
-
-            var nsamples = 240, pts = [];
-            for (var i = 0; i <= nsamples; i++) {
-              var t_rel = -T_WIN_BEFORE + (i / nsamples) * (T_WIN_BEFORE + T_WIN_AFTER);
-              var u = roadFn(t + t_rel);
-              pts.push([tToPx(t_rel), GROUND_PX - u * PX_PER_UNIT]);
-            }
-            r_.beginPath();
-            r_.moveTo(pts[0][0], pts[0][1]);
-            for (var i = 1; i < pts.length; i++) r_.lineTo(pts[i][0], pts[i][1]);
-            r_.lineTo(RW, RH); r_.lineTo(0, RH); r_.closePath();
-            r_.fillStyle = '#1a2336'; r_.fill();
-
-            r_.strokeStyle = '#ffb968'; r_.lineWidth = 2.4;
-            r_.shadowColor = '#ffb968'; r_.shadowBlur = 10;
-            r_.beginPath();
-            r_.moveTo(pts[0][0], pts[0][1]);
-            for (var i = 1; i < pts.length; i++) r_.lineTo(pts[i][0], pts[i][1]);
-            r_.stroke(); r_.shadowBlur = 0;
-
-            r_.strokeStyle = 'rgba(255,255,255,0.08)'; r_.lineWidth = 1;
-            r_.beginPath(); r_.moveTo(x_center, 0); r_.lineTo(x_center, RH); r_.stroke();
-
-            // car
-            var car_w = 96, car_h = 30;
-            var cx = x_center;
-            var cy = GROUND_PX - BODY_OFFSET - y[0] * PX_PER_UNIT;
-            var wheel_dx = 26, wheel_r = 11;
-            function pxToT(px_x) { return (px_x - x_center) / px_per_sec; }
-            var rear_x  = cx - wheel_dx, rear_t  = pxToT(rear_x);
-            var front_x = cx + wheel_dx, front_t = pxToT(front_x);
-            var rear_y  = GROUND_PX - roadFn(t + rear_t)  * PX_PER_UNIT;
-            var front_y = GROUND_PX - roadFn(t + front_t) * PX_PER_UNIT;
-
-            r_.strokeStyle = '#ffb968'; r_.lineWidth = 1.6;
-            r_.beginPath(); r_.moveTo(cx - wheel_dx, cy + car_h/2); r_.lineTo(rear_x,  rear_y); r_.stroke();
-            r_.beginPath(); r_.moveTo(cx + wheel_dx, cy + car_h/2); r_.lineTo(front_x, front_y); r_.stroke();
-
-            r_.shadowColor = '#7ce0d3'; r_.shadowBlur = 12;
-            r_.fillStyle = 'rgba(124,224,211,0.18)';
-            r_.strokeStyle = '#7ce0d3'; r_.lineWidth = 2.2;
-            roundRect(r_, cx - car_w/2, cy - car_h/2, car_w, car_h, 8, true, true);
-            r_.shadowBlur = 0;
-
-            r_.fillStyle = '#16223a'; r_.strokeStyle = '#9ed8ff'; r_.lineWidth = 2;
-            r_.beginPath(); r_.arc(rear_x,  rear_y  - wheel_r, wheel_r, 0, 6.2832); r_.fill(); r_.stroke();
-            r_.beginPath(); r_.arc(front_x, front_y - wheel_r, wheel_r, 0, 6.2832); r_.fill(); r_.stroke();
-          }
-
-          function roundRect(ctx, x, y, w, h, r, fill, stroke) {
-            ctx.beginPath();
-            ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
-            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-            ctx.lineTo(x + w, y + h - r);
-            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-            ctx.lineTo(x + r, y + h);
-            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-            ctx.lineTo(x, y + r);
-            ctx.quadraticCurveTo(x, y, x + r, y);
-            if (fill) ctx.fill(); if (stroke) ctx.stroke();
-          }
-
-          var T_HIST = 12;
-          function drawChart(t, y) {
-            g_.fillStyle = '#0c1118'; g_.fillRect(0, 0, GW, GH);
-            var L = 50, R = 14, T = 14, B = 24;
-            var tmin = Math.max(0, t - T_HIST), tmax = Math.max(t, T_HIST);
-            var lo = -0.7, hi = 0.7;
-            for (var i = 0; i < hist.length; i++) {
-              if (hist[i].t < tmin) continue;
-              lo = Math.min(lo, hist[i].q, hist[i].u);
-              hi = Math.max(hi, hist[i].q, hist[i].u);
-            }
-            var pad = (hi - lo) * 0.12; lo -= pad; hi += pad;
-            function cx(tv) { return L + (tv - tmin) / (tmax - tmin) * (GW - L - R); }
-            function cy(yv) { return T + (1 - (yv - lo) / (hi - lo)) * (GH - T - B); }
-
-            g_.strokeStyle = '#1d2638'; g_.lineWidth = 1;
-            g_.beginPath();
-            g_.moveTo(L, T); g_.lineTo(L, GH - B); g_.lineTo(GW - R, GH - B);
-            g_.stroke();
-            if (lo < 0 && hi > 0) {
-              g_.beginPath(); g_.moveTo(L, cy(0)); g_.lineTo(GW - R, cy(0)); g_.stroke();
-            }
-            g_.fillStyle = '#7c8aa0'; g_.font = '11px sans-serif';
-            g_.textAlign = 'left'; g_.textBaseline = 'top';
-            g_.fillText('road g(t) — amber dashed (forcing) · chassis y(t) — cyan solid (response)', L + 2, T - 1);
-
-            g_.strokeStyle = '#ffb968'; g_.lineWidth = 1.5; g_.setLineDash([5, 4]);
-            g_.beginPath(); var first = true;
-            for (var i = 0; i < hist.length; i++) {
-              if (hist[i].t < tmin) continue;
-              var px = cx(hist[i].t), py = cy(hist[i].u);
-              if (first) { g_.moveTo(px, py); first = false; } else g_.lineTo(px, py);
-            }
-            g_.stroke(); g_.setLineDash([]);
-
-            g_.strokeStyle = '#7ce0d3'; g_.lineWidth = 2.4;
-            g_.shadowColor = '#7ce0d3'; g_.shadowBlur = 8;
-            g_.beginPath(); first = true;
-            for (var i = 0; i < hist.length; i++) {
-              if (hist[i].t < tmin) continue;
-              var qx = cx(hist[i].t), qy = cy(hist[i].q);
-              if (first) { g_.moveTo(qx, qy); first = false; } else g_.lineTo(qx, qy);
-            }
-            g_.stroke(); g_.shadowBlur = 0;
-          }
-
-          function status(t, y) {
-            el.querySelector('[data-stat]').textContent =
-              't = ' + t.toFixed(2) + 's  ·  g(t) = ' + roadFn(t).toFixed(3) +
-              '  ·  y(t) = ' + y[0].toFixed(3) +
-              '  ·  ω₀ = ' + omega0.toFixed(2) + ', γ = ' + gamma.toFixed(2);
-          }
-
-          var lastWall = performance.now();
-          function frame(now) {
-            var dtw = Math.min(0.05, (now - lastWall) / 1000); lastWall = now;
-            var h = 0.005, n = Math.max(1, Math.round(dtw / h));
-            for (var k = 0; k < n; k++) { y = rk4step(t, y, h); t += h; }
-            hist.push({ t: t, q: y[0], u: roadFn(t) });
-            while (hist.length > 0 && hist[0].t < t - T_HIST - 2.0) hist.shift();
-            drawScene(t, y); drawChart(t, y); status(t, y);
-            requestAnimationFrame(frame);
-          }
-          requestAnimationFrame(frame);
-        }
-        export default { render };
-        """
-
-    mo.ui.anywidget(_PotholeCurb())
+def _(delib):
+    # Demo 16 -- uses the graduated delib.pothole_curb widget (same source
+    # of truth as Chapter 9's opening animation).
+    delib.pothole_curb()
     return
 
 
@@ -1091,10 +826,11 @@ def _(mo):
         **Graduation** — a demo gets promoted into a real chapter as
         a `delib` widget when its idea is about *feel* and the static
         alternative demonstrably fails; the **Status** column up top
-        is the single source of truth. Four of the survivors have
+        is the single source of truth. Five of the survivors have
         graduated and now power chapters: `spring_grab` (Ch 6),
-        `rumor_crowd` (Ch 1), `cooling_coffee` (Ch 2), and
-        `road_test` (Ch 8). The rest are candidates waiting on the
+        `rumor_crowd` (Ch 1), `cooling_coffee` (Ch 2),
+        `road_test` (Ch 8), and `pothole_curb` (Ch 9). The rest are
+        candidates waiting on the
         chapters that will host them — the 3-D hillside, for
         instance, is queued for Chapter 3a.
         """
