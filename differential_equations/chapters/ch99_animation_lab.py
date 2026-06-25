@@ -746,11 +746,13 @@ def _(delib):
 # ============================================================================
 # Demo 16 — Pothole and curb (Chapter 9 hook, prototype)
 # ============================================================================
-# Focused on ONE point: the two specific road shapes UC and VoP can't
-# touch cleanly -- a single sharp dip (Dirac) and a sudden permanent
-# step (Heaviside). Three preset buttons: SMOOTH (old methods work) /
-# POTHOLE (impulse) / CURB (step). Auto-resets the chassis on preset
-# change so the viewer always sees the from-rest reaction.
+# Focused on ONE point: the road shapes UC and VoP can't touch
+# cleanly -- a train of sharp dips (a Dirac impulse train) and a
+# flight of steps (a sum of Heavisides). Three preset buttons:
+# SMOOTH (old methods work) / POTHOLE (impulse train) / CURB (step
+# staircase). Auto-resets the chassis on preset change so the viewer
+# always sees the from-rest reaction, and the repeating events keep
+# the chassis reacting instead of coasting into empty road.
 # Inline -- not graduated yet; if the hook lands we promote it to
 # delib.pothole_curb() and wire it into ch9 §1.
 @app.cell(hide_code=True)
@@ -765,17 +767,19 @@ def _(mo):
 
         - **SMOOTH** — $g(t) = \sin(\omega t)$. Ch 7/8 territory. The
           guess table has a row for it; VoP integrates it cleanly.
-        - **POTHOLE** — a sharp narrow dip, approximating
-          $g(t) = \delta(t - 4)$. No row in any UC table; VoP would
-          have to wrestle with a distribution.
-        - **CURB** — $g(t) = u(t - 4)$. A function that's $0$ before
-          $t = 4$ and $1$ after. No UC trial form; VoP becomes
-          piecewise.
+        - **POTHOLE** — a *train* of sharp narrow dips, a sum of
+          impulses $g(t) = -\sum_k \delta(t - t_k)$. Each dip kicks a
+          fresh bounce; watch them pile up on each other —
+          superposition, live. No row in any UC table.
+        - **CURB** — a short flight of steps, each one a Heaviside
+          $u(t - t_k)$, summing to a raised plateau. No UC trial form;
+          VoP turns piecewise at every step.
 
         Watch what the chassis does in each case. The hook for
         Chapter 9 isn't "the old methods *can't* be made to work" —
-        it's that they become **awkward**, and Laplace handles all
-        three with the same algebra.
+        it's that they become **awkward** the moment the road stops
+        being smooth, and Laplace handles all of it with the same
+        algebra.
         """
     )
     return
@@ -830,25 +834,32 @@ def _(mo):
           });
 
           // --- presets ------------------------------------------------------
-          // POTHOLE is a narrow Gaussian dip (negative): integrates to
-          // ~ -1 over its support, so for finite sigma it's a smoothed
-          // -delta(t-4). CURB is a tanh-smoothed step at t=4 (sharp but
-          // differentiable so RK4 doesn't choke on the corner).
-          var T_EVENT = 4.0;
-          var POTHOLE_SIG = 0.18;
-          var CURB_SHARP = 22.0;
+          // POTHOLE is a periodic train of narrow Gaussian dips: each one
+          // integrates to ~ -1 over its support, so it's a smoothed
+          // -delta train. CURB is a short flight of tanh-smoothed steps
+          // (a sum of Heavisides) that climbs to a plateau; smoothed so
+          // RK4 doesn't choke on the corners.
+          var POTHOLE_SIG = 0.16, POTHOLE_T0 = 2.0, POTHOLE_PERIOD = 3.0;
+          var CURB_SHARP = 16.0, CURB_RISE = 0.16;
+          var CURB_STEPS = [2.0, 3.8, 5.6];   // step-up times
+          function smoothStep(x) { return 0.5 * (1 + Math.tanh(CURB_SHARP * x)); }
           var ROAD_FNS = {
             smooth:  function (t) { return 0.32 * Math.sin(1.4 * t); },
             pothole: function (t) {
-              var d = t - T_EVENT;
+              var p = (((t - POTHOLE_T0) % POTHOLE_PERIOD) + POTHOLE_PERIOD) % POTHOLE_PERIOD;
+              var d = (p < POTHOLE_PERIOD / 2) ? p : p - POTHOLE_PERIOD;
               return -0.55 * Math.exp(-(d*d)/(2*POTHOLE_SIG*POTHOLE_SIG));
             },
-            curb:    function (t) { return 0.40 * 0.5 * (1 + Math.tanh(CURB_SHARP * (t - T_EVENT))); },
+            curb: function (t) {
+              var s = 0;
+              for (var i = 0; i < CURB_STEPS.length; i++) s += CURB_RISE * smoothStep(t - CURB_STEPS[i]);
+              return s;
+            },
           };
           var TAGS = {
             smooth:  'SMOOTH:  g(t) = sin(ω t)  ·  UC has a row, VoP integrates cleanly',
-            pothole: 'POTHOLE: g(t) ≈ −δ(t − 4)  ·  no UC trial; VoP needs distributions',
-            curb:    'CURB:    g(t) = u(t − 4)  ·  no UC trial; VoP becomes piecewise',
+            pothole: 'POTHOLE: g(t) ≈ −Σ δ(t − tₖ)  ·  a train of impulses; no UC trial',
+            curb:    'CURB:    g(t) = Σ u(t − tₖ)  ·  a flight of steps; VoP goes piecewise',
           };
           var preset = 'smooth';
           var roadFn = ROAD_FNS.smooth;
