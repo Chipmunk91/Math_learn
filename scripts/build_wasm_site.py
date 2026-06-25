@@ -57,8 +57,8 @@ ROADMAP_PARTS = [
     ("Part II · Higher-order & transforms", "oscillation, resonance, Laplace", [
         ("Second-order ODEs", "ch06_second_order"),
         ("Damping, forcing, resonance", "ch07_damping_forcing_resonance"),
-        ("Non-homogeneous equations", None),
-        ("Laplace transforms", None),
+        ("Non-homogeneous equations", "ch08_nonhomogeneous"),
+        ("Laplace transforms", "ch09_laplace_transforms"),
     ]),
     ("Part III · Qualitative dynamics", "what the flow does without solving it", [
         ("Fixed points & stability", "ch05_fixed_points_stability"),
@@ -94,6 +94,7 @@ CHAPTER_CARDS = {
     "ch06_second_order": ("Chapter 6", "Second-order ODEs"),
     "ch07_damping_forcing_resonance": ("Chapter 7", "Damping, forcing, resonance"),
     "ch08_nonhomogeneous": ("Chapter 8", "Non-homogeneous equations"),
+    "ch09_laplace_transforms": ("Chapter 9", "Laplace transforms"),
 }
 
 # Chapters listed here are flagged as drafts on the landing-page index
@@ -110,7 +111,7 @@ CHAPTER_CARDS = {
 # `--mode edit` no longer saves any meaningful time and its un-executed-
 # cell render path triggers MathML triplication on dense math — so it's
 # gone.)
-WIP_CHAPTERS: set[str] = {"ch08_nonhomogeneous"}
+WIP_CHAPTERS: set[str] = {"ch08_nonhomogeneous", "ch09_laplace_transforms"}
 
 # Optional slug -> external fast-preview URL (e.g. a Hugging Face Space running
 # `marimo run` on a real Python kernel, which loads in <1s vs the WASM page's
