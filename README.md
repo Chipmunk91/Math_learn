@@ -1,5 +1,10 @@
 # Math Learn — interactive playground
 
+### ▶︎ [**Open the live playground →**](https://chipmunk91.github.io/Math_learn/)
+
+Runs entirely in your browser (no install, mobile-friendly): drag a slider and
+watch the field, phase portrait, or solution respond instantly.
+
 An interactive, animated, chapter-based playground for learning math. Each
 chapter is a self-contained [marimo](https://marimo.io) notebook: change a
 slider, watch the field / phase portrait / solution respond instantly.
@@ -39,6 +44,8 @@ grounding comes from two sidecar files next to the notebook:
 `chNN_<topic>.starters.txt` (suggested opening prompts, one per line).
 
 ## Live preview (mobile-friendly)
+
+The site is live at **<https://chipmunk91.github.io/Math_learn/>**.
 
 Every push builds each chapter into a self-contained **WASM** page (runs in the
 browser via Pyodide — interactive sliders and animations, no server). Pushes to
