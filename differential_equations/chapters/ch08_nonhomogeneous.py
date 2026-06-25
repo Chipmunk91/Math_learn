@@ -1455,6 +1455,85 @@ def _(mo):
     return
 
 
+# === Section 5 — See it work: one full turn of the crank ==========================
+# Bridge between the abstract Saga 10 formula and the hands-on
+# practice. Work y'' + y = tan x end-to-end on the saga's running
+# basis (cos/sin, W = 1). Deliberately a DIFFERENT forcing from the
+# practice problems (which use sec x), so it models the pipeline
+# without giving any practice answer away.
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## See it work — one full turn of the crank
+
+        The Finale closed the derivation, but a formula you've only
+        *derived* still feels abstract. Let's run the machine once,
+        start to finish, on a forcing **Method 1 genuinely cannot
+        touch** — so you can watch every part of the saga do its job.
+
+        Take
+
+        $$
+        y'' + y = \tan x.
+        $$
+
+        Why not undetermined coefficients? Differentiate $\tan x$ and
+        you get $\sec^2 x$, then $2\sec^2 x\tan x$, and so on — the
+        family never closes. There is no finite trial form to guess.
+        Variation of parameters doesn't care.
+
+        **Step 1 — the basis and its Wronskian.** The homogeneous
+        companion $y'' + y = 0$ has the basis we've used all along,
+        $y_1 = \cos x$ and $y_2 = \sin x$, with $W = 1$ — exactly the
+        Wronskian from Saga 8's figure. **Step 2 — the relic-rates.**
+        Drop $y_1, y_2, W$ and $g = \tan x$ straight into Saga 9:
+
+        $$
+        u_1' = -\frac{y_2\,g}{W} = -\sin x\,\tan x, \qquad u_2' = \frac{y_1\,g}{W} = \cos x\,\tan x = \sin x.
+        $$
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        **Step 3 — integrate to recover the relics.** The second is
+        immediate. The first needs one rewrite,
+        $\sin x\,\tan x = \tfrac{\sin^2 x}{\cos x} = \tfrac{1-\cos^2 x}{\cos x} = \sec x - \cos x$, and then a standard integral $\int \sec x\,dx = \ln\lvert\sec x + \tan x\rvert$:
+
+        $$
+        u_1 = -\!\int(\sec x - \cos x)\,dx = \sin x - \ln\lvert\sec x + \tan x\rvert, \qquad u_2 = \int \sin x\,dx = -\cos x.
+        $$
+
+        **Step 4 — equip the relics.** Assemble
+        $y_p = u_1 y_1 + u_2 y_2$ and watch the bare $\sin x\cos x$
+        pieces annihilate each other:
+
+        $$
+        y_p = \bigl(\sin x - \ln\lvert\sec x + \tan x\rvert\bigr)\cos x - \cos x\,\sin x = -\cos x\,\ln\lvert\sec x + \tan x\rvert.
+        $$
+
+        One clean term out of the gauntlet. Reattaching the
+        homogeneous coordinates (the Finale's step) gives the full
+        general solution:
+
+        $$
+        \boxed{\; y = -\cos x\,\ln\lvert\sec x + \tan x\rvert \;+\; c_1\cos x + c_2\sin x. \;}
+        $$
+
+        No table could have produced that first term — and the two
+        free constants $c_1, c_2$ sit there, exactly as before,
+        waiting for initial conditions. That's the whole method in
+        one pass. Now it's your turn.
+        """
+    )
+    return
+
+
 # === Section 6 — Try it (graded exercises) ========================================
 # Two practices per method: Method 1 (UC) tests trial-form picking AND
 # the collision rescue from §3; Method 2 (VoP) tests the Wronskian as
@@ -1488,10 +1567,10 @@ def _(mo):
 def _(mo):
     e1_get, e1_set = mo.state(
         "# For  y'' + 4y = 3 e^{2x},  the standard trial form is\n"
-        "# y_p = C e^{2x}. Substitute and solve for C.\n"
-        "# Hint: 4 C e^{2x} (second derivative) + 4 C e^{2x} = 3 e^{2x},\n"
-        "# so 8 C = 3 -> C = 3/8 = 0.375.\n"
-        "# Put C in `answer`.\n"
+        "#   y_p = C e^{2x}.\n"
+        "# Differentiate it twice, substitute into the left-hand side,\n"
+        "# and match the coefficient of e^{2x} on both sides to solve\n"
+        "# for C.  Put your value of C in `answer`.\n"
         "answer = ...\n"
     )
     return e1_get, e1_set
@@ -1544,12 +1623,12 @@ def _(mo):
     e2_get, e2_set = mo.state(
         "# For  y'' - 3 y' + 2 y = 2 e^{2x},  the naive trial C e^{2x}\n"
         "# COLLIDES with the homogeneous solution (the characteristic\n"
-        "# equation r^2 - 3r + 2 = 0 has a root r = 2).\n"
+        "# equation r^2 - 3r + 2 = 0 has a root r = 2), so it would be\n"
+        "# annihilated.\n"
         "#\n"
         "# Use the rescue: trial y_p = A x e^{2x}.\n"
-        "# Differentiate, substitute, solve for A.\n"
-        "# (Hint: the x-terms in the LHS cancel and you are left\n"
-        "#  with A e^{2x} = 2 e^{2x}.)\n"
+        "# Differentiate, substitute, and solve for A.  (The x-terms\n"
+        "# in the left-hand side cancel by design -- watch them go.)\n"
         "# Put A in `answer`.\n"
         "answer = ...\n"
     )
@@ -1676,22 +1755,17 @@ def _(delib, e3_code, e3_run):
 @app.cell
 def _(mo):
     e4_get, e4_set = mo.state(
-        "# For  y'' + y = sec(x),  use variation of parameters on the\n"
-        "# basis y_1 = cos x, y_2 = sin x with W = 1 (from the\n"
-        "# previous exercise). The Saga 10 formula gives\n"
+        "# For  y'' + y = sec(x),  use variation of parameters with the\n"
+        "# basis y_1 = cos x, y_2 = sin x and W = 1 (from exercise 3).\n"
+        "# Follow the same four steps as the worked tan(x) example:\n"
         "#\n"
-        "#   u_1(x) = - integral( y_2 g / W ) dx\n"
-        "#          = - integral( sin x / cos x ) dx\n"
-        "#          =   ln|cos x|.\n"
+        "#   1. relic-rates:  u_1' = - y_2 g / W,   u_2' = y_1 g / W\n"
+        "#   2. integrate each to get u_1(x) and u_2(x)\n"
+        "#   3. assemble    y_p = u_1 y_1 + u_2 y_2\n"
+        "#   4. evaluate    y_p at x = pi/4\n"
         "#\n"
-        "#   u_2(x) =   integral( y_1 g / W ) dx\n"
-        "#          =   integral( cos x / cos x ) dx\n"
-        "#          =   x.\n"
-        "#\n"
-        "# So y_p(x) = cos(x) * ln|cos x|  +  x * sin(x).\n"
-        "# Evaluate y_p at x = pi/4 and put the number in `answer`.\n"
-        "#\n"
-        "# (Numerically:  sqrt(2)/2 * ln(sqrt(2)/2)  +  pi/4 * sqrt(2)/2 .)\n"
+        "# (Both integrals here are friendlier than the tan(x) case.)\n"
+        "# Put the number y_p(pi/4) in `answer`.\n"
         "import math\n"
         "answer = ...\n"
     )
