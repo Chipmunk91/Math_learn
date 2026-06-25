@@ -1457,10 +1457,13 @@ def _(mo):
 
 # === Section 5 — See it work: one full turn of the crank ==========================
 # Bridge between the abstract Saga 10 formula and the hands-on
-# practice. Work y'' + y = tan x end-to-end on the saga's running
-# basis (cos/sin, W = 1). Deliberately a DIFFERENT forcing from the
-# practice problems (which use sec x), so it models the pipeline
-# without giving any practice answer away.
+# practice. Method 2 worked end-to-end on y'' + y = tan x as an
+# animated derivation (manim/variation_of_parameters.py rendered to
+# assets/variation_of_parameters.mp4) -- the static wall of equations
+# this used to be became fatiguing after the 10-saga climb. The clip
+# deliberately uses a DIFFERENT forcing from the practice problems
+# (which use sec x), so it models the pipeline without giving any
+# practice answer away.
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
@@ -1470,29 +1473,30 @@ def _(mo):
         The Finale closed the derivation, but a formula you've only
         *derived* still feels abstract. Let's run the machine once,
         start to finish, on a forcing **Method 1 genuinely cannot
-        touch** — so you can watch every part of the saga do its job.
-
-        Take
+        touch**:
 
         $$
-        y'' + y = \tan x.
+        y'' + y \;=\; \tan x.
         $$
 
         Why not undetermined coefficients? Differentiate $\tan x$ and
-        you get $\sec^2 x$, then $2\sec^2 x\tan x$, and so on — the
-        family never closes. There is no finite trial form to guess.
-        Variation of parameters doesn't care.
-
-        **Step 1 — the basis and its Wronskian.** The homogeneous
-        companion $y'' + y = 0$ has the basis we've used all along,
-        $y_1 = \cos x$ and $y_2 = \sin x$, with $W = 1$ — exactly the
-        Wronskian from Saga 8's figure. **Step 2 — the relic-rates.**
-        Drop $y_1, y_2, W$ and $g = \tan x$ straight into Saga 9:
-
-        $$
-        u_1' = -\frac{y_2\,g}{W} = -\sin x\,\tan x, \qquad u_2' = \frac{y_1\,g}{W} = \cos x\,\tan x = \sin x.
-        $$
+        you get $\sec^2 x$, then $2\sec^2 x\,\tan x$, and so on — the
+        family never closes, so there's no finite trial form to
+        guess. Variation of parameters doesn't care. Sit back and
+        watch the saga do its job — basis, Wronskian, relic-rates,
+        integrate, assemble, reattach.
         """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(delib):
+    delib.video(
+        "variation_of_parameters.mp4",
+        caption="Method 2 on  y'' + y = tan x  —  basis → Cramer → integrate → assemble.",
+        fallback="The variation-of-parameters animation is being rendered "
+                 "(see manim/variation_of_parameters.py).",
     )
     return
 
@@ -1501,34 +1505,16 @@ def _(mo):
 def _(mo):
     mo.md(
         r"""
-        **Step 3 — integrate to recover the relics.** The second is
-        immediate. The first needs one rewrite,
-        $\sin x\,\tan x = \tfrac{\sin^2 x}{\cos x} = \tfrac{1-\cos^2 x}{\cos x} = \sec x - \cos x$, and then a standard integral $\int \sec x\,dx = \ln\lvert\sec x + \tan x\rvert$:
+        One clean term out of the gauntlet, with the homogeneous
+        coordinates $c_1, c_2$ reattached at the end:
 
         $$
-        u_1 = -\!\int(\sec x - \cos x)\,dx = \sin x - \ln\lvert\sec x + \tan x\rvert, \qquad u_2 = \int \sin x\,dx = -\cos x.
-        $$
-
-        **Step 4 — equip the relics.** Assemble
-        $y_p = u_1 y_1 + u_2 y_2$ and watch the bare $\sin x\cos x$
-        pieces annihilate each other:
-
-        $$
-        y_p = \bigl(\sin x - \ln\lvert\sec x + \tan x\rvert\bigr)\cos x - \cos x\,\sin x = -\cos x\,\ln\lvert\sec x + \tan x\rvert.
-        $$
-
-        One clean term out of the gauntlet. Reattaching the
-        homogeneous coordinates (the Finale's step) gives the full
-        general solution:
-
-        $$
-        \boxed{\; y = -\cos x\,\ln\lvert\sec x + \tan x\rvert \;+\; c_1\cos x + c_2\sin x. \;}
+        \boxed{\; y \;=\; -\cos x\,\ln\lvert\sec x + \tan x\rvert \;+\; c_1\cos x + c_2\sin x. \;}
         $$
 
         No table could have produced that first term — and the two
-        free constants $c_1, c_2$ sit there, exactly as before,
-        waiting for initial conditions. That's the whole method in
-        one pass. Now it's your turn.
+        constants sit there, exactly as before, waiting for initial
+        conditions. Now it's your turn.
         """
     )
     return
