@@ -111,7 +111,7 @@ CHAPTER_CARDS = {
 # `--mode edit` no longer saves any meaningful time and its un-executed-
 # cell render path triggers MathML triplication on dense math — so it's
 # gone.)
-WIP_CHAPTERS: set[str] = {"ch08_nonhomogeneous", "ch09_laplace_transforms"}
+WIP_CHAPTERS: set[str] = {"ch09_laplace_transforms"}
 
 # Optional slug -> external fast-preview URL (e.g. a Hugging Face Space running
 # `marimo run` on a real Python kernel, which loads in <1s vs the WASM page's
