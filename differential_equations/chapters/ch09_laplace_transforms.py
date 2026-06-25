@@ -170,21 +170,40 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    # Companion-video callout. 3Blue1Brown's Laplace video tells the
-    # same forced-oscillator/poles story; we borrow its s-plane
-    # landscape visual in §2 and §4, credited there too.
-    mo.md(
-        r"""
-        > **📺 Companion video.** This chapter pairs beautifully with
-        > 3Blue1Brown's
-        > [*Why Laplace transforms are so useful*](https://www.youtube.com/watch?v=FE-hM1kRK4Y)
-        > (Grant Sanderson). It builds the very same story — the forced
-        > oscillator, the transform, and the **poles** that decide its
-        > behaviour — with his signature animation. We borrow one of its
-        > visual ideas (the $s$-plane landscape) in §2 and §4, with
-        > thanks.
-        """
-    )
+    # Companion-video embed. 3Blue1Brown's Laplace video tells the
+    # same forced-oscillator/poles story this chapter does; embed it
+    # inline so the reader can watch without leaving the page. We also
+    # borrow its s-plane landscape visual in §2.5 (interactive there,
+    # so it earns its keep alongside the video) and §4.
+    mo.vstack([
+        mo.md(
+            r"""
+            ### Companion video — *Why Laplace transforms are so useful* (3Blue1Brown)
+
+            Before we wade in, here's a 23-minute mini-lecture by
+            Grant Sanderson that builds the very same story we're
+            about to — the forced oscillator, the transform, and the
+            **poles** that decide its behaviour. Watch it before, after,
+            or alongside this chapter; either order works. We borrow
+            one of its visual ideas (the $s$-plane landscape) in §2.5
+            and §4, with thanks.
+            """
+        ),
+        mo.Html(
+            '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;'
+            'max-width:760px;margin:0 auto;border-radius:8px;border:1px solid #e4e9f0">'
+            '<iframe style="position:absolute;top:0;left:0;width:100%;height:100%"'
+            ' src="https://www.youtube-nocookie.com/embed/FE-hM1kRK4Y?rel=0"'
+            ' title="3Blue1Brown — Why Laplace transforms are so useful"'
+            ' frameborder="0" loading="lazy"'
+            ' allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"'
+            ' allowfullscreen></iframe></div>'
+            '<figcaption style="text-align:center;color:#56636f;font:13px sans-serif;'
+            'margin-top:6px">Grant Sanderson · 3Blue1Brown · '
+            '<a href="https://www.youtube.com/watch?v=FE-hM1kRK4Y" target="_blank" '
+            'rel="noopener" style="color:#56636f">open on YouTube</a></figcaption>'
+        ),
+    ])
     return
 
 
@@ -388,19 +407,18 @@ def _(go, mo, np):
             r"""
             ### A peek through the portal — the $s$-plane landscape
 
-            Here's a way to *see* what the portal produces, borrowed
-            (with thanks) from 3Blue1Brown's
-            [*Why Laplace transforms are so useful*](https://www.youtube.com/watch?v=FE-hM1kRK4Y).
-            Every entry in our dictionary is a **rational function of
-            $s$**, and a rational function has a landscape: plot the
-            height $|F(s)|$ over the complex $s$-plane — real part one
-            way, imaginary part the other — and wherever the
+            If you watched the companion video, you saw Grant draw
+            this picture: every entry in our dictionary is a **rational
+            function of $s$**, and a rational function has a landscape.
+            Plot the height $|F(s)|$ over the complex $s$-plane — real
+            part one way, imaginary part the other — and wherever the
             denominator hits zero the surface shoots up into a
             **tower**. Those towers are the **poles**.
 
-            Below is the landscape of $F(s) = \dfrac{1}{s^2 + \omega^2}$
-            — the transform of $\cos\omega t$ and $\sin\omega t$, with
-            $\omega = 1.5$. Drag to orbit it.
+            Here's the same idea, *orbitable* — the landscape of
+            $F(s) = \dfrac{1}{s^2 + \omega^2}$, the transform of
+            $\cos\omega t$ and $\sin\omega t$, with $\omega = 1.5$.
+            Drag to spin it.
             """
         ),
         _fig,
