@@ -101,7 +101,7 @@ def _(delib):
 def _(mo):
     # Why the inherited toolbox stumbles on pothole/curb -- motivates
     # the portal. Kept short; the *real* technical comparison lives in
-    # §5 after we have the machinery to do it justice.
+    # §6 after we have the machinery to do it justice.
     mo.md(
         r"""
         ### Why our old tools struggle here
@@ -387,114 +387,6 @@ def _(mo):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ### The first two pairs — constants and exponentials
-
-        Two transforms do all the work in this chapter, and both fall
-        out of the integral with one line of calculus.
-
-        **A constant.** For $f(t) = 1$:
-
-        $$
-        \mathcal{L}\{1\} \;=\; \int_0^{\infty} e^{-st}\, dt \;=\; \left[-\tfrac{1}{s} e^{-st}\right]_0^{\infty} \;=\; \frac{1}{s} \qquad (s > 0).
-        $$
-
-        A function that is identically $1$ in $t$-space is just
-        $1/s$ in $s$-space. Tiny, but exactly the image we'll need
-        when we transform an initial condition.
-
-        **An exponential.** For $f(t) = e^{at}$, the two exponentials
-        merge:
-
-        $$
-        \mathcal{L}\{e^{at}\} \;=\; \int_0^{\infty} e^{-(s-a)t}\, dt \;=\; \frac{1}{s - a} \qquad (s > a).
-        $$
-
-        Look at what just happened. In $t$-space, $e^{at}$ is the
-        function that "remembers itself" under differentiation
-        ($\frac{d}{dt} e^{at} = a\,e^{at}$). In $s$-space, it became
-        the **simplest possible** rational function — a single pole
-        at $s = a$. That correspondence is the chapter's load-bearing
-        beam. Hold onto it.
-        """
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ### Sine and cosine — one Euler-trick away
-
-        The third pair we'll need over and over is $\sin$ and $\cos$.
-        Instead of integrating by parts twice, run a complex
-        $e^{i\omega t}$ through the exponential rule from above:
-
-        $$
-        \mathcal{L}\{e^{i\omega t}\} \;=\; \frac{1}{s - i\omega} \;=\; \frac{s + i\omega}{s^2 + \omega^2}.
-        $$
-
-        But $e^{i\omega t} = \cos\omega t + i\sin\omega t$, and
-        $\mathcal{L}$ is **linear** — it distributes over the real
-        and imaginary parts. So reading off real and imaginary
-        pieces:
-
-        $$
-        \mathcal{L}\{\cos\omega t\} \;=\; \frac{s}{s^2 + \omega^2}, \qquad \mathcal{L}\{\sin\omega t\} \;=\; \frac{\omega}{s^2 + \omega^2}.
-        $$
-
-        Note where those $s$-images live: both have denominators
-        $s^2 + \omega^2$ — the very same polynomial that's the
-        **characteristic polynomial** of the undamped oscillator
-        $\ddot x + \omega^2 x = 0$ from Chapter 6. The portal already
-        knows the answer. We just don't quite see *why* yet — that
-        comes in §3.
-        """
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ### The starter dictionary
-
-        Five entries cover almost every example in this chapter
-        (and a sixth is one differentiation away). The first three
-        are the ones we just derived; the others fall out of exactly
-        the same machinery if you want to do them yourself.
-
-        | $f(t)$ | $F(s) = \mathcal{L}\{f(t)\}$ | converges for |
-        |---|---|---|
-        | $1$ | $\displaystyle \frac{1}{s}$ | $s > 0$ |
-        | $e^{at}$ | $\displaystyle \frac{1}{s - a}$ | $s > a$ |
-        | $\cos\omega t$ | $\displaystyle \frac{s}{s^2 + \omega^2}$ | $s > 0$ |
-        | $\sin\omega t$ | $\displaystyle \frac{\omega}{s^2 + \omega^2}$ | $s > 0$ |
-        | $t$ | $\displaystyle \frac{1}{s^2}$ | $s > 0$ |
-        | $t^n$ | $\displaystyle \frac{n!}{s^{n+1}}$ | $s > 0$ |
-
-        And one structural rule we'll lean on without saying:
-        **linearity.** Because the integral is linear,
-
-        $$
-        \mathcal{L}\{a\,f(t) + b\,g(t)\} \;=\; a\,F(s) + b\,G(s).
-        $$
-
-        Combinations on the $t$ side become the *same* combinations on
-        the $s$ side — no surprises. Six pairs and one rule. With that
-        much in hand, you can already transform any sum of
-        polynomials, exponentials, and sinusoids — the whole UC table
-        from Chapter 8, basically.
-        """
-    )
-    return
-
-
 # --- The s-plane landscape (visualise a dictionary entry) ------------------
 # Reframed to sit AFTER the dictionary so it visualises a transform
 # the reader has just *derived* (1/(s^2 + omega^2)) instead of teasing
@@ -538,16 +430,20 @@ def _(go, mo, np):
             r"""
             ### Seeing one — the $s$-plane landscape
 
-            Every entry we just derived is a **rational function of
-            $s$**, and a rational function has a landscape. Plot the
-            height $|F(s)|$ over the complex $s$-plane — real part one
-            way, imaginary part the other — and wherever the
-            denominator hits zero the surface shoots up into a
-            **tower**.
+            Every transform we'll meet turns out to be a **rational
+            function of $s$** — a fraction. And a rational function
+            has a *landscape*: plot the height $|F(s)|$ over the
+            complex $s$-plane (real part one way, imaginary part the
+            other), and wherever the denominator hits zero the
+            surface shoots up into a **tower**.
 
-            Here's the landscape of the $\sin/\cos$ entry,
-            $F(s) = \dfrac{1}{s^2 + \omega^2}$ with $\omega = 1.5$.
-            Drag to spin it.
+            Take one on faith for now (we'll derive it in §3, along
+            with a handful of cousins): the transform of $\sin\omega t$
+            and $\cos\omega t$ turns out to be a fraction with
+            denominator $s^2 + \omega^2$. Concretely,
+            $\mathcal{L}\{\sin\omega t\}=\dfrac{\omega}{s^2+\omega^2}$.
+            The landscape of $\dfrac{1}{s^2 + \omega^2}$ with
+            $\omega = 1.5$ is below — drag to spin it.
             """
         ),
         _fig,
@@ -575,15 +471,16 @@ def _(go, mo, np):
 def _(mo):
     mo.md(
         r"""
-        ### Reading the dictionary backwards — a pole is a *note*
+        ### A pole is a *note*
 
-        Those two towers were no accident. Look down the right column
-        of the table and notice every entry
-        has the same skeleton: a fraction whose **denominator** is the
-        whole story. $e^{at}$ sits over $s - a$. The sinusoids sit over
-        $s^2 + \omega^2 = (s - i\omega)(s + i\omega)$. The roots of
-        those denominators — the **poles** — aren't incidental
-        bookkeeping. They are a *readout of what $f(t)$ is made of.*
+        Those two towers were no accident. Every Laplace image you'll
+        meet has the same skeleton — a fraction whose **denominator**
+        is the whole story. (You'll watch this play out in §3:
+        $e^{at}$ transforms to a fraction over $s - a$; the sinusoids
+        transform to fractions over $s^2 + \omega^2 = (s-i\omega)(s+i\omega)$;
+        and so on.) The roots of those denominators — the **poles** —
+        aren't incidental bookkeeping. They are a *readout of what
+        $f(t)$ is made of.*
 
         Read each pair **backwards**:
 
@@ -687,25 +584,156 @@ def _(go, mo, np):
         mo.md(
             r"""
             This is why everything that follows becomes a **hunt for
-            poles.** When we solve an ODE in §3–§4, the answer arrives
+            poles.** When we solve an ODE in §4–§5, the answer arrives
             as a rational $Y(s)$; finding *where its poles sit* hands
             you the basis of $y(t)$ — its modes, their decay rates,
             their frequencies — before you've written down a single
-            exponential. (And in §4 we'll turn the damping knob on the
+            exponential. (And in §5 we'll turn the damping knob on the
             car and literally **watch those poles slide** across this
             plane.)
 
-            But first: how does an ODE turn into a rational $Y(s)$ at
-            all? That's the one rule still missing — the derivative
-            rule $\mathcal{L}\{y'\}$, and it's the rule that gives the
-            portal its whole point. On to §3.
+            But first: we need that table of transforms — the dictionary
+            of $(f, F)$ pairs the rest of the chapter will look up. And
+            then the one rule still missing — the derivative rule
+            $\mathcal{L}\{y'\}$, the rule that gives the portal its
+            whole point. On to §3 and §4.
             """
         ),
     ])
     return
 
 
-# === Section 3 — Why the portal works on ODEs: d/dt → s ===========================
+# === Section 3 — Stocking the toolbox: a dictionary of transforms ================
+# All the technical derivations live here -- moved out of §2 so the
+# conceptual narrative (portal -> diagram -> definition -> landscape
+# -> pole-as-basis) reads without a calculus interruption. From this
+# section forward, the chapter actually computes things.
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ## Stocking the toolbox
+
+        The conceptual tour is over. Before the portal can do any
+        real work for us, we need a small **table of transforms** —
+        the handful of $(f(t),\,F(s))$ pairs that every later step
+        will look up. The good news: only two derivations are
+        genuinely new; everything else falls out of them by
+        linearity or by reusing the exponential rule.
+        """
+    )
+    return
+
+
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### The first two pairs — constants and exponentials
+
+        Two transforms do all the work in this chapter, and both fall
+        out of the integral with one line of calculus.
+
+        **A constant.** For $f(t) = 1$:
+
+        $$
+        \mathcal{L}\{1\} \;=\; \int_0^{\infty} e^{-st}\, dt \;=\; \left[-\tfrac{1}{s} e^{-st}\right]_0^{\infty} \;=\; \frac{1}{s} \qquad (s > 0).
+        $$
+
+        A function that is identically $1$ in $t$-space is just
+        $1/s$ in $s$-space. Tiny, but exactly the image we'll need
+        when we transform an initial condition.
+
+        **An exponential.** For $f(t) = e^{at}$, the two exponentials
+        merge:
+
+        $$
+        \mathcal{L}\{e^{at}\} \;=\; \int_0^{\infty} e^{-(s-a)t}\, dt \;=\; \frac{1}{s - a} \qquad (s > a).
+        $$
+
+        Look at what just happened. In $t$-space, $e^{at}$ is the
+        function that "remembers itself" under differentiation
+        ($\frac{d}{dt} e^{at} = a\,e^{at}$). In $s$-space, it became
+        the **simplest possible** rational function — a single pole
+        at $s = a$. That correspondence is the chapter's load-bearing
+        beam. Hold onto it.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Sine and cosine — one Euler-trick away
+
+        The third pair we'll need over and over is $\sin$ and $\cos$.
+        Instead of integrating by parts twice, run a complex
+        $e^{i\omega t}$ through the exponential rule from above:
+
+        $$
+        \mathcal{L}\{e^{i\omega t}\} \;=\; \frac{1}{s - i\omega} \;=\; \frac{s + i\omega}{s^2 + \omega^2}.
+        $$
+
+        But $e^{i\omega t} = \cos\omega t + i\sin\omega t$, and
+        $\mathcal{L}$ is **linear** — it distributes over the real
+        and imaginary parts. So reading off real and imaginary
+        pieces:
+
+        $$
+        \mathcal{L}\{\cos\omega t\} \;=\; \frac{s}{s^2 + \omega^2}, \qquad \mathcal{L}\{\sin\omega t\} \;=\; \frac{\omega}{s^2 + \omega^2}.
+        $$
+
+        Note where those $s$-images live: both have denominators
+        $s^2 + \omega^2$ — the very same polynomial that's the
+        **characteristic polynomial** of the undamped oscillator
+        $\ddot x + \omega^2 x = 0$ from Chapter 6. The portal already
+        knows the answer. We just don't quite see *why* yet — that
+        comes in §4 (the derivative rule).
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### The starter dictionary
+
+        Five entries cover almost every example in this chapter
+        (and a sixth is one differentiation away). The first three
+        are the ones we just derived; the others fall out of exactly
+        the same machinery if you want to do them yourself.
+
+        | $f(t)$ | $F(s) = \mathcal{L}\{f(t)\}$ | converges for |
+        |---|---|---|
+        | $1$ | $\displaystyle \frac{1}{s}$ | $s > 0$ |
+        | $e^{at}$ | $\displaystyle \frac{1}{s - a}$ | $s > a$ |
+        | $\cos\omega t$ | $\displaystyle \frac{s}{s^2 + \omega^2}$ | $s > 0$ |
+        | $\sin\omega t$ | $\displaystyle \frac{\omega}{s^2 + \omega^2}$ | $s > 0$ |
+        | $t$ | $\displaystyle \frac{1}{s^2}$ | $s > 0$ |
+        | $t^n$ | $\displaystyle \frac{n!}{s^{n+1}}$ | $s > 0$ |
+
+        And one structural rule we'll lean on without saying:
+        **linearity.** Because the integral is linear,
+
+        $$
+        \mathcal{L}\{a\,f(t) + b\,g(t)\} \;=\; a\,F(s) + b\,G(s).
+        $$
+
+        Combinations on the $t$ side become the *same* combinations on
+        the $s$ side — no surprises. Six pairs and one rule. With that
+        much in hand, you can already transform any sum of
+        polynomials, exponentials, and sinusoids — the whole UC table
+        from Chapter 8, basically.
+        """
+    )
+    return
+# === Section 4 — Why the portal works on ODEs: d/dt → s ===========================
 # TODO: derive L{y'} = sY - y(0) and L{y''} = s²Y - s y(0) - y'(0)
 # from integration by parts. Land the central trick: t-derivatives
 # become s-multiplications, with the initial conditions automatically
@@ -713,7 +741,7 @@ def _(go, mo, np):
 
 
 # === Section 99 — Credits & further viewing =======================================
-# KEEP THIS CELL LAST. New sections (§3-§8) go ABOVE this banner.
+# KEEP THIS CELL LAST. New sections (§4-§9) go ABOVE this banner.
 # The companion video is deferred to the end on purpose: it's framed
 # as acknowledgement (we borrow its visual ideas heavily), and it
 # embeds via mo.iframe -- a raw <iframe> inside mo.Html gets stripped
@@ -747,7 +775,7 @@ def _(mo):
             Sanderson's video below.
 
             We've added the interactivity (orbit the landscape
-            yourself; in §4, drag the damping and watch the poles
+            yourself; in §5, drag the damping and watch the poles
             migrate) and stitched the ideas into our running
             car-and-road story — but the pictures come from here. If
             they clicked for you, this is where they came from. Watch
