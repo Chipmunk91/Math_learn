@@ -238,12 +238,12 @@ def _(mo):
         ' fill="#eef7fb" stroke="#2a5d9c" stroke-width="2"/>'
         '<text x="595" y="55" text-anchor="middle" font-size="12" '
         ' fill="#8a96a5" font-family="sans-serif">s-space</text>'
-        '<text x="595" y="88" text-anchor="middle" font-size="18" '
+        '<text x="595" y="90" text-anchor="middle" font-size="16" '
         ' fill="#16223a" font-family="serif">'
-        ' (s&#xB2; + 2&#x03B3; s + &#x03C9;&#x2080;&#xB2;) Y = G(s)</text>'
+        ' an algebra equation for Y(s)</text>'
         '<text x="595" y="118" text-anchor="middle" font-size="12" '
         ' fill="#56636f" font-family="sans-serif" font-style="italic">'
-        ' an algebraic equation</text>'
+        ' the y&#x2032;, y&#x2032;&#x2032; are gone</text>'
 
         # --- top arrow: transform L ---
         '<line x1="305" y1="85" x2="455" y2="85" stroke="#16223a" '
@@ -260,18 +260,18 @@ def _(mo):
         ' fill="#eef7fb" stroke="#2a5d9c" stroke-width="2"/>'
         '<text x="595" y="285" text-anchor="middle" font-size="12" '
         ' fill="#8a96a5" font-family="sans-serif">s-space (solved)</text>'
-        '<text x="595" y="318" text-anchor="middle" font-size="18" '
+        '<text x="595" y="322" text-anchor="middle" font-size="22" '
         ' fill="#16223a" font-family="serif">'
-        ' Y(s) = G(s) / (s&#xB2; + 2&#x03B3; s + &#x03C9;&#x2080;&#xB2;)</text>'
+        ' Y(s)</text>'
         '<text x="595" y="348" text-anchor="middle" font-size="12" '
         ' fill="#56636f" font-family="sans-serif" font-style="italic">'
-        ' a rational function in s</text>'
+        ' found by plain algebra</text>'
 
         # --- right arrow: divide ---
         '<line x1="595" y1="148" x2="595" y2="255" stroke="#16223a" '
         ' stroke-width="2" marker-end="url(#arr-dark)"/>'
-        '<text x="610" y="200" text-anchor="start" font-size="14" '
-        ' fill="#16223a" font-family="serif">divide</text>'
+        '<text x="610" y="200" text-anchor="start" font-size="13" '
+        ' fill="#16223a" font-family="serif">solve for Y</text>'
         '<text x="610" y="218" text-anchor="start" font-size="11" '
         ' fill="#0f8a6a" font-family="sans-serif">just algebra</text>'
 
@@ -317,29 +317,32 @@ def _(mo):
 
             1. **Top-left** is where we live: an ODE in $t$,
                derivatives everywhere.
-            2. **Top arrow** is the Laplace transform $\mathcal{L}$.
-               It rewrites every derivative as multiplication by $s$
-               — the operator $\tfrac{d}{dt}$ literally becomes a
-               polynomial in $s$.
+            2. **Top arrow** is the Laplace transform $\mathcal{L}$ —
+               the one new tool this chapter is about. For now treat
+               it as a black box with a single, almost unreasonable
+               gift: it takes an equation full of derivatives and
+               hands back one that's pure **algebra**. *How* it pulls
+               that off is the whole rest of the chapter; right here,
+               just notice what it buys us.
             3. **Top-right** is the equation *after* the transform:
-               algebraic, no calculus.
-            4. **Right arrow** is simple algebra — divide both sides
-               by the polynomial in $s$.
-            5. **Bottom-right** is the answer, written in $s$-space.
+               no more $y'$, $y''$ — just algebra in $Y(s)$.
+            4. **Right arrow** is exactly that payoff — solve for
+               $Y(s)$ the way you'd solve any algebra problem.
+            5. **Bottom-right** is the answer, still written in
+               $s$-space.
             6. **Bottom arrow** is the inverse transform
-               $\mathcal{L}^{-1}$ — split $Y(s)$ into pieces our
-               table knows, look each one up.
+               $\mathcal{L}^{-1}$ — carry $Y(s)$ back across the
+               portal to recover the function $y(t)$.
             7. **Bottom-left** is the answer in $t$ — what we wanted
                all along.
 
             The dashed red curve is the route UC and VoP take — stay
             in $t$-space the whole way and fight the derivatives
-            head-on. The point of Laplace is that the long way round,
-            through $s$-space, is perversely much shorter. The two
-            $s$-space steps are easy; only the two **transform
-            arrows** ($\mathcal{L}$ and $\mathcal{L}^{-1}$) carry any
-            real work — and once we have the table, even those become
-            lookups.
+            head-on. The whole bet of this chapter is that the long
+            way round, *through* $s$-space, is perversely much
+            shorter: the two $s$-space steps are easy algebra, and all
+            the real work lives in the two **transform arrows**
+            ($\mathcal{L}$ and $\mathcal{L}^{-1}$).
 
             So: what *is* this transform $\mathcal{L}$?
             """
