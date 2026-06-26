@@ -386,5 +386,65 @@ def _(mo):
     return
 
 
+# --- What the portal does with f'(t): the derivative rule (sF(s) - f(0)) ---
+# This is the cell that *delivers* the U-turn's promise. Send a
+# derivative through the integral, integrate by parts once, watch
+# d/dt collapse into multiplication by s (with a small f(0) memory).
+# Kept under the KaTeX density threshold (3 displays + ~22 inline).
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### What does the portal do with $f'(t)$?
+
+        We've defined what $F(s)$ is for a function $f(t)$. The next
+        natural question — and it's the one this whole chapter turns
+        on — is: **what comes out the other side if we send in the
+        derivative $f'(t)$ instead?**
+
+        Plug it straight into the integral, no clever tricks:
+
+        $$
+        \mathcal{L}\{f'(t)\} \;=\; \int_{0}^{\infty} e^{-st}\, f'(t)\, dt.
+        $$
+
+        The integrand is the weight $e^{-st}$ multiplied by $f'(t)$ —
+        a product that practically begs for **integration by parts**.
+        With $u = e^{-st}$ and $dv = f'(t)\, dt$ (so $du = -s\,e^{-st}\,dt$
+        and $v = f(t)$):
+
+        $$
+        \mathcal{L}\{f'(t)\} \;=\; \bigl[\,e^{-st}\, f(t)\,\bigr]_{0}^{\infty} \;+\; s\!\int_{0}^{\infty} e^{-st}\, f(t)\, dt.
+        $$
+
+        Now read off the two pieces.
+
+        - The **bracketed boundary term.** At $t = \infty$, the weight
+          $e^{-st}$ kills $f(t)$ (we're in the convergence band — that's
+          what the fine print bought us), so its value there is $0$. At
+          $t = 0$, the weight is $1$, so its value there is $f(0)$. The
+          whole bracket evaluates to $0 - f(0) = -f(0)$.
+        - The **remaining integral** is exactly the Laplace transform
+          of $f(t)$ — that is, $F(s)$ — multiplied out front by $s$.
+
+        Put both together and the rule falls out:
+
+        $$
+        \boxed{\;\;\mathcal{L}\{f'(t)\} \;=\; s\,F(s) \;-\; f(0).\;\;}
+        $$
+
+        Stare at this for a second. **The derivative on the $t$ side
+        became simple multiplication by $s$ on the $s$ side** — plus a
+        small correction $f(0)$ that carries the initial condition
+        along for the ride. The U-turn diagram promised "derivatives
+        become algebra"; this is that promise written down for the
+        first time. *Apply this rule once for each derivative in your
+        ODE and the entire equation collapses to algebra in $Y(s)$* —
+        which is precisely what the next move will do.
+        """
+    )
+    return
+
+
 if __name__ == "__main__":
     app.run()
