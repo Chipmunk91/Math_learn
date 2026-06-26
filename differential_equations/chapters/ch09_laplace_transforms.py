@@ -168,45 +168,6 @@ def _(mo):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    # Companion-video embed. 3Blue1Brown's Laplace video tells the
-    # same forced-oscillator/poles story this chapter does; embed it
-    # inline so the reader can watch without leaving the page. We also
-    # borrow its s-plane landscape visual in §2.5 (interactive there,
-    # so it earns its keep alongside the video) and §4.
-    mo.vstack([
-        mo.md(
-            r"""
-            ### Companion video — *Why Laplace transforms are so useful* (3Blue1Brown)
-
-            Before we wade in, here's a 23-minute mini-lecture by
-            Grant Sanderson that builds the very same story we're
-            about to — the forced oscillator, the transform, and the
-            **poles** that decide its behaviour. Watch it before, after,
-            or alongside this chapter; either order works. We borrow
-            one of its visual ideas (the $s$-plane landscape) in §2.5
-            and §4, with thanks.
-            """
-        ),
-        mo.Html(
-            '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;'
-            'max-width:760px;margin:0 auto;border-radius:8px;border:1px solid #e4e9f0">'
-            '<iframe style="position:absolute;top:0;left:0;width:100%;height:100%"'
-            ' src="https://www.youtube-nocookie.com/embed/FE-hM1kRK4Y?rel=0"'
-            ' title="3Blue1Brown — Why Laplace transforms are so useful"'
-            ' frameborder="0" loading="lazy"'
-            ' allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"'
-            ' allowfullscreen></iframe></div>'
-            '<figcaption style="text-align:center;color:#56636f;font:13px sans-serif;'
-            'margin-top:6px">Grant Sanderson · 3Blue1Brown · '
-            '<a href="https://www.youtube.com/watch?v=FE-hM1kRK4Y" target="_blank" '
-            'rel="noopener" style="color:#56636f">open on YouTube</a></figcaption>'
-        ),
-    ])
-    return
-
-
 # === Section 2 — The portal: why bother, then what it is ==========================
 # Rewritten to lead with the *usefulness* (escape the y', y'' guess
 # game / decoding gauntlet), show the canonical U-turn diagram, and
@@ -580,8 +541,9 @@ def _(go, mo, np):
             r"""
             ### A peek through the portal — the $s$-plane landscape
 
-            If you watched the companion video, you saw Grant draw
-            this picture: every entry in our dictionary is a **rational
+            Here's a way to *see* what the portal produces — an idea
+            we borrow from the 3Blue1Brown video credited at the end of
+            the chapter. Every entry in our dictionary is a **rational
             function of $s$**, and a rational function has a landscape.
             Plot the height $|F(s)|$ over the complex $s$-plane — real
             part one way, imaginary part the other — and wherever the
@@ -624,3 +586,63 @@ def _(go, mo, np):
 # from integration by parts. Land the central trick: t-derivatives
 # become s-multiplications, with the initial conditions automatically
 # baked in. Then run one tiny worked example end-to-end.
+
+
+# === Section 99 — Credits & further viewing =======================================
+# KEEP THIS CELL LAST. New sections (§3-§8) go ABOVE this banner.
+# The companion video is deferred to the end on purpose: it's framed
+# as acknowledgement (we borrow its visual ideas heavily), and it
+# embeds via mo.iframe -- a raw <iframe> inside mo.Html gets stripped
+# by marimo's HTML sanitizer, so mo.iframe (srcdoc-based) is the
+# working path.
+@app.cell(hide_code=True)
+def _(mo):
+    _player = mo.iframe(
+        '<style>html,body{margin:0;padding:0;background:#000;overflow:hidden}</style>'
+        '<iframe width="100%" height="100%"'
+        ' src="https://www.youtube-nocookie.com/embed/FE-hM1kRK4Y?rel=0"'
+        ' title="3Blue1Brown — Why Laplace transforms are so useful"'
+        ' frameborder="0"'
+        ' allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"'
+        ' allowfullscreen></iframe>',
+        width="100%",
+        height="430px",
+    )
+    mo.vstack([
+        mo.md(
+            r"""
+            ---
+            ## Credits & further viewing
+
+            A confession: much of this chapter's *visual* intuition is
+            not original. The idea of treating the transform as a
+            **portal** between worlds, of reading a system's behaviour
+            straight off the **poles** of its $s$-space image, and of
+            drawing $|F(s)|$ as a **landscape** over the complex plane
+            — all of it is borrowed, with gratitude, from Grant
+            Sanderson's video below.
+
+            We've added the interactivity (orbit the landscape
+            yourself; in §4, drag the damping and watch the poles
+            migrate) and stitched the ideas into our running
+            car-and-road story — but the pictures come from here. If
+            they clicked for you, this is where they came from. Watch
+            it to see the same ideas in motion.
+            """
+        ),
+        _player,
+        mo.md(
+            r"""
+            <div style="text-align:center;color:#56636f;font-size:13px">
+            3Blue1Brown — <em>Why Laplace transforms are so useful</em> ·
+            Grant Sanderson ·
+            <a href="https://www.youtube.com/watch?v=FE-hM1kRK4Y" target="_blank" rel="noopener">open on YouTube</a>
+            </div>
+            """
+        ),
+    ])
+    return
+
+
+if __name__ == "__main__":
+    app.run()
