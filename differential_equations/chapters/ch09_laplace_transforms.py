@@ -585,5 +585,133 @@ def _(mo):
     return
 
 
+# --- Why poles? The probe/resonance argument on the worked example --------
+# The user-requested explanation: pole addresses aren't decoration --
+# each one is the complex rate of a building block of y(t). Anchored
+# on the specific example we just solved (sin t, poles at s = +/- i)
+# so the mechanism is shown, not asserted.
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Why does $Y(s)$ blow up exactly at $s = \pm i$?
+
+        We landed on $Y(s) = 1/(s^2+1)$ — finite everywhere in the
+        $s$-plane except at the two points $s = \pm i$, where the
+        denominator vanishes. Why those *specific* addresses?
+
+        The honest answer is **resonance with a probe.** Look at the
+        definition one more time:
+
+        $$
+        Y(s) \;=\; \int_0^\infty e^{-st}\, y(t)\, dt.
+        $$
+
+        Think of $e^{-st}$ as a **tunable probe** you can slide
+        anywhere in the complex plane. Writing $s = -\gamma + i\omega$
+        for a general point, the probe both decays (rate $\gamma$) and
+        oscillates (frequency $\omega$). The integral asks: integrated
+        over all of time, *how much does $y(t)$ line up with this
+        particular probe?*
+
+        The integral can only blow up when the probe **exactly
+        cancels** an ingredient of $y(t)$, so the integrand never
+        decays and the area piles up forever. Try it on our answer.
+        By Euler,
+
+        $$
+        \sin t \;=\; \frac{e^{it} - e^{-it}}{2i}.
+        $$
+
+        So $y(t)$ is secretly two complex exponentials, with rates
+        $+i$ and $-i$. Probe the first one at $s = +i$:
+
+        $$
+        e^{-st}\cdot e^{it}\,\Big|_{s = i} \;=\; e^{-it}\cdot e^{it} \;=\; 1.
+        $$
+
+        The probe undid the mode exactly. Integrand $\equiv 1$, area
+        $= \infty$. **That blow-up is the pole at $s = +i$.** Same
+        story at $s = -i$ for the other mode.
+
+        So pole addresses aren't arbitrary. Each one is the **complex
+        rate of a building block of $y(t)$** — its **real part** is
+        that mode's decay rate, its **imaginary part** is that mode's
+        frequency. For our example: real parts $0$ (no decay),
+        imaginary parts $\pm 1$ (oscillation at frequency $1$). Read
+        backwards from the two poles alone, that's an undying
+        oscillation at frequency $1$ — exactly $\sin t$.
+        """
+    )
+    return
+
+
+# --- The 3-D landscape of |Y(s)| for the worked example -------------------
+@app.cell(hide_code=True)
+def _(go, mo, np):
+    _re = np.linspace(-1.8, 1.8, 130)
+    _im = np.linspace(-3.0, 3.0, 200)
+    _RE, _IM = np.meshgrid(_re, _im)
+    _S = _RE + 1j * _IM
+    _mag = 1.0 / np.abs(_S**2 + 1.0)
+    _Z = np.clip(_mag, 0, 5.0)
+
+    _fig = go.Figure(data=[go.Surface(
+        x=_re, y=_im, z=_Z,
+        colorscale="Viridis", showscale=False, opacity=0.98,
+        contours={"z": {"show": True, "usecolormap": True, "width": 1}},
+    )])
+    _fig.add_trace(go.Scatter3d(
+        x=[0, 0], y=[1, -1], z=[5.0, 5.0],
+        mode="markers+text",
+        marker=dict(size=4, color="#c15a46", symbol="diamond"),
+        text=["pole at s = +i", "pole at s = −i"],
+        textposition="top center",
+        textfont=dict(color="#c15a46", size=11), showlegend=False,
+    ))
+    _fig.update_layout(
+        height=460, margin=dict(l=0, r=0, t=10, b=0),
+        scene=dict(
+            xaxis_title="Re(s)", yaxis_title="Im(s)", zaxis_title="|Y(s)|",
+            camera=dict(eye=dict(x=1.6, y=1.5, z=1.05)),
+            aspectratio=dict(x=1, y=1.4, z=0.8),
+        ),
+        template="plotly_white",
+    )
+
+    mo.vstack([
+        mo.md(
+            r"""
+            ### The landscape of $Y(s)$
+
+            Same idea, picturable. Plot the height $|Y(s)|$ over the
+            complex $s$-plane — real part one way, imaginary part the
+            other. Everywhere the integral converges to a finite value,
+            the surface is finite; at the two poles, it shoots up into
+            **towers**. Drag to spin it.
+            """
+        ),
+        _fig,
+        mo.md(
+            r"""
+            The towers stand at $s = +i$ and $s = -i$ — squarely on the
+            **imaginary axis**, equal heights, mirror images. Their
+            *addresses* tell you the answer in time-domain language
+            without inverting anything: zero real part (no exponential
+            decay or growth), imaginary parts $\pm 1$ (oscillation at
+            frequency $1$). Together, an undying oscillation at
+            frequency $1$ — and that's the entire signature of $\sin t$.
+
+            This is what "the poles encode the answer" actually means.
+            We didn't have to invert the transform to see that $y(t)$
+            was a pure unit-frequency oscillation; the two pole
+            locations *already said so.* Inverting was just attaching
+            the right amplitude.
+            """
+        ),
+    ])
+    return
+
+
 if __name__ == "__main__":
     app.run()
