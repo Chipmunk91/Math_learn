@@ -574,6 +574,16 @@ def _(go, mo, np):
             basis $e^{rt}$. Laplace just makes that hidden exponential
             basis **visible**, as a constellation of dots in a plane.
 
+            Why does a pole *force* its mode, rather than merely
+            suggest it? Because the transform is **one-to-one**: two
+            functions with the same $F(s)$ are the same function
+            (this is Lerch's theorem, and it's the reason an *inverse*
+            transform even exists). So once you split $F(s)$ into
+            simple fractions $c_k/(s - p_k)$, each piece can *only*
+            have come from $c_k e^{p_k t}$ — nothing else maps there.
+            A pole at $s = a$ doesn't just hint at $e^{at}$; it
+            **guarantees** it.
+
             The atlas below is the whole dictionary in one picture:
             pick a spot in the $s$-plane (left), and the curve on the
             right is the mode that pole contributes to $f(t)$ —
@@ -659,6 +669,17 @@ def _(mo):
         the **simplest possible** rational function — a single pole
         at $s = a$. That correspondence is the chapter's load-bearing
         beam. Hold onto it.
+
+        And notice *where* that pole comes from — this is the answer
+        to "why does a pole at $s = a$ mean $e^{at}$?" The integral
+        converges only while $s > a$: the probe $e^{-st}$ has to
+        **out-decay** the function's own growth $e^{at}$. Push $s$
+        down toward $a$ and the two exactly cancel — the integrand
+        flattens to the constant $1$, the area runs to infinity, and
+        $F(s)$ blows up. *That blow-up is the pole.* So the pole sits
+        at $s = a$ for a reason: $a$ **is** the exponential rate
+        living inside $f(t)$, and the pole is the transform pointing
+        straight at it.
         """
     )
     return
