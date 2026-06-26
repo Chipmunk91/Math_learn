@@ -378,80 +378,12 @@ def _(mo):
         right tool for problems that **start at $t = 0$** with initial
         conditions, and for forcings (like a curb at $t = a$) that
         *switch on* somewhere along the way.
+
+        Enough definition. Best way to feel a transform is to compute
+        a few — let's send some familiar functions through the portal
+        and see what comes out.
         """
     )
-    return
-
-
-# --- The s-plane landscape (visual companion to the definition above) -----
-# Folded in here so the picture of "what an image looks like" lands
-# at the moment the definition is read. Uses the sin/cos transform
-# 1/(s^2 + omega^2) -- the visually clearest case, with two clean
-# towers on the imaginary axis. The derivation comes two cells later,
-# so we frame this as a preview. Idea borrowed from 3Blue1Brown
-# (credited in §99 at the end of the chapter).
-@app.cell(hide_code=True)
-def _(go, mo, np):
-    _omega = 1.5
-    _re = np.linspace(-2.0, 2.0, 130)
-    _im = np.linspace(-3.6, 3.6, 200)
-    _RE, _IM = np.meshgrid(_re, _im)
-    _S = _RE + 1j * _IM
-    _mag = 1.0 / np.abs(_S**2 + _omega**2)
-    _Z = np.clip(_mag, 0, 5.0)
-
-    _fig = go.Figure(data=[go.Surface(
-        x=_re, y=_im, z=_Z,
-        colorscale="Viridis", showscale=False, opacity=0.98,
-        contours={"z": {"show": True, "usecolormap": True, "width": 1}},
-    )])
-    _fig.add_trace(go.Scatter3d(
-        x=[0, 0], y=[_omega, -_omega], z=[5.0, 5.0],
-        mode="markers+text",
-        marker=dict(size=4, color="#c15a46", symbol="diamond"),
-        text=["pole at s = +iω", "pole at s = −iω"],
-        textposition="top center",
-        textfont=dict(color="#c15a46", size=11), showlegend=False,
-    ))
-    _fig.update_layout(
-        height=460, margin=dict(l=0, r=0, t=10, b=0),
-        scene=dict(
-            xaxis_title="Re(s)", yaxis_title="Im(s)", zaxis_title="|F(s)|",
-            camera=dict(eye=dict(x=1.6, y=1.5, z=1.05)),
-            aspectratio=dict(x=1, y=1.4, z=0.8),
-        ),
-        template="plotly_white",
-    )
-
-    mo.vstack([
-        mo.md(
-            r"""
-            So what does an "image on the other side" actually look
-            like? Every transform we'll meet turns out to be a
-            **rational function of $s$**, and a rational function has
-            a landscape. Plot the height $|F(s)|$ over the complex
-            $s$-plane — real part one way, imaginary part the other —
-            and wherever the denominator hits zero the surface shoots
-            up into a **tower**. Those towers are the **poles**.
-
-            Here's a preview — the landscape of
-            $F(s) = \dfrac{1}{s^2 + \omega^2}$ with $\omega = 1.5$.
-            (We'll derive this exact image two cells from now; it's
-            the transform of $\cos\omega t$ and $\sin\omega t$.) Drag
-            to spin it.
-            """
-        ),
-        _fig,
-        mo.md(
-            r"""
-            These two towers stand at $s = \pm i\omega$, on the
-            **imaginary axis**. Hold that thought — a pole's *address*
-            in this plane turns out to say something precise and
-            surprising about the original $f(t)$. We come back to it
-            below, once the dictionary is in hand.
-            """
-        ),
-    ])
     return
 
 
@@ -563,6 +495,75 @@ def _(mo):
     return
 
 
+# --- The s-plane landscape (visualise a dictionary entry) ------------------
+# Reframed to sit AFTER the dictionary so it visualises a transform
+# the reader has just *derived* (1/(s^2 + omega^2)) instead of teasing
+# one they haven't met. Idea borrowed from 3Blue1Brown (credited in
+# §99 at the end of the chapter).
+@app.cell(hide_code=True)
+def _(go, mo, np):
+    _omega = 1.5
+    _re = np.linspace(-2.0, 2.0, 130)
+    _im = np.linspace(-3.6, 3.6, 200)
+    _RE, _IM = np.meshgrid(_re, _im)
+    _S = _RE + 1j * _IM
+    _mag = 1.0 / np.abs(_S**2 + _omega**2)
+    _Z = np.clip(_mag, 0, 5.0)
+
+    _fig = go.Figure(data=[go.Surface(
+        x=_re, y=_im, z=_Z,
+        colorscale="Viridis", showscale=False, opacity=0.98,
+        contours={"z": {"show": True, "usecolormap": True, "width": 1}},
+    )])
+    _fig.add_trace(go.Scatter3d(
+        x=[0, 0], y=[_omega, -_omega], z=[5.0, 5.0],
+        mode="markers+text",
+        marker=dict(size=4, color="#c15a46", symbol="diamond"),
+        text=["pole at s = +iω", "pole at s = −iω"],
+        textposition="top center",
+        textfont=dict(color="#c15a46", size=11), showlegend=False,
+    ))
+    _fig.update_layout(
+        height=460, margin=dict(l=0, r=0, t=10, b=0),
+        scene=dict(
+            xaxis_title="Re(s)", yaxis_title="Im(s)", zaxis_title="|F(s)|",
+            camera=dict(eye=dict(x=1.6, y=1.5, z=1.05)),
+            aspectratio=dict(x=1, y=1.4, z=0.8),
+        ),
+        template="plotly_white",
+    )
+
+    mo.vstack([
+        mo.md(
+            r"""
+            ### Seeing one — the $s$-plane landscape
+
+            Every entry we just derived is a **rational function of
+            $s$**, and a rational function has a landscape. Plot the
+            height $|F(s)|$ over the complex $s$-plane — real part one
+            way, imaginary part the other — and wherever the
+            denominator hits zero the surface shoots up into a
+            **tower**.
+
+            Here's the landscape of the $\sin/\cos$ entry,
+            $F(s) = \dfrac{1}{s^2 + \omega^2}$ with $\omega = 1.5$.
+            Drag to spin it.
+            """
+        ),
+        _fig,
+        mo.md(
+            r"""
+            The two towers sit at $s = \pm i\omega$, on the
+            **imaginary axis** — the roots of the denominator
+            $s^2 + \omega^2$. Those addresses aren't decoration. As we
+            see next, where a tower stands says something precise
+            about the function $f(t)$ it came from.
+            """
+        ),
+    ])
+    return
+
+
 # === Section 2.6 — A pole is a basis note: what a pole says about f(t) =============
 # The user-requested deep dive: a pole isn't just "oscillates forever"
 # -- its location names an elementary exponential MODE of f(t), and
@@ -576,7 +577,8 @@ def _(mo):
         r"""
         ### Reading the dictionary backwards — a pole is a *note*
 
-        Look down the right column of the table and notice every entry
+        Those two towers were no accident. Look down the right column
+        of the table and notice every entry
         has the same skeleton: a fraction whose **denominator** is the
         whole story. $e^{at}$ sits over $s - a$. The sinusoids sit over
         $s^2 + \omega^2 = (s - i\omega)(s + i\omega)$. The roots of
