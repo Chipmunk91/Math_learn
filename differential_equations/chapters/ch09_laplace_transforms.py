@@ -383,6 +383,90 @@ def _(mo):
     return
 
 
+# --- The s-plane landscape (visual companion to the definition above) -----
+# Folded in here so the picture of "what an image looks like" lands
+# at the moment the definition is read. Uses the sin/cos transform
+# 1/(s^2 + omega^2) -- the visually clearest case, with two clean
+# towers on the imaginary axis. The derivation comes two cells later,
+# so we frame this as a preview. Idea borrowed from 3Blue1Brown
+# (credited in §99 at the end of the chapter).
+@app.cell(hide_code=True)
+def _(go, mo, np):
+    _omega = 1.5
+    _re = np.linspace(-2.0, 2.0, 130)
+    _im = np.linspace(-3.6, 3.6, 200)
+    _RE, _IM = np.meshgrid(_re, _im)
+    _S = _RE + 1j * _IM
+    _mag = 1.0 / np.abs(_S**2 + _omega**2)
+    _Z = np.clip(_mag, 0, 5.0)
+
+    _fig = go.Figure(data=[go.Surface(
+        x=_re, y=_im, z=_Z,
+        colorscale="Viridis", showscale=False, opacity=0.98,
+        contours={"z": {"show": True, "usecolormap": True, "width": 1}},
+    )])
+    _fig.add_trace(go.Scatter3d(
+        x=[0, 0], y=[_omega, -_omega], z=[5.0, 5.0],
+        mode="markers+text",
+        marker=dict(size=4, color="#c15a46", symbol="diamond"),
+        text=["pole at s = +iω", "pole at s = −iω"],
+        textposition="top center",
+        textfont=dict(color="#c15a46", size=11), showlegend=False,
+    ))
+    _fig.update_layout(
+        height=460, margin=dict(l=0, r=0, t=10, b=0),
+        scene=dict(
+            xaxis_title="Re(s)", yaxis_title="Im(s)", zaxis_title="|F(s)|",
+            camera=dict(eye=dict(x=1.6, y=1.5, z=1.05)),
+            aspectratio=dict(x=1, y=1.4, z=0.8),
+        ),
+        template="plotly_white",
+    )
+
+    mo.vstack([
+        mo.md(
+            r"""
+            So what does an "image on the other side" actually look
+            like? Every transform we'll meet turns out to be a
+            **rational function of $s$**, and a rational function has
+            a landscape. Plot the height $|F(s)|$ over the complex
+            $s$-plane — real part one way, imaginary part the other —
+            and wherever the denominator hits zero the surface shoots
+            up into a **tower**. Those towers are the **poles**.
+
+            Here's a preview — the landscape of
+            $F(s) = \dfrac{1}{s^2 + \omega^2}$ with $\omega = 1.5$.
+            (We'll derive this exact image two cells from now; it's
+            the transform of $\cos\omega t$ and $\sin\omega t$.) Drag
+            to spin it.
+            """
+        ),
+        _fig,
+        mo.md(
+            r"""
+            Read the towers' **addresses**, not just their heights.
+            They stand at $s = \pm i\omega$ — squarely on the
+            **imaginary axis**. That location *is* the message: a pole
+            on the imaginary axis means a response that **oscillates
+            forever and never decays** — exactly what undamped
+            $\sin\omega t$ does.
+
+            Slide a pole **left** of the axis (a negative real part)
+            and you'd be looking at a *decaying* oscillation; push it
+            onto the **real axis** and you'd get pure exponential
+            growth or decay — the $e^{at}$ entry, whose single tower
+            sits at $s = a$. A pole's position in the plane encodes
+            the behaviour in time. That correspondence is what makes
+            the whole method tick — and in §4 we'll turn the damping
+            knob on our car and **watch its poles migrate** across
+            this very plane: Chapter 6's three-case fork, redrawn in
+            $s$.
+            """
+        ),
+    ])
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
@@ -492,92 +576,6 @@ def _(mo):
         and it's the rule that gives the portal its whole point.
         """
     )
-    return
-
-
-# === Section 2.5 — Borrowed visualization: the s-plane landscape ===================
-# Credit: 3Blue1Brown, "Why Laplace transforms are so useful"
-# (https://www.youtube.com/watch?v=FE-hM1kRK4Y). The idea borrowed is
-# picturing |F(s)| as a surface over the complex s-plane, where poles
-# rise as towers and a pole's *location* encodes the time-behaviour.
-# Honest to §2 content: we plot the sin/cos transform 1/(s^2+omega^2),
-# whose two poles sit on the imaginary axis. §4 reuses the technique
-# on the chassis transfer function with an interactive damping knob.
-@app.cell(hide_code=True)
-def _(go, mo, np):
-    _omega = 1.5
-    _re = np.linspace(-2.0, 2.0, 130)
-    _im = np.linspace(-3.6, 3.6, 200)
-    _RE, _IM = np.meshgrid(_re, _im)
-    _S = _RE + 1j * _IM
-    _mag = 1.0 / np.abs(_S**2 + _omega**2)
-    _Z = np.clip(_mag, 0, 5.0)
-
-    _fig = go.Figure(data=[go.Surface(
-        x=_re, y=_im, z=_Z,
-        colorscale="Viridis", showscale=False, opacity=0.98,
-        contours={"z": {"show": True, "usecolormap": True, "width": 1}},
-    )])
-    _fig.add_trace(go.Scatter3d(
-        x=[0, 0], y=[_omega, -_omega], z=[5.0, 5.0],
-        mode="markers+text",
-        marker=dict(size=4, color="#c15a46", symbol="diamond"),
-        text=["pole at s = +iω", "pole at s = −iω"],
-        textposition="top center",
-        textfont=dict(color="#c15a46", size=11), showlegend=False,
-    ))
-    _fig.update_layout(
-        height=460, margin=dict(l=0, r=0, t=10, b=0),
-        scene=dict(
-            xaxis_title="Re(s)", yaxis_title="Im(s)", zaxis_title="|F(s)|",
-            camera=dict(eye=dict(x=1.6, y=1.5, z=1.05)),
-            aspectratio=dict(x=1, y=1.4, z=0.8),
-        ),
-        template="plotly_white",
-    )
-
-    mo.vstack([
-        mo.md(
-            r"""
-            ### A peek through the portal — the $s$-plane landscape
-
-            Here's a way to *see* what the portal produces — an idea
-            we borrow from the 3Blue1Brown video credited at the end of
-            the chapter. Every entry in our dictionary is a **rational
-            function of $s$**, and a rational function has a landscape.
-            Plot the height $|F(s)|$ over the complex $s$-plane — real
-            part one way, imaginary part the other — and wherever the
-            denominator hits zero the surface shoots up into a
-            **tower**. Those towers are the **poles**.
-
-            Here's the same idea, *orbitable* — the landscape of
-            $F(s) = \dfrac{1}{s^2 + \omega^2}$, the transform of
-            $\cos\omega t$ and $\sin\omega t$, with $\omega = 1.5$.
-            Drag to spin it.
-            """
-        ),
-        _fig,
-        mo.md(
-            r"""
-            Read the towers' **addresses**, not just their heights.
-            They stand at $s = \pm i\omega$ — squarely on the
-            **imaginary axis**. That location *is* the message: a pole
-            on the imaginary axis means a response that **oscillates
-            forever and never decays** — exactly what undamped
-            $\sin\omega t$ does.
-
-            Slide a pole **left** of the axis (a negative real part)
-            and you'd be looking at a *decaying* oscillation; push it
-            onto the **real axis** and you'd get pure exponential
-            growth or decay — the $e^{at}$ entry, whose single tower
-            sits at $s = a$. A pole's position in the plane encodes the
-            behaviour in time. That correspondence is what makes the
-            whole method tick — and in §4 we'll turn the damping knob
-            on our car and **watch its poles migrate** across this very
-            plane: Chapter 6's three-case fork, redrawn in $s$.
-            """
-        ),
-    ])
     return
 
 
