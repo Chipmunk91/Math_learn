@@ -444,23 +444,11 @@ def _(go, mo, np):
         _fig,
         mo.md(
             r"""
-            Read the towers' **addresses**, not just their heights.
-            They stand at $s = \pm i\omega$ — squarely on the
-            **imaginary axis**. That location *is* the message: a pole
-            on the imaginary axis means a response that **oscillates
-            forever and never decays** — exactly what undamped
-            $\sin\omega t$ does.
-
-            Slide a pole **left** of the axis (a negative real part)
-            and you'd be looking at a *decaying* oscillation; push it
-            onto the **real axis** and you'd get pure exponential
-            growth or decay — the $e^{at}$ entry, whose single tower
-            sits at $s = a$. A pole's position in the plane encodes
-            the behaviour in time. That correspondence is what makes
-            the whole method tick — and in §4 we'll turn the damping
-            knob on our car and **watch its poles migrate** across
-            this very plane: Chapter 6's three-case fork, redrawn in
-            $s$.
+            These two towers stand at $s = \pm i\omega$, on the
+            **imaginary axis**. Hold that thought — a pole's *address*
+            in this plane turns out to say something precise and
+            surprising about the original $f(t)$. We come back to it
+            below, once the dictionary is in hand.
             """
         ),
     ])
@@ -570,12 +558,148 @@ def _(mo):
         much in hand, you can already transform any sum of
         polynomials, exponentials, and sinusoids — the whole UC table
         from Chapter 8, basically.
-
-        What you *can't* yet do is transform an ODE. For that we need
-        one more piece — the derivative rule, $\mathcal{L}\{y'\}$ —
-        and it's the rule that gives the portal its whole point.
         """
     )
+    return
+
+
+# === Section 2.6 — A pole is a basis note: what a pole says about f(t) =============
+# The user-requested deep dive: a pole isn't just "oscillates forever"
+# -- its location names an elementary exponential MODE of f(t), and
+# the full pole set IS the exponential basis of f(t) (residues = how
+# much of each). Ties straight back to Ch6 characteristic roots. Two
+# cells: the read-it-backwards dictionary, then the basis reframe with
+# an s-plane -> time-waveform atlas figure.
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Reading the dictionary backwards — a pole is a *note*
+
+        Look down the right column of the table and notice every entry
+        has the same skeleton: a fraction whose **denominator** is the
+        whole story. $e^{at}$ sits over $s - a$. The sinusoids sit over
+        $s^2 + \omega^2 = (s - i\omega)(s + i\omega)$. The roots of
+        those denominators — the **poles** — aren't incidental
+        bookkeeping. They are a *readout of what $f(t)$ is made of.*
+
+        Read each pair **backwards**:
+
+        - a pole at $s = a$ on the real axis $\;\leftrightarrow\;$ the mode $e^{at}$ — pure growth ($a > 0$) or decay ($a < 0$);
+        - a pole pair at $s = \pm i\omega$ on the imaginary axis $\;\leftrightarrow\;$ the mode $\cos\omega t$ / $\sin\omega t$ — pure, undying oscillation;
+        - a pole pair at $s = -\gamma \pm i\omega$ off the axis $\;\leftrightarrow\;$ the mode $e^{-\gamma t}\cos\omega t$ — a decaying oscillation.
+
+        A pole's **address** carries two coordinates and each one means
+        something *in time*: its **horizontal** position (the real
+        part) is a growth/decay rate, and its **vertical** position
+        (the imaginary part) is an oscillation frequency. Left of the
+        axis decays, right of it grows, on it neither; higher up
+        oscillates faster.
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(go, mo, np):
+    from plotly.subplots import make_subplots as _msub
+
+    _red, _blue, _grn = "#c15a46", "#2a5d9c", "#2e8b6f"
+    _fig = _msub(
+        rows=1, cols=2, column_widths=[0.46, 0.54], horizontal_spacing=0.13,
+        subplot_titles=("a pole's location in the s-plane …", "… is the mode it adds to f(t)"),
+    )
+
+    # --- left: the s-plane with three representative poles ---
+    _fig.add_vrect(x0=-3.4, x1=0, fillcolor=_grn, opacity=0.05, line_width=0, row=1, col=1)
+    _fig.add_trace(go.Scatter(x=[-3.4, 2.2], y=[0, 0], mode="lines",
+        line=dict(color="#b9c2cf", width=1), showlegend=False, hoverinfo="skip"), row=1, col=1)
+    _fig.add_trace(go.Scatter(x=[0, 0], y=[-4.2, 4.2], mode="lines",
+        line=dict(color="#b9c2cf", width=1), showlegend=False, hoverinfo="skip"), row=1, col=1)
+    _fig.add_trace(go.Scatter(x=[-0.6], y=[0], mode="markers",
+        marker=dict(symbol="x", size=12, color=_red, line=dict(width=2)),
+        name="s = −0.6 → decaying exp"), row=1, col=1)
+    _fig.add_trace(go.Scatter(x=[0, 0], y=[2, -2], mode="markers",
+        marker=dict(symbol="x", size=12, color=_blue, line=dict(width=2)),
+        name="s = ±2i → pure oscillation"), row=1, col=1)
+    _fig.add_trace(go.Scatter(x=[-0.5, -0.5], y=[3, -3], mode="markers",
+        marker=dict(symbol="x", size=12, color=_grn, line=dict(width=2)),
+        name="s = −0.5 ± 3i → decaying oscillation"), row=1, col=1)
+
+    # --- right: the matching time-domain modes (color-locked to poles) ---
+    _t = np.linspace(0, 7, 400)
+    _fig.add_trace(go.Scatter(x=_t, y=np.exp(-0.6*_t), mode="lines",
+        line=dict(color=_red, width=2.4), showlegend=False), row=1, col=2)
+    _fig.add_trace(go.Scatter(x=_t, y=np.cos(2*_t), mode="lines",
+        line=dict(color=_blue, width=2.4), showlegend=False), row=1, col=2)
+    _fig.add_trace(go.Scatter(x=_t, y=np.exp(-0.5*_t)*np.cos(3*_t), mode="lines",
+        line=dict(color=_grn, width=2.4), showlegend=False), row=1, col=2)
+
+    _fig.update_xaxes(title="Re(s)", range=[-3.4, 2.2], zeroline=False, row=1, col=1)
+    _fig.update_yaxes(title="Im(s)", range=[-4.2, 4.2], zeroline=False, row=1, col=1)
+    _fig.update_xaxes(title="t", row=1, col=2)
+    _fig.update_yaxes(title="f(t)", range=[-1.12, 1.12], row=1, col=2)
+    _fig.update_layout(
+        height=400, template="plotly_white",
+        margin=dict(l=10, r=10, t=54, b=10),
+        legend=dict(orientation="h", x=0.0, y=-0.2, font=dict(size=11)),
+        paper_bgcolor="white", plot_bgcolor="white",
+    )
+
+    mo.vstack([
+        mo.md(
+            r"""
+            ### The basis hidden in every function
+
+            Here's the punchline, and it's *why the whole method
+            works.* Any $f(t)$ you can build from exponentials and
+            sinusoids is a sum of these elementary modes,
+
+            $$
+            f(t) \;=\; c_1\, e^{p_1 t} \;+\; c_2\, e^{p_2 t} \;+\; \cdots
+            $$
+
+            and its transform is then a sum of simple fractions, **one
+            per mode**,
+
+            $$
+            F(s) \;=\; \frac{c_1}{s - p_1} \;+\; \frac{c_2}{s - p_2} \;+\; \cdots
+            $$
+
+            The exponents $p_1, p_2, \dots$ are *exactly the poles* of
+            $F(s)$. So the poles **are the basis** of $f(t)$ — the
+            list of elementary exponential ingredients it's built from
+            — and the residues $c_1, c_2, \dots$ say how much of each.
+            It's the same move you met in Chapter 6, where the
+            characteristic roots were the exponents of the homogeneous
+            basis $e^{rt}$. Laplace just makes that hidden exponential
+            basis **visible**, as a constellation of dots in a plane.
+
+            The atlas below is the whole dictionary in one picture:
+            pick a spot in the $s$-plane (left), and the curve on the
+            right is the mode that pole contributes to $f(t)$ —
+            color-locked so you can see which goes with which.
+            """
+        ),
+        _fig,
+        mo.md(
+            r"""
+            This is why everything that follows becomes a **hunt for
+            poles.** When we solve an ODE in §3–§4, the answer arrives
+            as a rational $Y(s)$; finding *where its poles sit* hands
+            you the basis of $y(t)$ — its modes, their decay rates,
+            their frequencies — before you've written down a single
+            exponential. (And in §4 we'll turn the damping knob on the
+            car and literally **watch those poles slide** across this
+            plane.)
+
+            But first: how does an ODE turn into a rational $Y(s)$ at
+            all? That's the one rule still missing — the derivative
+            rule $\mathcal{L}\{y'\}$, and it's the rule that gives the
+            portal its whole point. On to §3.
+            """
+        ),
+    ])
     return
 
 
