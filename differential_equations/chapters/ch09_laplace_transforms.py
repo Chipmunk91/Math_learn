@@ -446,5 +446,144 @@ def _(mo):
     return
 
 
+# --- Second-derivative rule: L{f''} = s^2 F - s f(0) - f'(0) ----------------
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Once more, for $f''(t)$
+
+        A second-order ODE carries a $y''$, so we need the rule for the
+        *second* derivative too — and we get it for free, no new
+        integral. Just apply the rule we already have to $f'$ in place
+        of $f$. Writing $f'' = (f')'$:
+
+        $$
+        \mathcal{L}\{f''(t)\} \;=\; s\,\mathcal{L}\{f'(t)\} \;-\; f'(0).
+        $$
+
+        Then substitute $\mathcal{L}\{f'\} = sF(s) - f(0)$ from a moment
+        ago:
+
+        $$
+        \boxed{\;\;\mathcal{L}\{f''(t)\} \;=\; s^2 F(s) \;-\; s\,f(0) \;-\; f'(0).\;\;}
+        $$
+
+        Same pattern: each derivative pulls down another factor of $s$,
+        and each leaves behind a little memory of an initial value. Two
+        derivatives, two leftovers $f(0)$ and $f'(0)$ — *exactly* the
+        two numbers an initial-value problem hands you. The transform
+        doesn't only turn calculus into algebra; it **swallows the
+        initial conditions whole.**
+        """
+    )
+    return
+
+
+# --- Worked impulse example: y'' + y = delta(t), zero ICs ------------------
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### A worked example — the struck oscillator
+
+        Enough rules; let's push a real equation through. Take the bare
+        spring-mass from Chapter 6 and **strike it once** at $t = 0$ —
+        the pothole from the intro, idealized to a single instantaneous
+        unit kick:
+
+        $$
+        y'' + y \;=\; \delta(t), \qquad y(0) = 0,\;\; y'(0) = 0.
+        $$
+
+        That $\delta(t)$ is the **Dirac impulse** — picture an
+        infinitely tall, infinitely thin spike at $t = 0$ whose total
+        area is exactly $1$: a full unit of "push" delivered in zero
+        time. Its transform is the simplest object in the whole
+        subject. Drop it into the integral and the spike samples the
+        weight at the single instant $t = 0$:
+
+        $$
+        \mathcal{L}\{\delta(t)\} \;=\; \int_0^{\infty} e^{-st}\,\delta(t)\,dt \;=\; e^{-s\cdot 0} \;=\; 1.
+        $$
+
+        An impulse transforms to the constant $1$. That clean
+        right-hand side is exactly why the impulse is the friendliest
+        forcing to start with.
+        """
+    )
+    return
+
+
+# --- The collapse: transform every term, ICs vanish, divide ----------------
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Watch it collapse to algebra
+
+        Now transform the equation term by term, using the three rules
+        we just collected — $\mathcal{L}\{y''\} = s^2 Y - s\,y(0) - y'(0)$,
+        $\mathcal{L}\{y\} = Y$, and $\mathcal{L}\{\delta\} = 1$:
+
+        $$
+        \underbrace{\bigl(s^2 Y - s\,y(0) - y'(0)\bigr)}_{\mathcal{L}\{y''\}} \;+\; \underbrace{Y}_{\mathcal{L}\{y\}} \;=\; \underbrace{1}_{\mathcal{L}\{\delta\}}.
+        $$
+
+        Both initial conditions are zero, so the $s\,y(0)$ and $y'(0)$
+        terms simply drop. The differential equation — derivatives,
+        impulse, and all — has become this:
+
+        $$
+        s^2 Y + Y \;=\; 1.
+        $$
+
+        Not a derivative in sight. It's a one-line algebra problem in
+        $Y$, no harder than $5x = 1$: factor out $Y$ and divide.
+
+        $$
+        (s^2 + 1)\,Y \;=\; 1 \quad\Longrightarrow\quad \boxed{\;Y(s) \;=\; \frac{1}{s^2 + 1}.\;}
+        $$
+        """
+    )
+    return
+
+
+# --- How it turned out: invert (gesture), tie denominator to Ch6 -----------
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### How it turned out
+
+        That was the *entire* solve. All the calculus got spent inside
+        the transform rules; what remained in $s$-space was a single
+        division. Compare that to undetermined coefficients or
+        variation of parameters trying to wrestle a delta function in
+        $t$-space — there isn't even a contest.
+
+        One step is still owed: carrying $Y(s) = \dfrac{1}{s^2 + 1}$
+        **back** across the portal to recover $y(t)$. That's the
+        inverse transform, and we'll build the dictionary for it next.
+        But here's the punchline in advance — $\dfrac{1}{s^2 + 1}$ is
+        the transform of $\sin t$, so the struck oscillator answers
+        with
+
+        $$
+        y(t) \;=\; \sin t.
+        $$
+
+        Hit it once and it rings: a clean unit-amplitude oscillation at
+        its natural frequency — the **impulse response**. And notice
+        the denominator we divided by, $s^2 + 1$. That's no
+        coincidence: it's exactly the characteristic polynomial of
+        $y'' + y = 0$ from Chapter 6. The shape of the answer was
+        hiding in the denominator all along — a thread we'll pull hard
+        on later.
+        """
+    )
+    return
+
+
 if __name__ == "__main__":
     app.run()
