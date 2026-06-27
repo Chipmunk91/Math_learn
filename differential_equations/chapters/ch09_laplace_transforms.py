@@ -678,167 +678,51 @@ def _(mo):
     return
 
 
-# --- How it turned out: invert (gesture), tie denominator to Ch6 -----------
+# --- Step: what the inverse transform is, and how to apply it to Y(s) ------
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
-        ### How it turned out
+        ### Going back — the inverse transform
 
-        That was the *entire* solve. All the calculus got spent inside
-        the transform rules; what remained in $s$-space was a single
-        division. Compare that to undetermined coefficients or
-        variation of parameters trying to wrestle a delta function in
-        $t$-space — there isn't even a contest.
+        We have $Y(s) = \dfrac{1}{s^2 + 1}$: the answer, but written in
+        $s$-space. It's the image sitting on the far side of the
+        portal. To finish the job we have to carry it **back** to
+        $t$-space and recover the actual function $y(t)$.
 
-        One step is still owed: carrying $Y(s) = \dfrac{1}{s^2 + 1}$
-        **back** across the portal to recover $y(t)$. That's the
-        inverse transform, and we'll build the dictionary for it next.
-        But here's the punchline in advance — $\dfrac{1}{s^2 + 1}$ is
-        the transform of $\sin t$, so the struck oscillator answers
-        with
+        That return trip is the **inverse Laplace transform**, written
+        $\mathcal{L}^{-1}$:
 
         $$
-        y(t) \;=\; \sin t.
+        y(t) \;=\; \mathcal{L}^{-1}\{\,Y(s)\,\}.
         $$
 
-        Hit it once and it rings: a clean unit-amplitude oscillation at
-        its natural frequency — the **impulse response**. And notice
-        the denominator we divided by, $s^2 + 1$. That's no
-        coincidence: it's exactly the characteristic polynomial of
-        $y'' + y = 0$ from Chapter 6. The shape of the answer was
-        hiding in the denominator all along — a thread we'll pull hard
-        on later.
+        Two facts make it usable.
+
+        **It is well-defined.** The forward transform is *one-to-one* —
+        two different functions can't share the same image. (That's
+        what made "the answer, in $s$-space" a meaningful phrase in the
+        first place.) So there is exactly **one** $y(t)$ hiding behind
+        $Y(s)$, and $\mathcal{L}^{-1}$ is just the name for "the
+        function it came from."
+
+        **We invert by recognition, not by brute force.** There *is* a
+        formula for $\mathcal{L}^{-1}$ — a contour integral in the
+        complex plane — but we will not need it even once. Instead we
+        use the forward dictionary **backwards**: the forward direction
+        pairs each $f(t)$ with its $F(s)$; to invert, we hunt for a
+        function whose forward transform is the $F(s)$ in front of us.
+        By uniqueness, the moment we find one, it *is* the answer.
+
+        So inverting our result collapses to a single, concrete
+        question:
+
+        > Which function of $t$ has Laplace transform
+        > $\dfrac{1}{s^2 + 1}$?
+
+        Pin that down and $y(t)$ falls out. That's the next step.
         """
     )
-    return
-
-
-# --- Why poles? The probe/resonance argument on the worked example --------
-# The user-requested explanation: pole addresses aren't decoration --
-# each one is the complex rate of a building block of y(t). Anchored
-# on the specific example we just solved (sin t, poles at s = +/- i)
-# so the mechanism is shown, not asserted.
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(
-        r"""
-        ### Why does $Y(s)$ blow up exactly at $s = \pm i$?
-
-        We landed on $Y(s) = 1/(s^2+1)$ — finite everywhere in the
-        $s$-plane except at the two points $s = \pm i$, where the
-        denominator vanishes. Why those *specific* addresses?
-
-        The honest answer is **resonance with a probe.** Look at the
-        definition one more time:
-
-        $$
-        Y(s) \;=\; \int_0^\infty e^{-st}\, y(t)\, dt.
-        $$
-
-        Think of $e^{-st}$ as a **tunable probe** you can slide
-        anywhere in the complex plane. Writing $s = -\gamma + i\omega$
-        for a general point, the probe both decays (rate $\gamma$) and
-        oscillates (frequency $\omega$). The integral asks: integrated
-        over all of time, *how much does $y(t)$ line up with this
-        particular probe?*
-
-        The integral can only blow up when the probe **exactly
-        cancels** an ingredient of $y(t)$, so the integrand never
-        decays and the area piles up forever. Try it on our answer.
-        By Euler,
-
-        $$
-        \sin t \;=\; \frac{e^{it} - e^{-it}}{2i}.
-        $$
-
-        So $y(t)$ is secretly two complex exponentials, with rates
-        $+i$ and $-i$. Probe the first one at $s = +i$:
-
-        $$
-        e^{-st}\cdot e^{it}\,\Big|_{s = i} \;=\; e^{-it}\cdot e^{it} \;=\; 1.
-        $$
-
-        The probe undid the mode exactly. Integrand $\equiv 1$, area
-        $= \infty$. **That blow-up is the pole at $s = +i$.** Same
-        story at $s = -i$ for the other mode.
-
-        So pole addresses aren't arbitrary. Each one is the **complex
-        rate of a building block of $y(t)$** — its **real part** is
-        that mode's decay rate, its **imaginary part** is that mode's
-        frequency. For our example: real parts $0$ (no decay),
-        imaginary parts $\pm 1$ (oscillation at frequency $1$). Read
-        backwards from the two poles alone, that's an undying
-        oscillation at frequency $1$ — exactly $\sin t$.
-        """
-    )
-    return
-
-
-# --- The 3-D landscape of |Y(s)| for the worked example -------------------
-@app.cell(hide_code=True)
-def _(go, mo, np):
-    _re = np.linspace(-1.8, 1.8, 130)
-    _im = np.linspace(-3.0, 3.0, 200)
-    _RE, _IM = np.meshgrid(_re, _im)
-    _S = _RE + 1j * _IM
-    _mag = 1.0 / np.abs(_S**2 + 1.0)
-    _Z = np.clip(_mag, 0, 5.0)
-
-    _fig = go.Figure(data=[go.Surface(
-        x=_re, y=_im, z=_Z,
-        colorscale="Viridis", showscale=False, opacity=0.98,
-        contours={"z": {"show": True, "usecolormap": True, "width": 1}},
-    )])
-    _fig.add_trace(go.Scatter3d(
-        x=[0, 0], y=[1, -1], z=[5.0, 5.0],
-        mode="markers+text",
-        marker=dict(size=4, color="#c15a46", symbol="diamond"),
-        text=["pole at s = +i", "pole at s = −i"],
-        textposition="top center",
-        textfont=dict(color="#c15a46", size=11), showlegend=False,
-    ))
-    _fig.update_layout(
-        height=460, margin=dict(l=0, r=0, t=10, b=0),
-        scene=dict(
-            xaxis_title="Re(s)", yaxis_title="Im(s)", zaxis_title="|Y(s)|",
-            camera=dict(eye=dict(x=1.6, y=1.5, z=1.05)),
-            aspectratio=dict(x=1, y=1.4, z=0.8),
-        ),
-        template="plotly_white",
-    )
-
-    mo.vstack([
-        mo.md(
-            r"""
-            ### The landscape of $Y(s)$
-
-            Same idea, picturable. Plot the height $|Y(s)|$ over the
-            complex $s$-plane — real part one way, imaginary part the
-            other. Everywhere the integral converges to a finite value,
-            the surface is finite; at the two poles, it shoots up into
-            **towers**. Drag to spin it.
-            """
-        ),
-        _fig,
-        mo.md(
-            r"""
-            The towers stand at $s = +i$ and $s = -i$ — squarely on the
-            **imaginary axis**, equal heights, mirror images. Their
-            *addresses* tell you the answer in time-domain language
-            without inverting anything: zero real part (no exponential
-            decay or growth), imaginary parts $\pm 1$ (oscillation at
-            frequency $1$). Together, an undying oscillation at
-            frequency $1$ — and that's the entire signature of $\sin t$.
-
-            This is what "the poles encode the answer" actually means.
-            We didn't have to invert the transform to see that $y(t)$
-            was a pure unit-frequency oscillation; the two pole
-            locations *already said so.* Inverting was just attaching
-            the right amplitude.
-            """
-        ),
-    ])
     return
 
 
