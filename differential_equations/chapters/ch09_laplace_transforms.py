@@ -697,7 +697,15 @@ def _(mo):
         y(t) \;=\; \mathcal{L}^{-1}\{\,Y(s)\,\}.
         $$
 
-        Two facts make it usable.
+        One trap to clear first: the inverse is **not** the forward
+        transform run a second time. Feeding $Y(s)$ back through
+        $\mathcal{L}$ gives $\int_0^\infty e^{-ps}Y(s)\,ds$ — just
+        another forward transform, a different function of a new
+        variable, not our $y(t)$. $\mathcal{L}^{-1}$ is its own
+        operation. (It does have an explicit formula — a mirror-image
+        integral that runs *up a vertical line in the complex plane* —
+        but we will not need it even once.) Two simpler facts make it
+        usable.
 
         **It is well-defined.** The forward transform is *one-to-one* —
         two different functions can't share the same image. (That's
@@ -706,13 +714,11 @@ def _(mo):
         $Y(s)$, and $\mathcal{L}^{-1}$ is just the name for "the
         function it came from."
 
-        **We invert by recognition, not by brute force.** There *is* a
-        formula for $\mathcal{L}^{-1}$ — a contour integral in the
-        complex plane — but we will not need it even once. Instead we
-        use the forward dictionary **backwards**: the forward direction
-        pairs each $f(t)$ with its $F(s)$; to invert, we hunt for a
-        function whose forward transform is the $F(s)$ in front of us.
-        By uniqueness, the moment we find one, it *is* the answer.
+        **We invert by recognition.** Rather than evaluate any formula,
+        we read the forward dictionary **backwards**: the forward
+        direction pairs each $f(t)$ with its $F(s)$; to invert, we hunt
+        for a function whose forward transform is the $F(s)$ in front of
+        us. By uniqueness, the moment we find one, it *is* the answer.
 
         So inverting our result collapses to a single, concrete
         question:
@@ -721,6 +727,55 @@ def _(mo):
         > $\dfrac{1}{s^2 + 1}$?
 
         Pin that down and $y(t)$ falls out. That's the next step.
+        """
+    )
+    return
+
+
+# --- Build the pair sin t <-> 1/(s^2+1) via the f'' rule (no new integral) -
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Which function transforms to $\dfrac{1}{s^2+1}$?
+
+        We could grind the forward integral
+        $\int_0^\infty e^{-st} f(t)\,dt$ for candidate after candidate
+        until one lands on $1/(s^2+1)$. But we just built a tool that
+        shortcuts the search — the second-derivative rule — so let's use
+        it.
+
+        The denominator $s^2 + 1$ hints at an oscillation, so try
+        $f(t) = \sin t$. It has $f(0) = 0$, $f'(0) = 1$, and the
+        defining feature that it's the negative of its own second
+        derivative, $f'' = -\sin t = -f$. Run that last fact through the
+        rule from earlier, $\mathcal{L}\{f''\} = s^2 F - s f(0) - f'(0)$:
+
+        $$
+        \mathcal{L}\{f''\} \;=\; s^2 F - s\cdot 0 - 1 \;=\; s^2 F - 1, \qquad\text{but also}\qquad \mathcal{L}\{f''\} \;=\; \mathcal{L}\{-f\} \;=\; -F.
+        $$
+
+        Those two expressions are the same quantity, so set them equal
+        and solve for $F$ — pure algebra again:
+
+        $$
+        s^2 F - 1 \;=\; -F \quad\Longrightarrow\quad (s^2 + 1)\,F \;=\; 1 \quad\Longrightarrow\quad \boxed{\;\mathcal{L}\{\sin t\} \;=\; \frac{1}{s^2 + 1}.\;}
+        $$
+
+        That's the entry we needed. The function whose transform is
+        $1/(s^2+1)$ is $\sin t$ — and by the uniqueness from a moment
+        ago, it's the *only* one. So we may read the dictionary
+        backwards with confidence:
+
+        $$
+        \mathcal{L}^{-1}\!\left\{\frac{1}{s^2+1}\right\} = \sin t \quad\Longrightarrow\quad y(t) = \sin t.
+        $$
+
+        The struck oscillator's answer is $y(t) = \sin t$: hit it once
+        and it rings — a clean unit oscillation at its natural
+        frequency, the **impulse response.** We started with a
+        differential equation and a hammer-blow forcing, and recovered
+        the motion with nothing harder than the algebra of $s$.
         """
     )
     return
