@@ -369,18 +369,48 @@ def _(mo):
         so $F(s)$ is a brand-new function, this time of $s$ instead
         of $t$. That $F(s)$ is the image of $f(t)$ on the other side
         of the portal.
+        """
+    )
+    return
 
-        Two pieces of fine print, and we move on. **First**, $s$ has
-        to be large enough that the integral converges; for $f(t) =
-        e^{at}$, for example, the weight $e^{-st}$ only wins if
-        $s > a$. We won't fuss about it — for every function we'll
-        meet there's some half-plane $\mathrm{Re}(s) > s_0$ where the
-        integral converges, and we just live there. **Second**, the
-        lower limit is $0$, not $-\infty$. The portal sees only the
-        *future*. That's not a flaw — it's exactly why Laplace is the
-        right tool for problems that **start at $t = 0$** with initial
-        conditions, and for forcings (like a curb at $t = a$) that
-        *switch on* somewhere along the way.
+
+# --- The two caveats, made concrete (convergence + starts at t=0) ----------
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### Two things about that integral
+
+        Both are worth a moment, because each turns out to be a
+        *feature*, not a snag.
+
+        **It has to converge — and that's a tug-of-war.** The integral
+        runs all the way out to $t = \infty$, so to land on a finite
+        number the integrand $e^{-st} f(t)$ has to **die away** as time
+        goes on. The weight $e^{-st}$ (for positive $s$) is a
+        *fader* — it drags everything toward zero — while $f(t)$ may be
+        trying to grow. Convergence is just the question of who wins
+        that race. Take $f(t) = e^{at}$: the integrand becomes
+        $e^{-(s-a)t}$, which fades only when $s > a$. Push $s$ below
+        $a$ and the function out-runs the fader, the area is infinite,
+        and there's simply no transform. So a fast-growing $e^{5t}$
+        needs $s > 5$; a tame $\sin t$ or a constant needs only
+        $s > 0$, since the fader beats them on its own. The practical
+        upshot: every function we'll meet has *some* threshold beyond
+        which the transform exists — and for the ODE work ahead that
+        threshold never actually bites, so we'll stop mentioning it.
+
+        **It starts at $t = 0$, not $-\infty$ — the portal looks only
+        forward.** That's on purpose. The problems we solve are
+        *switch-it-on-and-watch* problems: release the mass, flip the
+        battery, hit the pothole — all clocked from $t = 0$. Whatever
+        happened earlier we either don't know or don't care about, and
+        we don't have to: its *entire* leftover effect is summed up in
+        the starting state $y(0)$ and $y'(0)$. Those are exactly the
+        two numbers the derivative rule pulled in a moment ago — the
+        transform was built to take them as input. And a forcing that
+        only switches on later, like a curb at $t = a$, still sits
+        comfortably inside $[0, \infty)$.
         """
     )
     return
