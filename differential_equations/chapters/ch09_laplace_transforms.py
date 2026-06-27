@@ -526,22 +526,121 @@ def _(mo):
         y'' + y \;=\; \delta(t), \qquad y(0) = 0,\;\; y'(0) = 0.
         $$
 
-        That $\delta(t)$ is the **Dirac impulse** — picture an
-        infinitely tall, infinitely thin spike at $t = 0$ whose total
-        area is exactly $1$: a full unit of "push" delivered in zero
-        time. Its transform is the simplest object in the whole
-        subject. Drop it into the integral and the spike samples the
-        weight at the single instant $t = 0$:
-
-        $$
-        \mathcal{L}\{\delta(t)\} \;=\; \int_0^{\infty} e^{-st}\,\delta(t)\,dt \;=\; e^{-s\cdot 0} \;=\; 1.
-        $$
-
-        An impulse transforms to the constant $1$. That clean
-        right-hand side is exactly why the impulse is the friendliest
-        forcing to start with.
+        The system sits at rest until, at $t = 0$, it gets one sharp
+        tap and is left to ring. That tap is written $\delta(t)$ — the
+        **Dirac impulse**. To send this equation through the portal we
+        need $\mathcal{L}\{\delta\}$ — and for that we have to be
+        honest about what $\delta$ actually *is*.
         """
     )
+    return
+
+
+# --- What delta is: bump-limit + sifting property, with a graphic ----------
+@app.cell(hide_code=True)
+def _(go, mo, np):
+    from plotly.subplots import make_subplots as _msub
+
+    _fig = _msub(
+        rows=1, cols=2, horizontal_spacing=0.12,
+        subplot_titles=(
+            "δ(t): a unit-area bump — ever taller, ever narrower",
+            "Sifting: δ samples e^(−st) at the one point t = 0",
+        ),
+    )
+
+    # --- left: a family of unit-area bumps shrinking toward the spike ---
+    _tt = np.linspace(-1.5, 1.5, 400)
+    for _eps, _col in [(0.50, "#cdd6e0"), (0.28, "#7aa6ff"), (0.15, "#2a5d9c")]:
+        _g = np.exp(-_tt**2 / (2*_eps**2)) / (_eps * np.sqrt(2*np.pi))
+        _fig.add_trace(go.Scatter(x=_tt, y=_g, mode="lines",
+            line=dict(color=_col, width=2), showlegend=False,
+            hoverinfo="skip"), row=1, col=1)
+    _fig.add_annotation(x=0.08, y=2.95, xref="x", yref="y", xanchor="left",
+        text="height → ∞, area stays 1", showarrow=False,
+        font=dict(size=11, color="#56636f"))
+
+    # --- right: e^{-st} with the spike picking out its value at t=0 ---
+    _s = 0.7
+    _tr = np.linspace(-0.25, 4.0, 320)
+    _w = np.exp(-_s * _tr)
+    _fig.add_trace(go.Scatter(x=_tr, y=_w, mode="lines",
+        line=dict(color="#2a5d9c", width=2.5), showlegend=False,
+        hoverinfo="skip"), row=1, col=2)
+    # the impulse: a red stem + arrowhead at t = 0
+    _fig.add_trace(go.Scatter(x=[0, 0], y=[0, 1.2], mode="lines",
+        line=dict(color="#c15a46", width=3), showlegend=False,
+        hoverinfo="skip"), row=1, col=2)
+    _fig.add_trace(go.Scatter(x=[0], y=[1.2], mode="markers",
+        marker=dict(symbol="triangle-up", size=13, color="#c15a46"),
+        showlegend=False, hoverinfo="skip"), row=1, col=2)
+    # the sampled value sitting on the curve at (0, 1)
+    _fig.add_trace(go.Scatter(x=[0], y=[1.0], mode="markers",
+        marker=dict(size=10, color="#16223a"), showlegend=False,
+        hoverinfo="skip"), row=1, col=2)
+    _fig.add_annotation(x=0.18, y=1.34, xref="x2", yref="y2", xanchor="left",
+        text="δ(t)", showarrow=False, font=dict(size=13, color="#c15a46"))
+    _fig.add_annotation(x=0.22, y=0.98, xref="x2", yref="y2", xanchor="left",
+        text="picks e^(−s·0) = 1", showarrow=False,
+        font=dict(size=12, color="#16223a"))
+
+    _fig.update_xaxes(title="t", range=[-1.5, 1.5], row=1, col=1)
+    _fig.update_yaxes(range=[0, 3.6], row=1, col=1)
+    _fig.update_xaxes(title="t", range=[-0.25, 4.0], row=1, col=2)
+    _fig.update_yaxes(range=[0, 1.55], row=1, col=2)
+    _fig.update_layout(
+        height=330, template="plotly_white",
+        margin=dict(l=10, r=10, t=46, b=10),
+        paper_bgcolor="white", plot_bgcolor="white",
+    )
+
+    mo.vstack([
+        mo.md(
+            r"""
+            ### Meet $\delta(t)$ — the unit impulse
+
+            $\delta(t)$ isn't a function in the ordinary sense; no real
+            function is infinite at a point. Picture it instead as the
+            **limit of a unit-area bump that grows taller and narrower
+            without end** (left). Every bump in the family has area
+            exactly $1$; as the width shrinks to zero the height runs to
+            infinity, but the *area stays pinned at $1$* — "a whole
+            unit of push, delivered in an instant."
+
+            The one property we ever use is what $\delta$ does *inside
+            an integral*. Since the spike is zero everywhere except the
+            single instant $t = a$, multiplying any smooth $g(t)$ by
+            $\delta(t-a)$ and integrating just **plucks out the value
+            $g(a)$**:
+
+            $$
+            \int_{-\infty}^{\infty} g(t)\,\delta(t-a)\,dt \;=\; g(a).
+            $$
+
+            That's the **sifting property** (right): the impulse is a
+            *sampler*, reading off $g$ at the one point where the spike
+            lives and ignoring it everywhere else.
+            """
+        ),
+        _fig,
+        mo.md(
+            r"""
+            Now the transform is no sleight of hand. The weight
+            $e^{-st}$ plays the role of $g$, and our spike sits at
+            $t = 0$, so sifting simply reads the weight off at that one
+            instant:
+
+            $$
+            \mathcal{L}\{\delta(t)\} \;=\; \int_{0}^{\infty} e^{-st}\,\delta(t)\,dt \;=\; e^{-s\cdot 0} \;=\; 1.
+            $$
+
+            An impulse transforms to the constant $1$ — it samples
+            $e^{-st}$ at $t = 0$, and $e^{0} = 1$. *That's* why the
+            collapse in the next cell is so clean: the whole right-hand
+            side of the ODE becomes just $1$.
+            """
+        ),
+    ])
     return
 
 
