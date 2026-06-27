@@ -406,11 +406,11 @@ def _(mo):
         battery, hit the pothole — all clocked from $t = 0$. Whatever
         happened earlier we either don't know or don't care about, and
         we don't have to: its *entire* leftover effect is summed up in
-        the starting state $y(0)$ and $y'(0)$. Those are exactly the
-        two numbers the derivative rule pulled in a moment ago — the
-        transform was built to take them as input. And a forcing that
-        only switches on later, like a curb at $t = a$, still sits
-        comfortably inside $[0, \infty)$.
+        the starting state $y(0)$ and $y'(0)$. Beginning the integral
+        at $t = 0$ is what lets those two starting values enter the
+        picture at all — keep them in mind; they'll have a role to
+        play shortly. And a forcing that only switches on later, like a
+        curb at $t = a$, still sits comfortably inside $[0, \infty)$.
         """
     )
     return
